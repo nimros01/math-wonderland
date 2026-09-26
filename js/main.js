@@ -1,8 +1,8 @@
 // Screens: players, map, stage popup, results, pet and sticker book, parent corner.
 import * as P from './progress.js';
 import { sfx, unlockAudio } from './audio.js';
-import { STAGES, STICKERS, HATS, AVATARS } from './skills.js';
-import { startRound } from './play.js';
+import { STAGES, LEARN, STICKERS, HATS, AVATARS } from './skills.js';
+import { startRound, BOSS } from './play.js';
 
 const app = document.getElementById('app');
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -67,13 +67,13 @@ function startChoice() {
 function placementDone(r) {
   const p = P.me();
   for (let i = 0; i < r.placedAt; i++) {
-    const rec = P.stageRec(p, STAGES[i].id);
+    const rec = P.stageRec(p, LEARN[i].id);
     rec.stars = Math.max(rec.stars, 2);
     rec.demo = true;
   }
   P.hatch(p);
   P.save();
-  const at = STAGES[Math.min(r.placedAt, STAGES.length - 1)];
+  const at = LEARN[Math.min(r.placedAt, LEARN.length - 1)];
   sfx.chest();
   app.innerHTML = `
     <div class="result">
@@ -95,6 +95,8 @@ function map(focusId) {
   const firstOpen = STAGES.findIndex((s, i) => P.isUnlocked(p, STAGES, i) && !(p.stages[s.id]?.stars > 0));
   const focus = focusId ? STAGES.findIndex(s => s.id === focusId) : firstOpen;
   const height = (n + 1) * STEP + 90;
+  // The boss opens once every learning stage has a star.
+  const bossOpen = p.unlockAll || LEARN.every(s => (p.stages[s.id]?.stars || 0) > 0);
   const pts = [...xs, 50].map((x, i) => `${x},${i * STEP + 70}`).join(' ');
 
   app.innerHTML = `
@@ -113,13 +115,14 @@ function map(focusId) {
           ${STAGES.map((s, i) => {
             const open = P.isUnlocked(p, STAGES, i);
             const stars = p.stages[s.id]?.stars || 0;
-            const cls = ['node', open ? 'open' : 'locked', i === firstOpen ? 'current' : '', stars ? 'done' : '', s.icon.startsWith('×') ? 'txt' : ''].join(' ');
+            const cls = ['node', open ? 'open' : 'locked', i === firstOpen ? 'current' : '', stars ? 'done' : '', s.icon.startsWith('×') ? 'txt' : '', s.puzzle ? 'puzzle' : ''].join(' ');
             return `<div class="node-wrap" style="left:${xs[i]}%;top:${i * STEP + 70}px">
               <button class="${cls}" data-i="${i}" aria-label="Stage ${i + 1}">${open ? s.icon : '🔒'}</button>
               <div class="stars">${starsHTML(stars)}</div></div>`;
           }).join('')}
           <div class="node-wrap" style="left:50%;top:${n * STEP + 70}px">
-            <button class="node locked boss" aria-label="Boss, coming soon">🐲</button><div class="stars soon">🚧</div>
+            <button class="node boss ${bossOpen ? 'open' : 'locked'} ${bossOpen && firstOpen < 0 && !p.bossMeadow ? 'current' : ''}" id="bossnode" aria-label="Boss">${bossOpen ? BOSS : '🔒'}</button>
+            <div class="stars soon">${p.bossMeadow ? '🏆' : ''}</div>
           </div>
         </div>
       </div>
@@ -136,10 +139,16 @@ function map(focusId) {
       stagePopup(i);
     };
   });
+  app.querySelector('#bossnode').onclick = e => {
+    if (!bossOpen) { sfx.bad(); e.currentTarget.classList.add('wobble'); setTimeout(() => e.currentTarget?.classList.remove('wobble'), 500); return; }
+    sfx.tap();
+    startRound(app, { mode: 'boss', onQuit: () => map(), onDone: bossResult });
+  };
   holdToOpen(app.querySelector('#gear'), app.querySelector('#gearfill'), parentCorner);
 
   const sc = app.querySelector('#scroller');
-  if (focus >= 0) sc.scrollTop = Math.max(0, focus * STEP + 70 - sc.clientHeight / 2 + 60);
+  const f = focus >= 0 ? focus : bossOpen ? n : -1;
+  if (f >= 0) sc.scrollTop = Math.max(0, f * STEP + 70 - sc.clientHeight / 2 + 60);
 }
 
 function stagePopup(i) {
@@ -219,6 +228,44 @@ function result(i, r) {
   app.querySelector('#map').onclick = () => { sfx.tap(); map(nextOpen ? STAGES[i + 1].id : s.id); };
 }
 
+// The Meadow boss: win for a big chest with three prizes.
+function bossResult(r) {
+  const p = P.me();
+  const first = r.win && !p.bossMeadow;
+  if (r.win) p.bossMeadow = true;
+  P.save();
+  if (r.win) sfx.chest(); else sfx.fail();
+  app.innerHTML = `
+    <div class="result">
+      <div class="res-top boss-end ${r.win ? 'beaten' : ''}">${r.win ? '💥' : BOSS}</div>
+      <div class="res-top">${r.win ? '🏆' : '💪'}</div>
+      <div class="res-gems">💎 +${r.gems}</div>
+      ${r.win ? '<button class="chest big" id="chest" aria-label="Open chest">🎁</button>' : ''}
+      <div class="reward three" id="reward" hidden></div>
+      <div class="res-btns">
+        <button class="bigbtn" id="again" aria-label="Fight again">🔁</button>
+        <button class="bigbtn green" id="map" aria-label="Map">🗺️</button>
+      </div>
+    </div>`;
+  const chest = app.querySelector('#chest');
+  if (chest) chest.onclick = () => {
+    chest.disabled = true;
+    chest.classList.add('open');
+    sfx.chest();
+    setTimeout(() => {
+      chest.remove();
+      const box = app.querySelector('#reward');
+      box.hidden = false;
+      const prizes = [openChest(p), openChest(p), openChest(p)];
+      if (first) { p.gems += 100; prizes.push('<div class="rw-item">💎</div><div class="rw-sub">+100</div>'); }
+      box.innerHTML = prizes.map(x => `<div>${x}</div>`).join('');
+      P.save();
+    }, 500);
+  };
+  app.querySelector('#again').onclick = () => { sfx.tap(); startRound(app, { mode: 'boss', onQuit: () => map(), onDone: bossResult }); };
+  app.querySelector('#map').onclick = () => { sfx.tap(); map(); };
+}
+
 function openChest(p) {
   const roll = Math.random();
   const hatsLeft = HATS.filter(h => !p.hats.includes(h));
@@ -245,7 +292,8 @@ function openChest(p) {
 // Pet and sticker book
 function petScreen() {
   const p = P.me();
-  const canFeed = p.pet.stage > 0 && p.pet.stage < 3 && p.gems >= P.FEED_COST;
+  const cost = P.feedCost(p);
+  const canFeed = p.pet.stage > 0 && p.pet.stage < 3 && p.gems >= cost;
   app.innerHTML = `
     <div class="petscreen">
       <div class="topbar">
@@ -256,10 +304,12 @@ function petScreen() {
       <div class="pet-stage">${petHTML(p, 'huge')}</div>
       ${p.pet.stage === 0 ? '<div class="pet-hint">▶ ⭐ → 🐣</div>' : p.pet.stage < 3 ? `
         <div class="growbar"><i style="width:${Math.round(P.feedProgress(p) * 100)}%"></i></div>
-        <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${P.FEED_COST}</small></button>` : '<div class="pet-hint">🏆</div>'}
+        <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${cost}</small></button>` : '<div class="pet-hint">🏆</div>'}
       <div class="hats">
         <button class="hatbtn ${p.pet.hat ? '' : 'on'}" data-h="" aria-label="No hat">∅</button>
-        ${HATS.map(h => `<button class="hatbtn ${p.pet.hat === h ? 'on' : ''}" data-h="${h}" ${p.hats.includes(h) ? '' : 'disabled'}>${p.hats.includes(h) ? h : '❔'}</button>`).join('')}
+        ${HATS.map(h => p.hats.includes(h)
+          ? `<button class="hatbtn ${p.pet.hat === h ? 'on' : ''}" data-h="${h}">${h}</button>`
+          : `<button class="hatbtn shop" data-buy="${h}" ${p.gems >= P.HAT_COST ? '' : 'disabled'}><span>${h}</span><small>💎${P.HAT_COST}</small></button>`).join('')}
       </div>
       <div class="book">
         <div class="book-head">📒 ${p.stickers.length} / ${STICKERS.length}</div>
@@ -277,7 +327,20 @@ function petScreen() {
     pet.classList.add(grew ? 'grow' : 'munch');
   };
   app.querySelectorAll('.hatbtn').forEach(b => {
-    b.onclick = () => { sfx.tap(); p.pet.hat = b.dataset.h || null; P.save(); petScreen(); };
+    b.onclick = () => {
+      if (b.dataset.buy) {
+        if (p.gems < P.HAT_COST) return;
+        p.gems -= P.HAT_COST;
+        p.hats.push(b.dataset.buy);
+        p.pet.hat = b.dataset.buy;
+        sfx.chest();
+      } else {
+        sfx.tap();
+        p.pet.hat = b.dataset.h || null;
+      }
+      P.save();
+      petScreen();
+    };
   });
 }
 

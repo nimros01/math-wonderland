@@ -1,5 +1,6 @@
-// Offline support: serve the game files from a cache, refresh them in the background.
-const CACHE = 'mw-v1';
+// Offline support. Game files come from the network when it's there, so a new version shows up on
+// the next launch; the cache is only a fallback for playing offline.
+const CACHE = 'mw-v2';
 const FILES = ['./', 'index.html', 'css/style.css', 'js/main.js', 'js/play.js', 'js/skills.js',
   'js/visuals.js', 'js/progress.js', 'js/audio.js', 'icon.svg', 'manifest.webmanifest'];
 
@@ -12,9 +13,15 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(caches.open(CACHE).then(async c => {
-    const hit = await c.match(e.request);
-    const net = fetch(e.request).then(r => { if (r.ok && r.type === 'basic') c.put(e.request, r.clone()); return r; }).catch(() => hit);
-    return hit || net;
-  }));
+  e.respondWith(
+    fetch(e.request)
+      .then(r => {
+        if (r.ok && (r.type === 'basic' || r.type === 'cors')) {
+          const copy = r.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return r;
+      })
+      .catch(() => caches.match(e.request)),
+  );
 });
