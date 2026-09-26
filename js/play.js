@@ -34,7 +34,7 @@ export function startRound(app, opts) {
       <div class="bottombar">
         <button class="icon-btn" id="hint" aria-label="Hint">💡</button>
         <div class="pet-mini" id="petmini">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</div>
-        <div class="stage-mini">${mode === 'placement' ? '🚀' : stage.icon}</div>
+        ${mode === 'gate' ? `<div class="stage-mini">${stage.icon}</div>` : '<button class="icon-btn" id="showme" aria-label="Show me how">👀</button>'}
       </div>
     </div>`;
 
@@ -49,6 +49,14 @@ export function startRound(app, opts) {
     visEl.classList.add('pop');
     hintBtn.disabled = true;
     sfx.tap();
+  };
+
+  const showBtn = $('showme');
+  if (showBtn) showBtn.onclick = () => {
+    if (st.busy || over) return;
+    const current = q;
+    const gen = mode === 'placement' ? STAGES[Math.min(pl.si, STAGES.length - 1)].gen : stage.gen;
+    demo(gen, () => { render(current); st.busy = false; });
   };
 
   function setProgress() {
@@ -183,9 +191,9 @@ export function startRound(app, opts) {
     opts.onDone(r);
   }
 
-  // Watch-then-try: the first time a stage is played, a hand shows how to answer.
-  async function demo() {
-    const dq = stage.gen(0);
+  // Watch-then-try: a hand shows how to answer. Plays the first time a stage opens and on 👀.
+  async function demo(gen, then) {
+    const dq = gen(0);
     dq.show = !!dq.visual;
     render(dq);
     st.busy = true;
@@ -193,42 +201,35 @@ export function startRound(app, opts) {
     const targets = dq.input === 'pad'
       ? [...String(dq.answer)].map(d => ansEl.querySelector(`[data-k="${d}"]`)).concat(ansEl.querySelector('[data-k="ok"]'))
       : [ansEl.querySelector(`[data-v="${dq.answer}"]`)];
-    let skip = false;
-    const stop = () => { skip = true; };
-    app.addEventListener('pointerdown', stop, { once: true });
     hand.style.transition = 'none';
     hand.style.left = '50%'; hand.style.top = '110%';
     hand.hidden = false;
-    await wait(500);
+    await wait(600);
     hand.style.transition = '';
     let shown = '';
     for (const t of targets) {
-      if (skip || over) break;
+      if (over) break;
       const r = t.getBoundingClientRect();
       hand.style.left = r.left + r.width / 2 + 'px';
       hand.style.top = r.top + r.height / 2 + 'px';
-      await wait(800);
-      if (skip || over) break;
+      await wait(1000);
+      if (over) break;
       hand.classList.add('tap'); t.classList.add('pressed');
       sfx.tap();
       if (dq.input === 'pad' && t.dataset.k !== 'ok') { shown += t.dataset.k; ansEl.querySelector('#padshow').textContent = shown; }
-      await wait(250);
+      await wait(300);
       hand.classList.remove('tap'); t.classList.remove('pressed');
     }
-    if (!skip && !over) {
+    if (!over) {
       (dq.input === 'pad' ? ansEl.querySelector('#padshow') : targets[0]).classList.add('ok');
       sfx.ok();
-      await wait(1200);
+      await wait(1500);
     }
-    app.removeEventListener('pointerdown', stop);
     hand.hidden = true;
-    if (over) return;
-    P.stageRec(p, stage.id).demo = true;
-    P.save();
-    await wait(skip ? 250 : 0);
-    next();
+    if (!over) then();
   }
 
-  if (mode === 'normal' && !P.stageRec(p, stage.id).demo) demo();
-  else next();
+  if (mode === 'normal' && !P.stageRec(p, stage.id).demo) {
+    demo(stage.gen, () => { P.stageRec(p, stage.id).demo = true; P.save(); next(); });
+  } else next();
 }

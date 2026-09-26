@@ -43,13 +43,15 @@ function genCount(lvl) {
     const n = R(1, max);
     return numQ('?', n, [n + 1, n - 1, n + 2, n - 2, n + 10], { visual: frames(fill(n)), show: true });
   }
+  // Compare: pick <, = or > between two numbers, with both piles drawn underneath.
   const a = R(1, max);
-  let b = a;
   const gap = lvl === 2 ? 2 : 6;
-  while (b === a) b = Math.min(max, Math.max(1, a + R(-gap, gap)));
+  const b = chance(0.15) ? a : Math.min(max, Math.max(1, a + R(-gap, gap)));
+  const sym = a > b ? '>' : a < b ? '<' : '=';
   return {
-    eq: '👑', answer: a > b ? 'L' : 'R', input: 'choice', layout: 'pair', visual: null, show: false,
-    choices: [{ value: 'L', html: frames(fill(a)) }, { value: 'R', html: frames(fill(b, 'b')) }],
+    eq: `${a} ◯ ${b}`, answer: sym, input: 'choice', layout: 'row', show: true,
+    visual: pair(frames(fill(a)), '', frames(fill(b, 'b'))),
+    choices: [['<', '&lt;'], ['=', '='], ['>', '&gt;']].map(([v, html]) => ({ value: v, html })),
   };
 }
 

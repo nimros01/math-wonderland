@@ -321,6 +321,11 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
 .pairvis { display: flex; align-items: flex-end; gap: 12px; }
 .pairvis .blocks .bar { height: 90px; }
 .pairvis .op { font-size: 34px; align-self: center; }
+.pairvis .op:empty { width: 10px; }
+.pairvis .frames { flex-direction: column; flex-wrap: nowrap; }
+.pairvis .tf { grid-template-columns: repeat(5, 26px); grid-auto-rows: 26px; }
+.vis > .frames .tf { grid-template-columns: repeat(5, 40px); grid-auto-rows: 40px; }
+.vis > .frames .tf i::after { inset: 5px; }
 .arr { display: grid; gap: calc(var(--s) * .25); }
 .arr i { width: var(--s); height: var(--s); border-radius: 50%; background: var(--sun); border: 2px solid #b27c00; }
 .arr i.alt { background: #ffd978; }
