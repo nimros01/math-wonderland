@@ -34,7 +34,7 @@ export function startRound(app, opts) {
       <div class="bottombar">
         <button class="icon-btn" id="hint" aria-label="Hint">💡</button>
         <div class="pet-mini" id="petmini">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</div>
-        ${mode === 'gate' ? `<div class="stage-mini">${stage.icon}</div>` : '<button class="icon-btn" id="showme" aria-label="Show me how">👀</button>'}
+        <button class="icon-btn" id="showme" aria-label="Show me how">👀</button>
       </div>
     </div>`;
 
@@ -68,7 +68,8 @@ export function startRound(app, opts) {
     q = question;
     window.__mwq = q; // lets automated tests read the current question
     typed = '';
-    eqEl.textContent = q.eq;
+    // The spot to fill in is always a yellow dashed slot.
+    eqEl.innerHTML = q.eq.replace('?', '<span class="slot">?</span>').replace('◯', '<span class="slot"></span>');
     eqEl.hidden = !q.eq;
     visEl.classList.remove('pop');
     visEl.innerHTML = q.show && q.visual ? q.visual : '';
@@ -96,6 +97,13 @@ export function startRound(app, opts) {
     show.textContent = typed;
   }
 
+  function fillSlot(html, fix = false) {
+    const slot = $('card').querySelector('.slot');
+    if (!slot) return;
+    slot.innerHTML = html;
+    slot.classList.add(fix ? 'fixed' : 'filled');
+  }
+
   function floatGems(n) {
     const g = document.createElement('div');
     g.className = 'floater';
@@ -118,6 +126,7 @@ export function startRound(app, opts) {
     if (ok) {
       sfx.ok();
       el.classList.add('ok');
+      fillSlot(q.input === 'pad' ? String(q.answer) : q.choices.find(c => String(c.value) === String(q.answer)).html);
       st.streak++;
       st.best = Math.max(st.best, st.streak);
       if (st.streak === 5 || st.streak === 10) setTimeout(sfx.streak, 150);
@@ -139,6 +148,7 @@ export function startRound(app, opts) {
         ansEl.querySelector(`[data-v="${q.answer}"]`)?.classList.add('right');
       }
       if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); }
+      setTimeout(() => fillSlot(q.input === 'pad' ? String(q.answer) : q.choices.find(c => String(c.value) === String(q.answer)).html, true), 450);
       if (mode === 'normal' && !q.redo) st.redo.push({ ...q, redo: true, show: false, hinted: false });
     }
     showStreak();
@@ -222,6 +232,7 @@ export function startRound(app, opts) {
     }
     if (!over) {
       (dq.input === 'pad' ? ansEl.querySelector('#padshow') : targets[0]).classList.add('ok');
+      fillSlot(dq.input === 'pad' ? String(dq.answer) : dq.choices.find(c => String(c.value) === String(dq.answer)).html);
       sfx.ok();
       await wait(1500);
     }

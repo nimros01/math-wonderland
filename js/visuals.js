@@ -37,4 +37,6 @@ export function array(r, c) {
   return h + '</div>';
 }
 
-export const row = items => '<div class="seq">' + items.map(x => `<span>${x}</span>`).join('') + '</div>';
+// A train of tiles. '❓' becomes the yellow slot the child fills in.
+export const row = items => `<div class="seq" style="--n:${items.length}">` +
+  items.map(x => (x === '❓' ? `<span class="slot${typeof items.find(i => i !== '❓') === 'number' ? ' num' : ''}">?</span>` : `<span${typeof x === 'number' ? ` class="num${x >= 100 ? ' n3' : ''}"` : ''}>${x}</span>`)).join('') + '</div>';

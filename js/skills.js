@@ -36,23 +36,54 @@ const numQ = (eq, answer, near, extra = {}) => ({
   eq, answer, input: 'choice', choices: numChoices(answer, near), visual: null, show: false, ...extra,
 });
 
-// 1. Count and compare to 20
+// 1. Numbers: count, compare and number tracks
+const SYMBOLS = [['<', '&lt;'], ['=', '='], ['>', '&gt;']].map(([v, html]) => ({ value: v, html }));
+const symOf = (x, y) => (x > y ? '>' : x < y ? '<' : '=');
+const cmpQ = (left, right, x, y, visual = null) =>
+  ({ eq: `${left} ◯ ${right}`, answer: symOf(x, y), input: 'choice', layout: 'row', choices: SYMBOLS, visual, show: !!visual });
+
 function genCount(lvl) {
-  const max = [10, 15, 20][lvl];
-  if (chance(0.55)) {
-    const n = R(1, max);
+  const kind = pick([['dots', 'cmpDots', 'cmpDots', 'track', 'track'], ['dots', 'cmp', 'cmp', 'track', 'track'], ['cmp', 'cmpSum', 'cmpSum', 'track', 'track']][lvl]);
+  if (kind === 'dots') {
+    const n = R(lvl ? 11 : 3, 20);
     return numQ('?', n, [n + 1, n - 1, n + 2, n - 2, n + 10], { visual: frames(fill(n)), show: true });
   }
-  // Compare: pick <, = or > between two numbers, with both piles drawn underneath.
-  const a = R(1, max);
-  const gap = lvl === 2 ? 2 : 6;
-  const b = chance(0.15) ? a : Math.min(max, Math.max(1, a + R(-gap, gap)));
-  const sym = a > b ? '>' : a < b ? '<' : '=';
-  return {
-    eq: `${a} ◯ ${b}`, answer: sym, input: 'choice', layout: 'row', show: true,
-    visual: pair(frames(fill(a)), '', frames(fill(b, 'b'))),
-    choices: [['<', '&lt;'], ['=', '='], ['>', '&gt;']].map(([v, html]) => ({ value: v, html })),
-  };
+  if (kind === 'cmpDots') {
+    const a = R(5, 20);
+    const b = chance(0.15) ? a : Math.min(20, Math.max(1, a + pick([-3, -2, -1, 1, 2, 3])));
+    return cmpQ(a, b, a, b, pair(frames(fill(a)), '', frames(fill(b, 'b'))));
+  }
+  if (kind === 'cmp') {
+    // Close numbers up to 100, including swapped digits like 36 and 63.
+    const a = R(12, 99);
+    let b = chance(0.3) && a % 10 !== Math.floor(a / 10) && a % 10 > 0 ? (a % 10) * 10 + Math.floor(a / 10) : a + pick([-5, -3, -1, 1, 2, 4, 10, -10]);
+    if (chance(0.1)) b = a;
+    b = Math.min(100, Math.max(1, b));
+    return cmpQ(a, b, a, b);
+  }
+  if (kind === 'cmpSum') {
+    // Compare a sum with a number, or two sums.
+    const a = R(3, 9), b = R(3, 9), s = a + b;
+    if (chance(0.5)) {
+      const c = s + pick([-1, 0, 1, 2, -2]);
+      return cmpQ(`${a} + ${b}`, c, s, c);
+    }
+    const c = R(2, 9), d = s - c + pick([-1, 0, 1]);
+    if (d < 1) return genCount(lvl);
+    return cmpQ(`${a} + ${b}`, `${c} + ${d}`, s, c + d);
+  }
+  // Number track with one missing tile.
+  const step = lvl === 2 ? pick([2, 5, 10, -1, -2]) : lvl === 1 ? pick([1, 1, -1, 2]) : pick([1, 1, -1]);
+  const len = 5;
+  const lo = lvl === 0 ? 0 : 10, hi = lvl === 0 ? 20 : 100;
+  let start = R(lo, hi);
+  if (start + step * (len - 1) > hi) start = hi - step * (len - 1);
+  if (start + step * (len - 1) < lo) start = lo - step * (len - 1);
+  const seq = Array.from({ length: len }, (_, i) => start + i * step);
+  const miss = R(lvl === 0 ? 2 : 1, len - 1);
+  const ans = seq[miss];
+  const shown = seq.map((v, i) => (i === miss ? '❓' : v));
+  return numQ('', ans, [ans + 1, ans - 1, ans + step * 2, ans + 10, ans - 10], { visual: row(shown), show: true });
 }
 
 // 2. Patterns
