@@ -47,14 +47,22 @@ function newPlayer() {
 }
 
 // Start from the beginning, or take the placement quest to skip what you know.
+// Each button draws its own little map: walk from the first stage, or answer a few ❓ and fly ahead.
 function startChoice() {
   const p = P.me();
+  const icons = LEARN.slice(0, 5).map(s => s.icon);
+  const stops = (done = 0) => icons.map((ic, i) => `<span class="stop${i < done ? ' won' : ''}">${i < done ? '⭐' : ic}</span>`).join('');
   app.innerHTML = `
     <div class="home">
       <div class="big-q">${p.avatar}</div>
       <div class="start-choice">
-        <button class="bigbtn green" id="begin"><span>🌱</span><small>1 → </small></button>
-        <button class="bigbtn gold" id="quest"><span>🚀</span><small>⭐ ⭐ ⭐</small></button>
+        <button class="pathbtn green" id="begin" aria-label="Start at stage 1">
+          <span class="minipath">${stops()}<span class="walker">${p.avatar}</span></span>
+          <span class="pathnums">${icons.map((_, i) => `<b>${i + 1}</b>`).join('')}</span>
+        </button>
+        <button class="pathbtn gold" id="quest" aria-label="Quiz and jump ahead">
+          <span class="minipath"><span class="stop quiz"><span class="slot">?</span></span>${stops(3).replace(/<span class="stop[^>]*>[^<]*<\/span>$/, '')}<span class="flyer">🚀</span></span>
+        </button>
       </div>
     </div>`;
   app.querySelector('#begin').onclick = () => { sfx.tap(); map(); };
