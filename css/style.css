@@ -682,3 +682,31 @@ svg.die { display: block; margin: auto; }
 @media (max-width: 340px) { .zoom .zc em { font-size: 11px; } }
 .zoom { align-items: end; }
 .zoom .zc i { line-height: 1; white-space: nowrap; }
+
+/* Meadow additions: new-stop sparkle, coin shop, stories, parent coin choice */
+.node.fresh { box-shadow: 0 0 0 5px var(--sun), 0 5px 0 var(--ink); }
+.node .newbadge { position: absolute; top: -10px; right: -10px; font-size: 22px; animation: twinkle 1.4s ease-in-out infinite; pointer-events: none; }
+@keyframes twinkle { 50% { transform: scale(1.3) rotate(20deg); } }
+.wtab.hasnew { position: relative; }
+.wtab.hasnew::after { content: '✨'; position: absolute; top: -10px; right: -8px; font-size: 16px; }
+.mcoins { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; max-width: 260px; }
+.mcoin { display: inline-grid; place-items: center; border-radius: 50%; border: 3px solid var(--ink); font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 rgba(30, 38, 80, .3); line-height: 1; }
+.mcoin.il.v10 { width: 48px; height: 48px; background: #ffd24a; }
+.mcoin.il.v5 { width: 44px; height: 44px; background: #cfd6e4; }
+.mcoin.il.v2 { width: 40px; height: 40px; background: #cfd6e4; }
+.mcoin.il.v1 { width: 36px; height: 36px; background: #e3e7ef; }
+.mcoin.us.v25 { width: 48px; height: 48px; background: #cfd6e4; }
+.mcoin.us.v5 { width: 42px; height: 42px; background: #dfe3ea; }
+.mcoin.us.v10 { width: 36px; height: 36px; background: #cfd6e4; }
+.mcoin.us.v1 { width: 38px; height: 38px; background: #e59a5b; }
+.choice .mcoins { max-width: 100%; gap: 2px; }
+.choice .mcoin { transform: scale(.78); margin: -4px; }
+.pricetag { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.pricetag i { font-style: normal; font-size: 70px; line-height: 1; }
+.pricetag b { font-size: 28px; font-weight: 800; padding: 2px 14px; background: #fff4cc; border: 3px solid var(--ink); border-radius: 10px; }
+.story .crowd { font-size: 18px; line-height: 1.15; word-break: break-all; max-width: 110px; }
+.story .fly { font-size: 22px; color: var(--sky, #3e9be0); }
+.story .box { font-style: normal; font-size: 24px; }
+.pc-seg { display: inline-flex; gap: 6px; margin-left: 8px; }
+.pc-cty { font: inherit; font-size: 15px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--card); }
+.pc-cty.on { background: var(--sun); font-weight: 800; }

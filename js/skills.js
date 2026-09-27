@@ -8,6 +8,7 @@
 // 'choice' adds answer, choices [{value, html}], layout 'grid' | 'row' | 'pair', and optional fill
 // (what goes into each slot). 'multi' adds target (HTML) and items [{html, ok}].
 // 'pairs' adds target, op and cards [{v}].
+import { genMeasure, genShop, genStory1 } from './meadow2.js';
 import { frames, fill, blocks, pair, array, row, pyramid, polygon, circle, triangleFan, squareX, half, mirrorVis, solid, SOLID_NAMES } from './visuals.js';
 
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -458,8 +459,11 @@ export const STAGES = [
   { id: 'add20', icon: '🍎', gen: genAdd20 },
   { id: 'make10', icon: '🔟', gen: genMake10 },
   { id: 'tens', icon: '🧱', gen: genTens },
+  { id: 'measure', icon: '📏', gen: genMeasure, added: true },
   { id: 'add100', icon: '➕', gen: genAdd100 },
+  { id: 'shop', icon: '🛒', gen: genShop, added: true },
   { id: 'carry', icon: '🔄', gen: genCarry },
+  { id: 'story1', icon: '🎬', gen: genStory1, added: true },
   { id: 'puzzle1', icon: '🧩', gen: genPuzzle(false), puzzle: true },
   { id: 'x2', icon: '×2', gen: genTables([1, 2, 10]) },
   { id: 'x5', icon: '×5', gen: genTables([5]) },
