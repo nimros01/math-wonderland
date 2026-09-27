@@ -3,6 +3,7 @@ import * as P from './progress.js';
 import { sfx } from './audio.js';
 import { LEARN } from './skills.js';
 import { WORLDS, learnOf } from './worlds.js';
+import { helpFor } from './help.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -40,6 +41,7 @@ export function startRound(app, opts) {
       <div class="topbar">
         <button class="icon-btn" id="quit" aria-label="Back to map">✖</button>
         <div class="prog"><i id="progfill"></i></div>
+        <button class="icon-btn info" id="info" aria-label="What to do">i</button>
         <div class="gem-count"><span>💎</span><b id="gems">${p.gems}</b></div>
       </div>
       ${mode === 'boss' ? `<div class="bossbar"><span class="boss" id="boss">${world.boss}</span><div class="hp"><i id="hpfill"></i></div><span class="hearts" id="hearts"></span></div>` : ''}
@@ -61,7 +63,7 @@ export function startRound(app, opts) {
   const $ = id => app.querySelector('#' + id);
   const eqEl = $('eq'), visEl = $('vis'), ansEl = $('answers'), hintBtn = $('hint'), cardEl = $('card');
 
-  $('quit').onclick = () => { over = true; sfx.tap(); opts.onQuit(); };
+  $('quit').onclick = () => { over = true; document.querySelector('.infopop')?.parentNode.remove(); sfx.tap(); opts.onQuit(); };
   hintBtn.onclick = () => {
     if (!q || st.busy || !q.visual || q.show) return;
     q.show = true; q.hinted = true;
@@ -69,6 +71,17 @@ export function startRound(app, opts) {
     visEl.classList.add('pop');
     hintBtn.disabled = true;
     sfx.tap();
+  };
+  // ⓘ: what this question asks, in words, for parents and kids who read. Free, and it doesn't pause scoring.
+  $('info').onclick = () => {
+    if (!q || over || document.querySelector('.overlay')) return;
+    sfx.tap();
+    const ov = document.createElement('div');
+    ov.className = 'overlay infoov';
+    ov.innerHTML = `<div class="popup infopop" role="dialog" aria-label="What to do"><span class="infoicon">i</span><p></p><button class="icon-btn close" aria-label="Close">✖</button></div>`;
+    ov.querySelector('p').textContent = helpFor(q, mode === 'normal' || mode === 'gate' ? stage.id : undefined);
+    ov.onclick = () => ov.remove();
+    document.body.appendChild(ov);
   };
   $('showme').onclick = () => {
     if (st.busy || over) return;
@@ -378,6 +391,7 @@ export function startRound(app, opts) {
 
   function finish() {
     over = true;
+    document.querySelector('.infopop')?.parentNode.remove();
     const r = { mode, gems: st.gems, correct: st.correct, total, best: st.best };
     if (mode === 'normal') r.stars = starsFor(st.correct);
     else if (mode === 'gate') r.stars = st.correct >= GATE_PASS ? 3 : 0;
