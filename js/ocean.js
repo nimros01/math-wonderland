@@ -636,6 +636,7 @@ function genMillion(lvl) {
     const div = lvl > 0 && chance(0.4);
     const a = pick([R(2, 99) * 100, R(11, 999) * 10, R(2, 9) * 1000, R(12, 99) * 1000]);
     const m = lvl === 2 ? pick([10, 100, 1000]) : 10;
+    if (div && a % m) return genMillion(lvl);
     if (div) return { ...numQ(`${big(a)} ÷ ${m} = ?`, a / m), small: true, choices: bigChoices(a / m, [a / m * 10, a / m / 10, a / m * 100].filter(Number.isInteger)) };
     const c = a * m;
     if (c > 9999999) return genMillion(lvl);
@@ -685,7 +686,7 @@ function genLongDiv(lvl) {
   if (kind === 'rem') {
     const r = R(1, k - 1), m = n + r;
     if (m > 999) return genLongDiv(lvl);
-    return numQ(`${m} ÷ ${k} = ${q} <small>r</small> ?`, r, [r + 1, r - 1, k - r, k].filter(v => v >= 0 && v !== r), { visual: `<div class="deal">${place(m)}${chests(k)}</div>`, show: false });
+    return numQ(`${m} ÷ ${k} = ${q} <small class="rem">🐟</small> ?`, r, [r + 1, r - 1, k - r, k].filter(v => v >= 0 && v !== r), { visual: `<div class="deal">${place(m)}${chests(k)}</div>`, show: false });
   }
   if (kind === 'back') return numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, q + k, n + 10]);
   const wrongSplit = Number(String(Math.floor(n / 100 / k) || '') + String(Math.floor((n % 100) / 10 / k)) + String(Math.floor((n % 10) / k)));
@@ -694,25 +695,36 @@ function genLongDiv(lvl) {
 
 // ---------- Shape sorter: right corners, equal sides, parallel sides ----------
 // Each shape: points (unit grid), and its facts.
-const QUADS = [
-  { p: [[0, 0], [4, 0], [4, 4], [0, 4]], right: true, par: 2, eq: true },            // square
-  { p: [[0, 0], [6, 0], [6, 3], [0, 3]], right: true, par: 2, eq: false },           // rectangle
-  { p: [[0, 0], [4, 0], [6, 3], [2, 3]], right: false, par: 2, eq: false },          // parallelogram
-  { p: [[0, 0], [3, 0], [5, 4], [2, 4]], right: false, par: 2, eq: false },          // parallelogram 2
-  { p: [[2, 0], [4, 3], [2, 6], [0, 3]], right: false, par: 2, eq: true },           // rhombus
-  { p: [[0, 0], [6, 0], [4, 3], [2, 3]], right: false, par: 1, eq: false },          // trapezoid
-  { p: [[0, 0], [5, 0], [3, 3], [0, 3]], right: true, par: 1, eq: false },           // right trapezoid
-  { p: [[2, 0], [4, 2], [2, 6], [0, 2]], right: false, par: 0, eq: false },          // kite
-  { p: [[0, 0], [5, 1], [4, 4], [1, 3]], right: false, par: 0, eq: false },          // any quad
-  { p: [[0, 0], [5, 0], [5, 3], [1, 4]], right: true, par: 0, eq: false },           // quad with right corners
-];
-const TRIS = [
-  { p: [[0, 0], [5, 0], [0, 4]], right: true, par: 0, eq: false },                   // right triangle
-  { p: [[0, 0], [6, 0], [3, 5.2]], right: false, par: 0, eq: true },                 // equilateral
-  { p: [[0, 0], [4, 0], [2, 5]], right: false, par: 0, eq: false },                  // isosceles
-  { p: [[0, 0], [6, 0], [4, 3]], right: false, par: 0, eq: false },                  // scalene
-  { p: [[0, 0], [4, 0], [4, 4]], right: true, par: 0, eq: false },                   // right isosceles
-];
+export const QUADS = [
+  [[0, 0], [4, 0], [4, 4], [0, 4]],   // square
+  [[0, 0], [6, 0], [6, 3], [0, 3]],   // rectangle
+  [[0, 0], [4, 0], [6, 3], [2, 3]],   // parallelogram
+  [[0, 0], [3, 0], [5, 4], [2, 4]],   // parallelogram 2
+  [[2, 0], [4, 3], [2, 6], [0, 3]],   // rhombus
+  [[0, 0], [6, 0], [4, 3], [2, 3]],   // trapezoid
+  [[0, 0], [5, 0], [3, 3], [0, 3]],   // right trapezoid
+  [[2, 0], [4, 1], [2, 6], [0, 1]],   // kite
+  [[0, 0], [5, 1], [4, 5], [1, 3]],   // any four corners
+  [[0, 0], [5, 0], [5, 3], [1, 4]],   // two right corners
+].map(p => facts(p));
+export const TRIS = [
+  [[0, 0], [5, 0], [0, 4]],           // right
+  [[0, 0], [6, 0], [3, 3 * Math.sqrt(3)]], // equal sides
+  [[0, 0], [4, 0], [2, 5]],           // two equal sides
+  [[0, 0], [6, 0], [4, 3]],           // scalene
+  [[0, 0], [4, 0], [4, 4]],           // right, two equal sides
+].map(p => facts(p));
+// Right corners, pairs of parallel sides and all-equal sides, worked out from the corners.
+function facts(p) {
+  const n = p.length, side = i => [p[(i + 1) % n][0] - p[i][0], p[(i + 1) % n][1] - p[i][1]];
+  const cross = (u, v) => u[0] * v[1] - u[1] * v[0], dotp = (u, v) => u[0] * v[0] + u[1] * v[1];
+  let right = false, par = 0;
+  for (let i = 0; i < n; i++) if (Math.abs(dotp(side(i), side((i + n - 1) % n))) < 1e-9) right = true;
+  if (n === 4) for (const i of [0, 1]) if (Math.abs(cross(side(i), side(i + 2))) < 1e-9) par++;
+  const len = p.map((_, i) => Math.hypot(...side(i)));
+  const eq = len.every(l => Math.abs(l - len[0]) < 1e-9);
+  return { p, right, par, eq };
+}
 function shapeSvg(sh, { size = 76, rot = 0, marks = false } = {}) {
   const a = rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
   const r = sh.p.map(([x, y]) => [x * c - y * s, x * s + y * c]);
@@ -752,8 +764,16 @@ function genSort(lvl) {
   }
   if (kind === 'odd') {
     // three quads with two pairs of parallel sides and one without, or the reverse
-    const yes = shuffle(QUADS.filter(q => q.par === 2)).slice(0, 3), no = pick(QUADS.filter(q => q.par < 2));
-    const i = R(0, 3), set = yes.slice(); set.splice(i, 0, no);
+    // the odd shape is the one without two pairs of parallel sides; no other fact may single out one shape
+    const tests = [sh => sh.right, sh => sh.eq, sh => sh.par > 0];
+    let set, i;
+    for (let t = 0; ; t++) {
+      const yes = shuffle(QUADS.filter(q => q.par === 2)).slice(0, 3), no = pick(QUADS.filter(q => q.par < 2));
+      i = R(0, 3); set = yes.slice(); set.splice(i, 0, no);
+      const lonely = tests.some(f => { const k = set.filter(f).length; return k === 1 || k === 3; });
+      if (!lonely) break;
+      if (t > 200) return genSort(lvl);
+    }
     return { eq: '?', answer: i, input: 'choice', layout: 'grid', visual: null, show: false, choices: set.map((sh, j) => ({ value: j, html: shapeSvg(sh, { size: 70, rot: rot() }) })) };
   }
   const prop = pick(lvl === 0 ? ['right', 'eq'] : ['right', 'par', 'eq']);
