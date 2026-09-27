@@ -387,7 +387,7 @@ function genBoth(lvl) {
     const wrongs = [`${kb(a + c)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)}${b ? ` + ${b}` : ''} = ${d - c}`, `${kb(a)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)} = ${d + c}`];
     // Values stay plain words: the equations hold HTML, which can't go into a button's data attribute.
     const opts = [right, ...wrongs.filter(w => w !== right)].slice(0, 4);
-    return { eq: '⚖️ ?', answer: 'e0', input: 'choice', layout: 'col', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
+    return { eq: '⚖️ ?', answer: 'e0', input: 'choice', layout: 'grid', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
       choices: shuffle(opts.map((o, i) => ({ value: `e${i}`, html: ex(o) }))) };
   }
   if (kind === 'check') {
@@ -459,8 +459,8 @@ function genIneq(lvl) {
   const heavyLeft = rel === '>' || rel === '≥';
   const vis = bal([...boxes(k, 'x'), a], [c], ineq, { tilt: heavyLeft ? 12 : -12 });
   if (kind === 'multi') {
-    const lo = Math.max(0, t - R(3, 5)), nums = Array.from({ length: 9 }, (_, i) => lo + i);
-    return { eq: '', input: 'multi', target: ineq, visual: vis, show: true, grid3: true,
+    const lo = Math.max(0, t - R(2, 3)), nums = Array.from({ length: 6 }, (_, i) => lo + i);
+    return { eq: '', input: 'multi', target: ineq, visual: vis, show: false, grid3: true,
       items: nums.map(n => ({ html: String(n), ok: REL[rel](n, t) })) };
   }
   if (kind === 'line') {

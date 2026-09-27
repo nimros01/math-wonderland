@@ -572,7 +572,7 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
 .pc-row #pc-name { flex: 1; width: auto; height: auto; font-size: 16px; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; }
 
 /* ---------- worlds ---------- */
-.world-tabs { display: flex; justify-content: center; gap: 10px; margin: 6px auto 0; }
+.world-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; margin: 6px auto 0; padding: 0 6px; }
 .wtab { display: flex; align-items: center; gap: 4px; padding: 4px 14px; font: inherit; font-size: 24px; color: var(--ink); background: rgba(255, 255, 255, .75); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); }
 .wtab b { font-size: 18px; }
 .wtab.on { background: var(--sun); }
@@ -786,10 +786,15 @@ svg.die { display: block; margin: auto; }
 .camel b { font-size: 16px; }
 .numcards { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
 .numcards b { min-width: 42px; padding: 6px 8px; font-size: 24px; font-weight: 800; text-align: center; background: #fff4d6; border: 3px solid var(--ink); border-radius: 10px; }
+@media (min-width: 360px) and (max-width: 419px) {
+  .world-tabs { gap: 6px; }
+  .wtab { padding: 4px 7px; font-size: 20px; gap: 3px; }
+  .wtab b { font-size: 15px; }
+}
 @media (max-width: 359px) {
-  .world-tabs { gap: 5px; }
-  .wtab { padding: 4px 8px; font-size: 21px; }
-  .wtab b { font-size: 16px; }
+  .world-tabs { gap: 6px 4px; }
+  .wtab { padding: 3px 6px; font-size: 19px; gap: 2px; }
+  .wtab b { font-size: 14px; }
 }
 .lvlicon { display: inline-flex; align-items: flex-end; gap: .08em; height: 1em; vertical-align: baseline; }
 .lvlicon i { width: .28em; box-sizing: border-box; background: var(--sand, #d9a33a); border: 1.5px solid var(--ink); border-bottom-width: 2.5px; }
