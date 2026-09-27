@@ -44,7 +44,8 @@ const BY_STAGE = {
     : has(q.eq, '−') ? 'How much longer is the red snake than the blue one? Use the ruler.'
     : has(q.eq, '≈') ? 'Guess the length: the small yellow square is 1 long. About how many squares long is the snake?'
     : 'How long is the snake? Read the ruler. Careful, the snake does not always start at 0.'),
-  shop: q => (has(q.eq, '🪙') ? 'What is the smallest number of coins that pays exactly this price?'
+  shop: q => (q.fewest ? 'Every handful pays exactly the price on the tag. Which one uses the fewest coins?'
+    : has(q.eq, '🪙') ? 'What is the smallest number of coins that pays exactly this price?'
     : has(q.eq, '−') ? 'You pay with the first amount for the toy. How much change do you get back?'
     : q.eq ? 'Add up the coins. How much money is there?'
     : 'Which handful of coins pays exactly the price on the tag?'),
