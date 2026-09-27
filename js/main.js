@@ -19,8 +19,15 @@ function curWorld(p) {
   return WORLDS[wi] && worldOpen(p, wi) ? wi : 0;
 }
 
-function petHTML(p, cls = '') {
-  return `<span class="pet ${cls} s${p.pet.stage}">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</span>`;
+const wid = p => WORLDS[curWorld(p)].id;
+
+function petFace(pet, w, cls = '') {
+  return `<span class="pet ${cls} s${pet.stage}">${P.petEmoji(pet, w)}${pet.hat ? `<span class="hat">${pet.hat}</span>` : ''}</span>`;
+}
+// A child's pet for the world they're in (egg until it hatches); with `buddy`, the one that plays along.
+function petHTML(p, cls = '', buddy = false) {
+  const c = buddy ? P.companion(p, wid(p)) : { pet: P.peekPet(p, wid(p)), wid: wid(p) };
+  return petFace(c.pet, c.wid, cls);
 }
 
 // Players. Each child picks their own animal at every launch; each keeps separate progress.
@@ -36,7 +43,7 @@ function home() {
         ${ps.map(p => `<button class="player${p.id === P.state.current ? ' last' : ''}" data-id="${p.id}" aria-label="Player">
           <span class="av">${p.avatar}</span>
           ${p.name ? `<span class="pname">${esc(p.name)}</span>` : ''}
-          <span class="pmeta">${petHTML(p, 'tiny')}<span class="pst">★ ${Object.entries(p.stages).reduce((t, [id, r]) => t + (id.startsWith('boss-') ? 0 : r.stars || 0), 0)}</span></span>
+          <span class="pmeta">${petHTML(p, 'tiny', true)}<span class="pst">★ ${Object.entries(p.stages).reduce((t, [id, r]) => t + (id.startsWith('boss-') ? 0 : r.stars || 0), 0)}</span></span>
         </button>`).join('')}
         ${ps.length < MAX_PLAYERS ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
       </div>
@@ -118,7 +125,7 @@ function placementDone(r) {
     rec.stars = Math.max(rec.stars, 2);
     rec.demo = true;
   }
-  P.hatch(p);
+  P.hatch(p.pet);
   P.save();
   const at = LEARN[Math.min(r.placedAt, LEARN.length - 1)];
   sfx.chest();
@@ -143,6 +150,9 @@ function map(focusId) {
   if (fresh > 0) p.world = fresh;
   const wi = curWorld(p), W = WORLDS[wi], STAGES = W.stages;
   if (!seen.includes(wi)) { seen.push(wi); P.save(); }
+  // Children who already have stars in a world get its pet the first time they see it there.
+  const newPet = wi > 0 && STAGES.some(s => p.stages[s.id]?.stars > 0) && P.hatch(P.petOf(p, W.id));
+  if (newPet) P.save();
   const n = STAGES.length;
   const STEP = 116;
   const xs = STAGES.map((_, i) => 50 + Math.sin(i * 1.05) * 26);
@@ -186,7 +196,7 @@ function map(focusId) {
     </div>`;
 
   app.querySelector('#who').onclick = () => { sfx.tap(); home(); };
-  app.querySelector('#petbtn').onclick = () => { sfx.tap(); petScreen(); };
+  app.querySelector('#petbtn').onclick = () => { sfx.tap(); petScreen(W.id); };
   app.querySelectorAll('.node[data-i]').forEach(b => {
     const i = +b.dataset.i;
     b.onclick = () => {
@@ -220,6 +230,18 @@ function map(focusId) {
     app.querySelector('.map').appendChild(hi);
     hi.onclick = () => hi.remove();
     setTimeout(() => hi.remove(), 2600);
+  }
+  if (newPet) {
+    const born = document.createElement('div');
+    born.className = 'newworld petborn';
+    born.innerHTML = `<div>🥚<b>→</b>${petFace(P.petOf(p, W.id), W.id, 'bounce')}</div>`;
+    setTimeout(() => {
+      if (!app.contains(app.querySelector('#bossnode'))) return;
+      sfx.grow();
+      app.querySelector('.map').appendChild(born);
+      born.onclick = () => born.remove();
+      setTimeout(() => born.remove(), 3000);
+    }, fresh > 0 ? 2700 : 300);
   }
 
   const sc = app.querySelector('#scroller');
@@ -265,7 +287,8 @@ function result(STAGES, i, r) {
   const before = rec.stars;
   rec.stars = Math.max(rec.stars, r.stars);
   rec.plays++;
-  const hatched = r.stars > 0 && P.hatch(p);
+  const w = WORLDS[worldOfStage(s.id)].id;
+  const hatched = r.stars > 0 && P.hatch(P.petOf(p, w));
   P.save();
   const nextOpen = i + 1 < STAGES.length && before === 0 && r.stars > 0;
 
@@ -274,7 +297,7 @@ function result(STAGES, i, r) {
       <div class="res-top">${r.mode === 'gate' ? '⚡' : s.icon}</div>
       <div class="stars huge">${[1, 2, 3].map(k => `<i class="${k <= r.stars ? 'on' : ''}" style="animation-delay:${k * 0.35}s">★</i>`).join('')}</div>
       <div class="res-gems">💎 +${r.gems}${r.best >= 5 ? ` <span class="res-streak">🔥${r.best}</span>` : ''}</div>
-      ${hatched ? `<div class="hatch">🥚 → ${petHTML(p, 'bounce')}</div>` : ''}
+      ${hatched ? `<div class="hatch">🥚 → ${petFace(P.petOf(p, w), w, 'bounce')}</div>` : ''}
       ${r.stars > 0 ? '<button class="chest" id="chest" aria-label="Open chest">🎁</button>' : '<div class="retry-face">💪</div>'}
       <div class="reward" id="reward" hidden></div>
       <div class="res-btns">
@@ -350,8 +373,9 @@ function openChest(p) {
   if (roll < 0.2 && hatsLeft.length) {
     const h = pick(hatsLeft);
     p.hats.push(h);
-    p.pet.hat = h;
-    return `<div class="rw-item">${h}</div><div class="rw-sub">${petHTML(p, 'bounce')}</div>`;
+    const c = P.companion(p, wid(p));
+    c.pet.hat = h;
+    return `<div class="rw-item">${h}</div><div class="rw-sub">${petFace(c.pet, c.wid, 'bounce')}</div>`;
   }
   if (roll < 0.6) {
     const st = pick(STICKERS);
@@ -367,11 +391,19 @@ function openChest(p) {
   return `<div class="rw-item">💎</div><div class="rw-sub">+${g}</div>`;
 }
 
-// Pet and sticker book
-function petScreen() {
+// Pet and sticker book. Each world has its own pet; the row on top picks which one to look after.
+// Worlds that aren't built yet show a locked egg, so kids know more pets are coming.
+const SOON = [['candy', '🍭'], ['desert', '🏜️'], ['volcano', '🌋'], ['space', '🚀']];
+
+function petScreen(w = wid(P.me())) {
   const p = P.me();
-  const cost = P.feedCost(p);
-  const canFeed = p.pet.stage > 0 && p.pet.stage < 3 && p.gems >= cost;
+  const k = WORLDS.findIndex(x => x.id === w);
+  if (k < 0 || !worldOpen(p, k)) w = 'meadow';
+  const W = WORLDS.find(x => x.id === w);
+  const pet = P.petOf(p, w);
+  const cost = P.feedCost(pet);
+  const canFeed = pet.stage > 0 && pet.stage < 3 && p.gems >= cost;
+  const soon = SOON.filter(([id]) => !WORLDS.some(x => x.id === id));
   app.innerHTML = `
     <div class="petscreen">
       <div class="topbar">
@@ -379,14 +411,20 @@ function petScreen() {
         <div class="gem-count"><span>💎</span><b id="pg">${p.gems}</b></div>
         <span></span>
       </div>
-      <div class="pet-stage">${petHTML(p, 'huge')}</div>
-      ${p.pet.stage === 0 ? '<div class="pet-hint">▶ ⭐ → 🐣</div>' : p.pet.stage < 3 ? `
-        <div class="growbar"><i style="width:${Math.round(P.feedProgress(p) * 100)}%"></i></div>
+      <div class="petpicks">
+        ${WORLDS.map((x, j) => worldOpen(p, j)
+          ? `<button class="petpick${x.id === w ? ' on' : ''}" data-w="${x.id}" aria-label="Pet of world ${j + 1}">${petFace(P.peekPet(p, x.id), x.id)}<small>${x.icon}</small></button>`
+          : `<button class="petpick locked" aria-label="Locked">🥚<small>🔒</small></button>`).join('')}
+        ${soon.map(() => '<button class="petpick locked soon" aria-label="Coming soon">🥚<small>🔒</small></button>').join('')}
+      </div>
+      <div class="pet-stage">${petFace(pet, w, 'huge')}</div>
+      ${pet.stage === 0 ? `<div class="pet-hint">${w === 'meadow' ? '▶' : W.icon} ⭐ → 🐣</div>` : pet.stage < 3 ? `
+        <div class="growbar"><i style="width:${Math.round(P.feedProgress(pet) * 100)}%"></i></div>
         <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${cost}</small></button>` : '<div class="pet-hint">🏆</div>'}
       <div class="hats">
-        <button class="hatbtn ${p.pet.hat ? '' : 'on'}" data-h="" aria-label="No hat">∅</button>
+        <button class="hatbtn ${pet.hat ? '' : 'on'}" data-h="" aria-label="No hat">∅</button>
         ${HATS.map(h => p.hats.includes(h)
-          ? `<button class="hatbtn ${p.pet.hat === h ? 'on' : ''}" data-h="${h}">${h}</button>`
+          ? `<button class="hatbtn ${pet.hat === h ? 'on' : ''}" data-h="${h}">${h}</button>`
           : `<button class="hatbtn shop" data-buy="${h}" ${p.gems >= P.HAT_COST ? '' : 'disabled'}><span>${h}</span><small>💎${P.HAT_COST}</small></button>`).join('')}
       </div>
       <div class="book">
@@ -395,14 +433,21 @@ function petScreen() {
       </div>
     </div>`;
   app.querySelector('#back').onclick = () => { sfx.tap(); map(); };
+  app.querySelectorAll('.petpick').forEach(b => {
+    b.onclick = () => {
+      if (!b.dataset.w) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
+      sfx.tap();
+      petScreen(b.dataset.w);
+    };
+  });
   const feedBtn = app.querySelector('#feed');
   if (feedBtn) feedBtn.onclick = () => {
-    const grew = P.feed(p);
+    const grew = P.feed(p, pet);
     P.save();
     grew ? sfx.grow() : sfx.ok();
-    petScreen();
-    const pet = app.querySelector('.pet-stage .pet');
-    pet.classList.add(grew ? 'grow' : 'munch');
+    petScreen(w);
+    const el = app.querySelector('.pet-stage .pet');
+    el.classList.add(grew ? 'grow' : 'munch');
   };
   app.querySelectorAll('.hatbtn').forEach(b => {
     b.onclick = () => {
@@ -410,14 +455,14 @@ function petScreen() {
         if (p.gems < P.HAT_COST) return;
         p.gems -= P.HAT_COST;
         p.hats.push(b.dataset.buy);
-        p.pet.hat = b.dataset.buy;
+        pet.hat = b.dataset.buy;
         sfx.chest();
       } else {
         sfx.tap();
-        p.pet.hat = b.dataset.h || null;
+        pet.hat = b.dataset.h || null;
       }
       P.save();
-      petScreen();
+      petScreen(w);
     };
   });
 }

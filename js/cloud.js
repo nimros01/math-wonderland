@@ -102,6 +102,11 @@ function mergeProfiles(a, b) {
   m.stickers = [...new Set([...(m.stickers || []), ...(older.stickers || [])])];
   m.hats = [...new Set([...(m.hats || []), ...(older.hats || [])])];
   m.bossMeadow = !!(m.bossMeadow || older.bossMeadow);
+  // Each world's pet keeps the more grown copy (a phone on an older version may not have them all).
+  for (const [w, pet] of Object.entries(older.pets || {})) {
+    const n = (m.pets ||= {})[w];
+    if (!n || pet.stage > n.stage || (pet.stage === n.stage && pet.xp > n.xp)) m.pets[w] = pet;
+  }
   return m;
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);

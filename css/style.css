@@ -682,3 +682,14 @@ svg.die { display: block; margin: auto; }
 @media (max-width: 340px) { .zoom .zc em { font-size: 11px; } }
 .zoom { align-items: end; }
 .zoom .zc i { line-height: 1; white-space: nowrap; }
+
+/* one pet per world */
+.petpicks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 0 12px; }
+.petpick { width: 48px; height: 62px; border-radius: 16px; background: var(--card); border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28px; line-height: 1; padding: 2px 0; }
+.petpick .pet { font-size: 26px; }
+.petpick .pet .hat { top: -.35em; }
+.petpick small { font-size: 16px; margin-top: 3px; }
+.petpick.on { background: var(--sun); }
+.petpick.locked { opacity: .5; }
+.newworld.petborn div { flex-direction: row; gap: 12px; font-size: 70px; }
+.newworld.petborn .pet { font-size: 90px; }
