@@ -61,9 +61,13 @@ export function stageRec(p, id) {
 
 // A stage opens when the one before it has a star. Stages that were already reached stay open,
 // even if a new stage is later added in front of them.
+// A stage added later (added: true) that has no stars yet doesn't block the stop after it.
 export function isUnlocked(p, stages, idx) {
   if (p.unlockAll || idx === 0) return true;
-  return stages.slice(idx - 1).some(s => (p.stages[s.id]?.stars || 0) > 0);
+  const has = s => (p.stages[s.id]?.stars || 0) > 0;
+  let j = idx - 1;
+  while (j > 0 && stages[j].added && !has(stages[j])) j--;
+  return (j === 0 && stages[0].added) || stages.slice(j).some(has);
 }
 
 // Pet lines: egg, baby, young, grown. Growth comes from feeding with gems.

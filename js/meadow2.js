@@ -23,7 +23,16 @@ function ruler(x, y, n) {
   let out = `<rect x="${x - 6}" y="${y}" width="${n * U + 12}" height="30" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2.5"/>`;
   for (let i = 0; i <= n; i++) {
     out += `<line x1="${x + i * U}" y1="${y}" x2="${x + i * U}" y2="${y + 11}" stroke="${INK}" stroke-width="2"/>`;
-    out += `<text x="${x + i * U}" y="${y + 22}" font-size="10" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
+    if (i <= 10 || i % 2 === 0) out += `<text x="${x + i * U}" y="${y + 23}" font-size="12" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
+  }
+  return out;
+}
+// A ruler with steps of u picture units.
+function rulerU(x, y, n, u) {
+  let out = `<rect x="${x - 4}" y="${y}" width="${n * u + 8}" height="26" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/>`;
+  for (let i = 0; i <= n; i++) {
+    out += `<line x1="${x + i * u}" y1="${y}" x2="${x + i * u}" y2="${y + 9}" stroke="${INK}" stroke-width="2"/>`;
+    if (u >= 20 || i % 2 === 0) out += `<text x="${x + i * u}" y="${y + 20}" font-size="11" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
   }
   return out;
 }
@@ -38,6 +47,14 @@ function genMeasure(lvl) {
   if (kind === 'ruler0' || kind === 'ruler') {
     const start = kind === 'ruler' ? R(1, 5) : 0, len = R(2, kind === 'ruler' ? 8 : 12), end = start + len, n = Math.max(12, end + 1);
     return numQ('?', len, [end, start, len + 1, len - 1].filter(v => v > 0), { visual: pic(n * U + 20, 60, snake(10 + start * U, 8, len, COL.green) + ruler(10, 26, n)), show: true });
+  }
+  if (kind === 'longer' && lvl === 2) {
+    // the longer snake is drawn with smaller steps, so it can look shorter: read the rulers
+    let a, b;
+    do { a = R(3, 11); b = R(3, 11); } while (Math.abs(a - b) < 1 || Math.abs(a - b) > 3);
+    const ua = a > b ? 14 : 24, ub = a > b ? 24 : 14;
+    const rowPic = (len, u, color, y) => snake(10, y, len, color, u) + rulerU(10, y + 18, Math.ceil(12 * 20 / u), u);
+    return { ...cmpQ(dot('red'), dot('blue'), a, b), visual: pic(12 * U + 44, 116, rowPic(a, ua, COL.red, 4) + rowPic(b, ub, COL.blue, 60)), show: true };
   }
   if (kind === 'longer') {
     const a = R(3, 10), b = chance(0.12) ? a : Math.max(2, Math.min(11, a + pick([-3, -2, -1, 1, 2, 3])));
@@ -55,7 +72,7 @@ function genMeasure(lvl) {
   const opts = [len];
   for (const d of shuffle([4, -4, 8, -8]).concat([12])) if (opts.length < 4 && len + d > 0 && len + d <= 21) opts.push(len + d);
   return {
-    eq: '≈ ?', answer: len, input: 'choice', visual: pic(14 * U + 20, 56, snake(10, 6, len, COL.green) + `<rect x="10" y="32" width="${U}" height="${U}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + U + 6}" y="${32 + U / 2 + 4}" font-size="11" font-weight="800" fill="${INK}">1</text>`), show: true,
+    eq: '≈ ?', answer: len, input: 'choice', layout: 'grid', visual: pic(14 * U + 20, 56, snake(10, 6, len, COL.green) + `<rect x="10" y="32" width="${U}" height="${U}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + U + 6}" y="${32 + U / 2 + 4}" font-size="11" font-weight="800" fill="${INK}">1</text>`), show: true,
     choices: shuffle(opts).map(v => ({ value: v, html: String(v) })),
   };
 }
@@ -79,12 +96,29 @@ function genShop(lvl) {
   const kind = pick([['count', 'count', 'pay'], ['count', 'pay', 'fewest'], ['pay', 'fewest', 'change', 'count']][lvl]);
   if (kind === 'count') {
     const list = randomCoins(R(2, lvl ? 6 : 4), small, M.max);
+    const shown = lvl === 2 ? shuffle(list.slice()) : list;
     const v = sum(list);
-    return numQ(M.fmt('?'), v, [v + list[0], v - list[list.length - 1], v + 1, v - 1].filter(x => x > 0), { visual: coinsHTML(list), show: true });
+    return numQ(M.fmt('?'), v, [v + list[0], v - list[list.length - 1], v + 1, v - 1].filter(x => x > 0), { visual: coinsHTML(shown), show: true });
   }
   if (kind === 'fewest') {
-    const price = R(6, M.max), best = greedy(price, M.coins);
-    return numQ('? 🪙', best.length, [best.length + 1, best.length + 2, best.length - 1, price].filter(x => x > 0 && x < 20), { visual: tag(pick(TOYS), price), show: true });
+    // every handful pays the price exactly; the right one uses the fewest coins
+    const price = R(8, M.max), best = greedy(price, M.coins);
+    const hands = [best], counts = new Set([best.length]);
+    let cur = best;
+    for (let t = 0; hands.length < 4 && t < 60; t++) {
+      // break one coin that isn't the smallest into smaller coins
+      const big = cur.filter(c => c > M.coins[M.coins.length - 1]);
+      if (!big.length) break;
+      const c = pick(big), i = cur.indexOf(c);
+      const smaller = M.coins.filter(x => x < c);
+      const next = [...cur.slice(0, i), ...cur.slice(i + 1), ...greedy(c, chance(0.5) ? smaller : smaller.slice(1).length ? smaller.slice(1) : smaller)].sort((a, b) => b - a);
+      if (sum(next) !== price || next.length > 9) continue;
+      cur = next;
+      if (!counts.has(next.length)) { counts.add(next.length); hands.push(next); }
+    }
+    if (hands.length < 4) return genShop(lvl);
+    const order = shuffle([0, 1, 2, 3]);
+    return { eq: '<span class="fewest">🪙<b>⬇</b></span>', answer: order.indexOf(0), input: 'choice', layout: 'grid', fewest: true, visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(hands[k].slice()) : hands[k]) })) };
   }
   if (kind === 'change') {
     const pay = pick(M.pay), price = R(Math.ceil(pay / 4), pay - 1);
@@ -103,7 +137,7 @@ function genShop(lvl) {
   }
   if (sets.length < 4) return genShop(lvl);
   const order = shuffle([0, 1, 2, 3]);
-  return { eq: '', answer: order.indexOf(0), input: 'choice', layout: 'grid', visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(sets[k]) })) };
+  return { eq: '', answer: order.indexOf(0), input: 'choice', layout: 'grid', visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(sets[k].slice()) : sets[k]) })) };
 }
 
 // ---------- Picture stories: a three-picture comic with no words ----------

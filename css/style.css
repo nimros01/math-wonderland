@@ -723,3 +723,5 @@ svg.die { display: block; margin: auto; }
 .pairvis .blocks .bar:nth-of-type(5) { margin-right: 5px; }
 .pairvis .blocks .ones { grid-template-columns: repeat(2, 13px); gap: 2px; margin-left: 4px; }
 .pairvis .blocks .ones i { width: 13px; height: 13px; }
+.eq .fewest { display: inline-flex; align-items: center; gap: 2px; font-size: .9em; }
+.eq .fewest b { font-size: .8em; color: var(--tomato); }

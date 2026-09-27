@@ -14,8 +14,8 @@ const starsHTML = n => [1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★<
 
 document.addEventListener('pointerdown', unlockAudio, { capture: true });
 
-// A stage added in an update that this child has already moved past: open, no stars yet, a later stage has stars.
-const isFresh = (p, stages, i) => !(p.stages[stages[i].id]?.stars > 0) && stages.slice(i + 1).some(s => p.stages[s.id]?.stars > 0);
+// A stage added in an update that this child has already moved past: no stars yet, and a later stage has stars.
+const isFresh = (p, stages, i) => !!stages[i].added && !(p.stages[stages[i].id]?.stars > 0) && stages.slice(i + 1).some(s => p.stages[s.id]?.stars > 0);
 const worldHasFresh = (p, w) => w.stages.some((_, i) => isFresh(p, w.stages, i));
 
 // The world this player is looking at (falls back to Meadow if it isn't open).
@@ -157,7 +157,7 @@ function map(focusId) {
   // The boss opens once every learning stage has a star.
   const beaten = bossBeaten(p, W);
   // A troll already beaten stays open, even when new stages join the world later.
-  const bossOpen = p.unlockAll || beaten || learnOf(W).every(s => (p.stages[s.id]?.stars || 0) > 0);
+  const bossOpen = p.unlockAll || beaten || learnOf(W).filter(s => !s.added).every(s => (p.stages[s.id]?.stars || 0) > 0);
   const pts = [...xs, 50].map((x, i) => `${x},${i * STEP + 70}`).join(' ');
 
   app.innerHTML = `
@@ -521,7 +521,6 @@ function familyPanel(back) {
         ${body}
         ${msg ? `<p class="fam-msg">${msg}</p>` : ''}
         <label class="pc-row"><input type="checkbox" id="pc-sound" ${P.state.muted ? '' : 'checked'}> Sound effects</label>
-      <div class="pc-row">Coins <span class="pc-seg"><button class="pc-cty${country() === 'IL' ? ' on' : ''}" data-c="IL">₪ Israel</button><button class="pc-cty${country() === 'US' ? ' on' : ''}" data-c="US">$ US</button></span></div>
         <button class="pc-btn" id="fam-close">Close</button>
       </div>`;
     const $ = id => ov.querySelector('#' + id);
