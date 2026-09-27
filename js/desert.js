@@ -34,7 +34,7 @@ function genUnits(lvl) {
   if (kind === 'mixed') {
     // 2 m 35 cm = 235 cm, 1 kg 250 g = 1250 g
     const n = R(1, 4), part = k === 10 ? R(1, 9) : k === 100 ? R(5, 95) : 50 * R(1, 19), ans = n * k + part;
-    return numQ(`${icon} ${n} ${big} ${part} ${small} = ? ${small}`, ans, [n + part, n * 10 + part, n * 100 + part, n * 1000 + part, ans + k].filter(v => v !== ans && v > 0), { layout: 'grid', units: true });
+    return numQ(`${n} ${big} ${part} ${small} = ? ${small}`, ans, [n + part, n * 10 + part, n * 100 + part, n * 1000 + part, ans + k].filter(v => v !== ans && v > 0), { layout: 'grid', units: true });
   }
   if (kind === 'half') {
     // Half, a quarter or three quarters of a big unit
@@ -76,7 +76,7 @@ function bareAngle(deg, rot) {
   return svg(140, 140, `<line x1="${cx}" y1="${cy}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${RED}" stroke-width="6" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${RED}" stroke-width="6" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="5" fill="${INK}"/>`);
 }
 function genProtractor(lvl) {
-  if (lvl === 2 && chance(0.4)) {
+  if (chance([0.25, 0.3, 0.4][lvl])) {
     // Guess without the protractor: which is closest?
     const d = pick([20, 45, 70, 100, 120, 135, 150, 160]);
     const opts = shuffle([30, 60, 90, 120, 150, 180].filter(x => Math.abs(x - d) >= 25)).slice(0, 3);
@@ -92,7 +92,7 @@ function genProtractor(lvl) {
 }
 
 // ---------- 3. Corners of a triangle ----------
-function triangle(A, B, labels, size = 220) {
+function triangle(A, B, labels, size = 220, equal = false) {
   // Base on the bottom, angles A (left) and B (right) in degrees.
   const base = 200, rad = d => (d * Math.PI) / 180, C = 180 - A - B;
   const side = (base * Math.sin(rad(B))) / Math.sin(rad(C));
@@ -104,9 +104,20 @@ function triangle(A, B, labels, size = 220) {
   const P = pts.map(([x, y]) => [x - minx + 30, H - 30 - y]);
   const cen = [(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3];
   let body = `<polygon points="${P.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="${SAND}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+  if (equal) {
+    // Matching red arcs mark the two equal corners.
+    for (const [i, j, k] of [[0, 1, 2], [1, 0, 2]]) {
+      const a1 = Math.atan2(P[j][1] - P[i][1], P[j][0] - P[i][0]), a2 = Math.atan2(P[k][1] - P[i][1], P[k][0] - P[i][0]);
+      for (const r of [16, 22]) {
+        const e = a => `${(P[i][0] + r * Math.cos(a)).toFixed(1)} ${(P[i][1] + r * Math.sin(a)).toFixed(1)}`;
+        const sweep = ((a2 - a1 + 2 * Math.PI) % (2 * Math.PI)) < Math.PI ? 1 : 0;
+        body += `<path d="M${e(a1)} A${r} ${r} 0 0 ${sweep} ${e(a2)}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+      }
+    }
+  }
   P.forEach((p, i) => {
     const t = labels[i];
-    if (t === null) return;
+    if (t === null || t === '=') return;
     const lx = p[0] + (cen[0] - p[0]) * 0.36, ly = p[1] + (cen[1] - p[1]) * 0.36;
     body += t === '?' ? `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="13" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 3"/>${txt(lx.toFixed(1), ly.toFixed(1), '?', 15, 'fill="#d99a00"')}`
       : txt(lx.toFixed(1), ly.toFixed(1), t, 16);
@@ -119,27 +130,27 @@ function genTriangle(lvl) {
   if (kind === 'two' || kind === 'right') {
     const A = kind === 'right' ? 90 : (lvl ? 5 : 10) * R(3, lvl ? 22 : 11), B = (lvl ? 5 : 10) * R(2, Math.floor((175 - A) / (lvl ? 5 : 10)));
     const C = 180 - A - B;
-    if (C < 15 || B < 15) return genTriangle(lvl);
+    if (C < 20 || B < 20 || A < 20) return genTriangle(lvl);
     const lab = a => (a === 90 ? '90°' : `${a}°`);
     const order = shuffle([0, 1, 2]), angs = [A, B, C], hide = order[0];
     const labels = angs.map((a, i) => (i === hide ? '?' : lab(a)));
     const shown = angs.filter((_, i) => i !== hide);
-    return numQ(lvl ? '?°' : `${shown[0]}° + ${shown[1]}° + ?° = 180°`, angs[hide], [180 - shown[0], 180 - shown[1], 360 - shown[0] - shown[1], angs[hide] + 10, 90].filter(v => v > 0 && v !== angs[hide]),
+    return numQ('?°', angs[hide], [180 - shown[0], 180 - shown[1], 360 - shown[0] - shown[1], angs[hide] + 10, 90].filter(v => v > 0 && v !== angs[hide]),
       { visual: triangle(A, B, labels), show: true, tri: true });
   }
   if (kind === 'iso' || kind === 'isoTop') {
     // Two equal corners at the bottom.
     const base = 5 * R(5, 16), top = 180 - 2 * base;
-    if (kind === 'iso') return numQ('?°', base, [top, 180 - top, base + 10, 90 - base / 2 | 0].filter(v => v > 0 && v !== base), { visual: triangle(base, base, ['?', '=', `${top}°`]), show: true, iso: true });
-    return numQ('?°', top, [base, 180 - base, 90 - base, top + 10].filter(v => v > 0 && v !== top), { visual: triangle(base, base, [`${base}°`, '=', '?']), show: true, iso: true });
+    if (kind === 'iso') return numQ('?°', base, [top, 180 - top, base + 10, 90 - base / 2 | 0].filter(v => v > 0 && v !== base), { visual: triangle(base, base, ['?', '=', `${top}°`], 220, true), show: true, iso: true });
+    return numQ('?°', top, [base, 180 - base, 90 - base, top + 10].filter(v => v > 0 && v !== top), { visual: triangle(base, base, [`${base}°`, '=', '?'], 220, true), show: true, iso: true });
   }
   // Angles on a straight line add up to 180°.
   const a = 5 * R(4, 32);
-  const r = 70, rad = (a * Math.PI) / 180;
-  const body = `<line x1="10" y1="80" x2="230" y2="80" stroke="${INK}" stroke-width="4"/><line x1="120" y1="80" x2="${(120 + r * Math.cos(rad)).toFixed(1)}" y2="${(80 - r * Math.sin(rad)).toFixed(1)}" stroke="${INK}" stroke-width="4"/>`
+  const r = 70, rad = (a * Math.PI) / 180, qr = Math.min(95, Math.max(40, 17 / Math.sin((Math.PI - rad) / 2)));
+  const body = `<line x1="4" y1="80" x2="236" y2="80" stroke="${INK}" stroke-width="4"/><line x1="120" y1="80" x2="${(120 + r * Math.cos(rad)).toFixed(1)}" y2="${(80 - r * Math.sin(rad)).toFixed(1)}" stroke="${INK}" stroke-width="4"/>`
     + txt((120 + 44 * Math.cos(rad / 2)).toFixed(1), (80 - 44 * Math.sin(rad / 2)).toFixed(1), `${a}°`, 15)
-    + `<circle cx="${(120 + 40 * Math.cos((rad + Math.PI) / 2)).toFixed(1)}" cy="${(80 - 40 * Math.sin((rad + Math.PI) / 2)).toFixed(1)}" r="13" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 3"/>`
-    + txt((120 + 40 * Math.cos((rad + Math.PI) / 2)).toFixed(1), (80 - 40 * Math.sin((rad + Math.PI) / 2)).toFixed(1), '?', 15, 'fill="#d99a00"');
+    + `<circle cx="${(120 + qr * Math.cos((rad + Math.PI) / 2)).toFixed(1)}" cy="${(80 - qr * Math.sin((rad + Math.PI) / 2)).toFixed(1)}" r="13" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 3"/>`
+    + txt((120 + qr * Math.cos((rad + Math.PI) / 2)).toFixed(1), (80 - qr * Math.sin((rad + Math.PI) / 2)).toFixed(1), '?', 15, 'fill="#d99a00"');
   return numQ('?°', 180 - a, [a, 360 - a, 90 - a, 190 - a].filter(v => v > 0 && v !== 180 - a), { visual: svg(240, 96, body), show: true, line: true });
 }
 
@@ -170,7 +181,7 @@ function genArea(lvl) {
     const top = kind === 'rtri' ? 0 : R(1, b - 1);
     const pts = [[0, 0], [b, 0], [top, h]];
     return numQ('◺ = ?', (b * h) / 2, [b * h, b + h, (b * h) / 2 + b, 2 * (b + h)].filter(v => v !== (b * h) / 2),
-      { visual: shapeOnGrid(pts, { h: kind === 'tri' ? [top, h] : null, labels: [[b / 2, -0.45, b], [top + (top < b / 2 ? 0.45 : -0.45), h / 2, h, RED]] }), show: true, shape: 'tri' });
+      { visual: shapeOnGrid(pts, { h: [top, h], labels: [[b / 2, -0.45, b], [top + (top < b / 2 ? 0.45 : -0.45), h / 2, h, RED]] }), show: true, shape: 'tri' });
   }
   // Area known, find the base: a parallelogram of area 24 and height 4.
   const area = b * h;
@@ -198,11 +209,21 @@ function wheel(d, { area = false } = {}) {
   return svg(120, 120, body, 'width="120" height="120"');
 }
 const roll = d => `<div class="rollrow">${wheel(d)}<span class="rolltrack"><b>🛞 ➜</b><i></i></span></div>`;
+// The track one turn covers, marked off in wheel widths: three and a bit.
+function rollWidths() {
+  const u = 58;
+  let body = `<circle cx="22" cy="22" r="18" fill="#fff" stroke="${INK}" stroke-width="3"/><line x1="4" y1="22" x2="40" y2="22" stroke="${RED}" stroke-width="3"/>`;
+  body += `<line x1="4" y1="56" x2="${4 + 3.14 * u}" y2="56" stroke="${INK}" stroke-width="4"/>`;
+  for (let i = 0; i < 3; i++) body += `<line x1="${4 + i * u + 2}" y1="66" x2="${4 + (i + 1) * u - 2}" y2="66" stroke="${RED}" stroke-width="4"/>`;
+  for (let i = 0; i <= 3; i++) body += `<line x1="${4 + i * u}" y1="48" x2="${4 + i * u}" y2="64" stroke="${INK}" stroke-width="2"/>`;
+  body += `<line x1="${4 + 3.14 * u}" y1="44" x2="${4 + 3.14 * u}" y2="64" stroke="${INK}" stroke-width="3"/>`;
+  return svg(200, 76, body);
+}
 function genCircle(lvl) {
   const kind = pick([['times', 'around', 'around'], ['around', 'around', 'area', 'back'], ['around', 'area', 'area', 'back']][lvl]);
   if (kind === 'times') {
     // One turn of the wheel goes a bit more than 3 of its widths.
-    return textQ('🛞 ➜ ? ×', '≈ 3', ['≈ 2', '≈ 4', '≈ 6', '≈ 1'], { visual: roll('d'), show: true, pi3: true });
+    return textQ('🛞 ➜ ? ×', '≈ 3', ['≈ 2', '≈ 4', '≈ 6', '≈ 1'], { visual: rollWidths(), show: false, pi3: true });
   }
   if (kind === 'around') {
     const d = lvl === 0 ? R(1, 10) : lvl === 1 ? R(2, 20) : pick([R(6, 30), 40, 50, 100]);
@@ -210,7 +231,7 @@ function genCircle(lvl) {
     return textQ('🛞 ➜ ≈ ?', String(c), [String(d), String(2 * d), String(f1(3.14 * d * d)), String(f1(3.14 * d / 2)), String(4 * d)], { visual: roll(d), show: true, around: true });
   }
   if (kind === 'area') {
-    const r = lvl < 2 ? pick([1, 2, 3, 10]) : R(2, 12);
+    const r = lvl < 2 ? R(1, 10) : R(2, 12);
     const a = f1(3.14 * r * r);
     return textQ('● ≈ ?', String(a), [String(f1(3.14 * 2 * r)), String(f1(3.14 * r)), String(r * r), String(f1(3.14 * 4 * r * r))], { visual: wheel(r, { area: true }), show: true, carea: true });
   }
@@ -253,7 +274,7 @@ function genVolume(lvl) {
 
 // ---------- 8. Treasure map: coordinates ----------
 const THINGS = ['💎', '🐫', '🌴', '🏺', '🦂', '⛺', '🐍', '🗝️'];
-function mapGrid(n, marks, { size = 230, route = null } = {}) {
+function mapGrid(n, marks, { size = 210, route = null } = {}) {
   const u = Math.floor(200 / n), o = 26, T = 14, W = n * u + o + 14;
   let body = '';
   for (let i = 0; i <= n; i++) {
@@ -295,13 +316,17 @@ function genCoords(lvl) {
       { visual: mapGrid(n, [[x, y, '🐫']]), show: true, move: true });
   }
   // Three corners of a rectangle; where is the fourth?
-  const x1 = R(0, n - 3), y1 = R(0, n - 3), x2 = x1 + R(2, n - x1), y2 = y1 + R(2, n - y1);
-  const corners = shuffle([[x1, y1], [x2, y1], [x2, y2], [x1, y2]]);
-  const [mx, my] = corners.pop();
-  return textQ('🏺 = ?', `(${mx}, ${my})`, [`(${my}, ${mx})`, `(${mx + 1}, ${my})`, `(${mx}, ${my + 1})`, `(${x2 - x1}, ${y2 - y1})`],
-    { visual: mapGrid(n, corners.map(([x, y]) => [x, y, '🌴'])), show: true, rect: true });
+  const x1 = R(1, n - 3), y1 = R(1, n - 3), x2 = x1 + R(2, n - x1), y2 = y1 + R(2, n - y1);
+  const ring = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]], m = R(0, 3);
+  const [mx, my] = ring[m];
+  const corners = [ring[(m + 1) % 4], ring[(m + 2) % 4], ring[(m + 3) % 4]];
+  return textQ('🌴🌴🌴 ▭ ➜ ?', `(${mx}, ${my})`, [`(${my}, ${mx})`, `(${mx + 1}, ${my})`, `(${mx}, ${my + 1})`, `(${x2 - x1}, ${y2 - y1})`],
+    { visual: mapGrid(n, corners.map(([x, y]) => [x, y, '🌴']), { route: corners }), show: true, rect: true });
 }
 
+// Uneven towers made level: the mean. The middle of a row: the median.
+const LEVEL = '<span class="lvlicon"><i style="height:1em"></i><i style="height:.35em"></i><i style="height:.65em"></i><b>➜</b><i style="height:.65em"></i><i style="height:.65em"></i><i style="height:.65em"></i></span>';
+const MIDDLE = '<span class="midicon"><i></i><i></i>?<i></i><i></i></span>';
 // Number cards in a row, one may be a '?'.
 const cards = vals => `<div class="numcards">${vals.map(v => (v === '?' ? '<b><span class="slot">?</span></b>' : `<b>${v}</b>`)).join('')}</div>`;
 
@@ -322,10 +347,10 @@ function genMean(lvl) {
   for (let t = 0; t < k * 2; t++) { const i = R(0, k - 1), j = R(0, k - 1), d = R(1, 2); if (i !== j && hs[j] - d >= 1 && hs[i] + d <= (lvl ? 12 : 8)) { hs[i] += d; hs[j] -= d; } }
   if (hs.every(h => h === m)) return genMean(lvl);
   const sum = k * m;
-  if (kind === 'level') return numQ('▦ ➜ ? ▦', m, [m + 1, m - 1, Math.max(...hs), sum].filter(v => v > 0 && v !== m), { visual: towers(hs), show: true, mean: true });
-  if (kind === 'nums') return numQ('⚖️ = ?', m, [sum, m + 1, m - 1, [...hs].sort((a, b) => a - b)[k >> 1] === m ? m + 2 : [...hs].sort((a, b) => a - b)[k >> 1]].filter(v => v > 0 && v !== m), { visual: cards(hs), show: true, mean: true, nums: true });
+  if (kind === 'level') return numQ(`${LEVEL} ?`, m, [m + 1, m - 1, Math.max(...hs), sum].filter(v => v > 0 && v !== m), { visual: towers(hs), show: true, mean: true });
+  if (kind === 'nums') return numQ(`${LEVEL} ?`, m, [sum, m + 1, m - 1, [...hs].sort((a, b) => a - b)[k >> 1] === m ? m + 2 : [...hs].sort((a, b) => a - b)[k >> 1]].filter(v => v > 0 && v !== m), { visual: cards(hs), show: true, mean: true, nums: true });
   const miss = R(0, k - 1), shown = hs.map((h, i) => (i === miss ? '?' : h));
-  return numQ(`⚖️ = ${m}`, hs[miss], [m, sum - m, hs[miss] + 1, hs[miss] - 1].filter(v => v > 0 && v !== hs[miss]), { visual: cards(shown), show: true, mean: true, missing: true });
+  return numQ(`${LEVEL} ${m}`, hs[miss], [m, sum - m, hs[miss] + 1, hs[miss] - 1].filter(v => v > 0 && v !== hs[miss]), { visual: cards(shown), show: true, mean: true, missing: true });
 }
 
 // ---------- 10. The middle camel: median and the most common ----------
@@ -348,7 +373,7 @@ function genMedian(lvl) {
     while (hs.size < k) hs.add(R(2, 9));
     const arr = [...hs], sorted = [...arr].sort((a, b) => a - b), med = sorted[k >> 1];
     const pics = `<div class="camels">${arr.map(h => `<span class="camel" style="font-size:${14 + h * 4}px">🐪<b>${h}</b></span>`).join('')}</div>`;
-    return numQ('🐪 ↕ ?', med, [arr[k >> 1], sorted[0], sorted[k - 1], Math.round(arr.reduce((s, v) => s + v, 0) / k)].filter(v => v !== med), { visual: pics, show: true, median: true });
+    return numQ(MIDDLE, med, [arr[k >> 1], sorted[0], sorted[k - 1], Math.round(arr.reduce((s, v) => s + v, 0) / k)].filter(v => v !== med), { visual: pics, show: true, median: true });
   }
   if (kind === 'nums' || kind === 'even') {
     const k = kind === 'even' ? pick([4, 6]) : pick([5, 7]);
@@ -358,7 +383,7 @@ function genMedian(lvl) {
       const med = k % 2 ? s[k >> 1] : (s[k / 2 - 1] + s[k / 2]) / 2;
       if (!Number.isInteger(med) || new Set(arr).size < k - 1) continue;
       if (arr[k >> 1] === med) continue;
-      return numQ('↕ = ?', med, [arr[k >> 1], s[k >> 1] === med ? s[(k >> 1) - 1] : s[k >> 1], Math.round(arr.reduce((a, b) => a + b, 0) / k), s[k - 1] - s[0]].filter(v => v > 0 && v !== med), { visual: cards(arr), show: true, median: true, even: kind === 'even' });
+      return numQ(MIDDLE, med, [arr[k >> 1], s[k >> 1] === med ? s[(k >> 1) - 1] : s[k >> 1], Math.round(arr.reduce((a, b) => a + b, 0) / k), s[k - 1] - s[0]].filter(v => v > 0 && v !== med), { visual: cards(arr), show: true, median: true, even: kind === 'even' });
     }
   }
   // The most common value on a dot plot.
@@ -369,13 +394,13 @@ function genMedian(lvl) {
   const best = Math.max(...Object.values(count)), modes = Object.keys(count).filter(v => count[v] === best);
   if (modes.length !== 1) return genMedian(lvl);
   const mode = +modes[0];
-  return numQ('●●● = ?', mode, [best, mode + 1, mode - 1, vals.length].filter(v => v > 0 && v !== mode), { visual: dotPlot(vals, lo, hi), show: true, mode: true });
+  return numQ('●●● ➜ ?', mode, [mode + 1, mode - 1, mode + 2, mode - 2, lo, hi].filter(v => v > 0 && v !== mode && v !== best), { visual: dotPlot(vals, lo, hi), show: true, mode: true });
 }
 
 // ---------- 11. Same fence, new shape (puzzle stop) ----------
-function tilesSvg(cells, size = 120, fill = SAND) {
+function tilesSvg(cells, size = 120, fill = SAND, unit = 0) {
   const w = Math.max(...cells.map(c => c[0])) + 1, h = Math.max(...cells.map(c => c[1])) + 1;
-  const u = Math.min(22, Math.floor(size / Math.max(w, h)));
+  const u = unit || Math.min(22, Math.floor(size / Math.max(w, h)));
   const set = new Set(cells.map(c => c.join(',')));
   let body = '', edges = '';
   for (const [x, y] of cells) {
@@ -400,14 +425,14 @@ function genFence(lvl) {
   const kind = pick(['most', 'most', 'lshape', 'square', 'same']);
   if (kind === 'most') {
     // Every pen uses the same fence; which gives the camels the most room?
-    const P = pick([12, 14, 16, 18, 20]), half = P / 2;
+    const P = pick([16, 18, 20]), half = P / 2;
     const rects = [];
     for (let w = 1; w <= half / 2; w++) rects.push([half - w, w]);
-    if (rects.length < 3) return genFence(lvl);
-    const pickR = shuffle(rects.slice()).slice(0, Math.min(4, rects.length));
+    const pickR = shuffle(rects.slice()).slice(0, 4);
     const best = pickR.reduce((b, r) => (r[0] * r[1] > b[0] * b[1] ? r : b));
-    const choices = shuffle(pickR.map(([w, h]) => ({ value: `${w}x${h}`, html: tilesSvg(rectCells(w, h), 96) })));
-    return { eq: `🧱 ${P} ➜ 🐫 ⬆`, answer: `${best[0]}x${best[1]}`, input: 'choice', layout: 'grid', choices, visual: null, show: false, most: true };
+    const u = Math.floor(100 / Math.max(...pickR.map(r => r[0])));
+    const choices = shuffle(pickR.map(([w, h]) => ({ value: `${w}x${h}`, html: tilesSvg(rectCells(w, h), 96, SAND, u) })));
+    return { eq: `🧱 ${P} ➜ 🐫🐫🐫 ?`, answer: `${best[0]}x${best[1]}`, input: 'choice', layout: 'grid', choices, visual: null, show: false, most: true };
   }
   if (kind === 'lshape') {
     const w = R(3, 5), h = R(3, 5), cw = R(1, w - 1), ch = R(1, h - 1);
@@ -418,15 +443,17 @@ function genFence(lvl) {
   if (kind === 'square') {
     // A square pen with this much fence: how much room inside?
     const s = R(2, 9), P = 4 * s;
-    return numQ(`🟨 🧱 ${P} ➜ ?`, s * s, [P, s, P / 2, s * s + s].filter(v => v !== s * s), { visual: null, show: false, square: true });
+    const pen = svg(150, 150, `<rect x="25" y="25" width="100" height="100" fill="${SAND}" stroke="${SANDD}" stroke-width="8" stroke-dasharray="10 5"/>${txt(75, 12, `🧱 ${P}`, 16)}<circle cx="75" cy="75" r="18" fill="#fff4cc" stroke="#d99a00" stroke-width="3" stroke-dasharray="5 4"/>${txt(75, 75, '?', 20, 'fill="#d99a00"')}`);
+    return numQ('🟨 = ?', s * s, [P, s, P / 2, s * s + s].filter(v => v !== s * s), { visual: pen, show: true, square: true });
   }
   // Two different rectangles with the same room: which fence is longer?
   const A = pick([12, 16, 18, 24, 36]);
-  const ps = []; for (let w = 1; w * w <= A; w++) if (A % w === 0) ps.push([A / w, w]);
+  const ps = []; for (let w = 1; w * w <= A; w++) if (A % w === 0 && A / w <= 12) ps.push([A / w, w]);
   if (ps.length < 2) return genFence(lvl);
   const [a, b] = shuffle(ps).slice(0, 2);
+  const u = Math.floor(110 / Math.max(a[0], b[0]));
   const pa = 2 * (a[0] + a[1]), pb = 2 * (b[0] + b[1]);
-  const q = cmpQ('🧱', '🧱', pa, pb, `<div class="pairvis">${tilesSvg(rectCells(...a), 100)}<b class="op"></b>${tilesSvg(rectCells(...b), 100)}</div>`);
+  const q = cmpQ('🧱', '🧱', pa, pb, `<div class="pairvis">${tilesSvg(rectCells(...a), 100, SAND, u)}<b class="op"></b>${tilesSvg(rectCells(...b), 100, SAND, u)}</div>`);
   return { ...q, fenceCmp: true };
 }
 
@@ -450,7 +477,7 @@ function genStory3(lvl) {
   }
   // Two camels walk toward each other: when do they meet?
   const a = R(2, 5), b = R(2, 5), t = R(2, 5), d = (a + b) * t;
-  return { ...numQ('', t, [d / a | 0, t + 1, d / (a + b) + 1, a + b].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`<span>🐫➡️ ${a} km</span><span>${b} km ⬅️🐪</span><span class="num">↔ ${d} km</span>`)}<b class="arrow">▶</b>${panel(`<span>🐫🐪</span><span class="num">🕐 <span class="slot">?</span></span>`)}</div>`, show: true, meet: true };
+  return { ...numQ('', t, [d / a | 0, t + 1, d / (a + b) + 1, a + b].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`<span class="num">🕐 1</span><span>🐫➡️ ${a} km</span><span>${b} km ⬅️🐪</span><span class="num">↔ ${d} km</span>`)}<b class="arrow">▶</b>${panel(`<span>🐫🐪</span><span class="num">🕐 <span class="slot">?</span></span>`)}</div>`, show: true, meet: true };
 }
 
 export const DESERT = [

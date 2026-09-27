@@ -154,32 +154,33 @@ const BY_STAGE = {
   'd-protr': q => (q.guess ? 'Guess the size of the angle without measuring. Which of these is it closest to? A square corner is 90°.'
     : 'Read the protractor: one red arm lies on 0, so read the number where the other red arm crosses the scale. How many degrees is the angle?'),
   'd-tri': q => (q.line ? 'Together the two angles make a straight line, and a straight line is 180°. How big is the angle with the ?'
-    : q.iso ? 'The corners marked = are equal, and the three corners of every triangle add up to 180°. How big is the angle with the ?'
+    : q.iso ? 'The two corners with red arcs are equal, and the three corners of every triangle add up to 180°. How big is the angle with the ?'
     : 'The three corners of every triangle add up to 180°. How big is the corner with the ?'),
   'd-area': q => (q.shape === 'side' ? 'The area of this slanted rectangle is base × the red height. The area is given; how long is the base?'
     : q.shape === 'tri' ? 'A triangle is half of a slanted rectangle: base × red height, then halve it. How many squares is its area?'
     : 'Cut the slanted corner off and slide it to the other side: it becomes a rectangle. Area = base × the red height (not the slanted side). How many squares?'),
   'd-trap': () => 'Flip a copy of this shape and put it next to it: together they make a slanted rectangle. So the area is (top + bottom) × red height, halved. How many squares?',
-  'd-circle': q => (q.pi3 ? 'Roll the wheel once. The distance it goes is just over how many times its width?'
+  'd-circle': q => (q.pi3 ? 'Roll the wheel once along the line. The distance it goes is just over how many times its width (the red line)?'
     : q.carea ? 'The area of a circle is about 3.14 × red radius × red radius. Which is closest?'
     : q.back ? 'The wheel rolled this far in one turn, which is about 3.14 × its width. How wide is it?'
     : 'In one turn a wheel goes about 3.14 × its width (the red line). About how far does it go?'),
   'd-vol': q => (q.surface ? 'Paint the whole outside of the box: count the squares on all six faces. How many squares get painted?'
+    : has(q.eq, '🧊 ×') ? 'The number shows how many cubes are in one layer. How many cubes are in all the layers together?'
     : has(q.eq, '×') ? 'The volume of a box is length × width × height. Which number goes in the yellow ? box?'
     : 'How many small cubes are in the whole box, including the ones you cannot see? Tip: count one layer, then times the number of layers.'),
   'd-map': q => (q.find ? 'The first number says how far to go right, the second how far to go up. Which thing is at that spot?'
     : q.move ? 'Start at the camel and walk the arrows: right, then up. Where do you end? Write it as (right, up).'
-    : q.rect ? 'The palm trees are three corners of a rectangle. Where is the fourth corner, where the treasure is? Write it as (right, up).'
+    : q.rect ? 'The three palm trees are corners of a rectangle. Where is its fourth corner? Write it as (right, up).'
     : 'Where is it on the map? Write the spot as (how far right, how far up).'),
   'd-mean': q => (q.missing ? 'The mean (the level height) is given. Which number is hidden? Tip: all the numbers together must be the mean × how many there are.'
     : q.nums ? 'Find the mean: if every card were the same, what would it be? Add all the numbers and share the total equally among the cards.'
     : 'Move blocks from the tall towers to the short ones until all the towers are the same height. How tall is each tower then?'),
-  'd-median': q => (q.mode ? 'Each dot is one camel at that number. Which number has the most dots?'
+  'd-median': q => (q.mode ? 'Each dot is one camel at the number under it. Which number under the line has the most dots above it?'
     : q.even ? 'Put the numbers in order. There are two in the middle: the median is exactly halfway between them.'
     : 'Line them up from smallest to biggest. Which number is in the middle (the median)?'),
-  'd-fence': q => (q.most ? 'All these pens use the same length of fence. Which pen gives the camels the most room inside?'
+  'd-fence': q => (q.most ? 'All these pens use the same length of fence. Which pen has the most room inside for camels?'
     : q.lshape ? 'How long is the fence all the way around the shape? Count the sides of the squares on the edge.'
-    : q.square ? 'A square pen uses this much fence, the same on all four sides. How many squares of room are inside?'
+    : q.square ? 'This square pen uses this much fence in all, the same on each of its four sides. How many squares of room are inside?'
     : 'Both pens hold the same number of squares. Which one needs more fence around it? ' + CMP),
   'd-story': q => (q.time ? 'The camel walks the same distance every hour. How many hours does the long trip take?'
     : q.price ? 'Every coconut costs the same. How much do the coconuts in the second picture cost?'

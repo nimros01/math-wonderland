@@ -758,7 +758,7 @@ svg.die { display: block; margin: auto; }
 .saletag .tagp { font-size: 42px; font-weight: 800; padding: 6px 18px; background: #fff4cc; border: 3px solid var(--ink); border-radius: 12px 30px 30px 12px; }
 .saletag .tagoff { font-size: 21px; letter-spacing: -.5px; font-weight: 800; color: #fff; background: var(--tomato, #ef5b52); border-radius: 50%; width: 80px; height: 80px; display: grid; place-items: center; transform: rotate(-12deg); }
 .mixes { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.mixrow { display: flex; gap: 12px; font-size: 24px; flex-wrap: wrap; justify-content: center; max-width: 290px; }
+.mixrow { display: flex; gap: 10px; font-size: 22px; flex-wrap: wrap; justify-content: center; max-width: 250px; }
 .mixrow span { display: inline-flex; flex-wrap: wrap; }
 .mixc { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; }
 .mixc b { white-space: nowrap; }
@@ -786,3 +786,13 @@ svg.die { display: block; margin: auto; }
 .camel b { font-size: 16px; }
 .numcards { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
 .numcards b { min-width: 42px; padding: 6px 8px; font-size: 24px; font-weight: 800; text-align: center; background: #fff4d6; border: 3px solid var(--ink); border-radius: 10px; }
+@media (max-width: 359px) {
+  .world-tabs { gap: 5px; }
+  .wtab { padding: 4px 8px; font-size: 21px; }
+  .wtab b { font-size: 16px; }
+}
+.lvlicon { display: inline-flex; align-items: flex-end; gap: .08em; height: 1em; vertical-align: baseline; }
+.lvlicon i { width: .28em; box-sizing: border-box; background: var(--sand, #d9a33a); border: 1.5px solid var(--ink); border-bottom-width: 2.5px; }
+.lvlicon b { font-size: .5em; margin: 0 4px; align-self: center; }
+.midicon { display: inline-flex; align-items: center; gap: 4px; }
+.midicon i { width: .5em; height: .7em; border: 3px solid var(--ink); border-radius: 5px; background: #fff4d6; }

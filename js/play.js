@@ -71,6 +71,7 @@ export function startRound(app, opts) {
     q.show = true; q.hinted = true;
     visEl.innerHTML = q.visual;
     visEl.classList.add('pop');
+    fitVis();
     hintBtn.disabled = true;
     sfx.tap();
   };
@@ -190,6 +191,7 @@ export function startRound(app, opts) {
     hintBtn.disabled = !q.visual || q.show || mode === 'gate' || mode === 'boss';
     const layout = q.input === 'pad' ? 'pad' : q.input === 'multi' ? (q.grid3 ? 'multi g3' : 'multi') : q.input === 'pairs' ? 'multi g4' : q.layout || 'grid';
     ansEl.className = 'answers ' + layout + (q.small ? ' small' : '');
+    requestAnimationFrame(fitVis);
     if (q.input === 'pad') {
       if (!slots().length) eqEl.insertAdjacentHTML('beforeend', ' <span class="slot">?</span>');
       ansEl.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button class="key" data-k="${d}">${d}</button>`).join('') +
@@ -259,6 +261,22 @@ export function startRound(app, opts) {
     const max = cardEl.clientWidth - 28, w = eqEl.getBoundingClientRect().width;
     eqEl.style.width = '';
     if (w > max) eqEl.style.fontSize = Math.floor(parseFloat(getComputedStyle(eqEl).fontSize) * max / w) + 'px';
+  }
+
+  // Shrink a picture that is too tall for the card on small phones, so nothing is cut off.
+  function fitVis() {
+    const el = visEl.firstElementChild;
+    if (!el) return;
+    el.style.height = ''; el.style.width = ''; el.style.transform = ''; el.style.marginBottom = '';
+    const cs = getComputedStyle(cardEl);
+    const parts = [eqEl, visEl].filter(x => !x.hidden && x.getBoundingClientRect().height > 0);
+    const need = parts.reduce((h, x) => h + x.getBoundingClientRect().height, 0) + (parseFloat(cs.rowGap) || 0) * (parts.length - 1)
+      + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const over = need - cardEl.clientHeight;
+    if (over <= 0) return;
+    const h = visEl.getBoundingClientRect().height, target = Math.max(80, h - over - 4);
+    if (el.tagName.toLowerCase() === 'svg' && visEl.children.length === 1) { el.style.height = target + 'px'; el.style.width = 'auto'; }
+    else { el.style.transform = `scale(${(target / h).toFixed(3)})`; el.style.transformOrigin = 'top center'; el.style.marginBottom = -(h - target) + 'px'; }
   }
 
   function pairTap(i, btn) {
@@ -332,7 +350,7 @@ export function startRound(app, opts) {
         ansEl.querySelector(`[data-v="${CSS.escape(String(q.answer))}"]`)?.classList.add('right');
         setTimeout(() => fillSlot(rightParts(), true), 450);
       }
-      if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); }
+      if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); fitVis(); }
       // A missed question comes back later, with its picture if it needs one.
       if (mode === 'normal' && !q.redo) {
         const again = JSON.parse(JSON.stringify(q));
