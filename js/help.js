@@ -50,7 +50,7 @@ const BY_STAGE = {
     : has(q.eq, '−') ? 'You pay with the first amount for the toy. How much change do you get back?'
     : q.eq ? 'Add up the coins. How much money is there?'
     : 'Which handful of coins pays exactly the price on the tag?'),
-  story1: q => (has(q.visual, '<span class="slot">?</span><b class="fly">')
+  story1: q => (has(q.visual, 'class="puff"')
     ? 'Read the picture story from left to right. How many flew away in the middle picture?'
     : q.input === 'choice' && q.choices?.some(c => has(c.html, 'class="ex"')) ? STORY_EXPR : STORY),
 

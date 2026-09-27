@@ -799,14 +799,14 @@ function story(lvl) {
     const k = R(2, lvl ? 4 : 3), b = R(2, lvl ? 5 : 4), c = R(1, Math.min(9, k * b - 1));
     const leave = kind === 'leave';
     const ans = leave ? k * b - c : k * b + c;
-    const pics = [panel(groupsPic(k, b, e, '⛵')), panel(`<span class="move">${e.repeat(Math.min(c, 6))}${c > 6 ? '…' : ''}<b>${leave ? '→' : '←'}</b></span><span class="num">${leave ? '−' : '+'}${c}</span>`), panel('<span class="slot">?</span>')];
+    const pics = [panel(groupsPic(k, b, e, '⛵')), panel(`<span class="move"><i class="boat">⛵</i><span class="${leave ? 'swimout' : 'swimin'}">${e.repeat(Math.min(c, 6))}${c > 6 ? '…' : ''}</span><b class="still">${leave ? '→' : '←'}</b></span><span class="num">${leave ? '−' : '+'}${c}</span>`), panel('<span class="slot">?</span>')];
     const expr = `${k} × ${b} ${leave ? '−' : '+'} ${c}`;
     return { k: `${k}x${b}${leave ? '-' : '+'}${c}`, pics, ans, expr, wrongExpr: [`${k} + ${b} ${leave ? '−' : '+'} ${c}`, `${k} × ${b} ${leave ? '+' : '−'} ${c}`, `${k} × ${c} ${leave ? '−' : '+'} ${b}`], wrongs: [k + b + (leave ? -c : c), k * b, leave ? k * b + c : k * b - c, ans + 1] };
   }
   if (kind === 'share') {
     const k = R(2, 4), q = R(2, lvl ? 6 : 4), c = R(1, q - 1 || 1);
     const n = k * q, ans = q - c;
-    const pics = [panel(`<div class="fishrow">${e.repeat(n)}</div><div class="nets">${'<span class="net"></span>'.repeat(k)}</div>`), panel(`<span class="net">${e.repeat(q)}</span><span class="move"><b>→</b>${e.repeat(c)}</span>`), panel('<span class="net"><span class="slot">?</span></span>')];
+    const pics = [panel(`<div class="fishrow">${e.repeat(n)}</div><div class="nets">${'<span class="net"></span>'.repeat(k)}</div>`), panel(`<span class="net">${e.repeat(q)}</span><span class="move"><b class="still">→</b><span class="swimout">${e.repeat(c)}</span></span>`), panel('<span class="net"><span class="slot">?</span></span>')];
     return { pics, ans, expr: `${n} ÷ ${k} − ${c}`, wrongExpr: [`${n} − ${k} − ${c}`, `${n} ÷ ${c} − ${k}`, `${n} × ${k} − ${c}`], wrongs: [q, n - c, ans + 1, n - k - c] };
   }
   // shop: 3 shells at 4 💎 each, paid with 20 💎
