@@ -147,6 +147,44 @@ const BY_STAGE = {
     : q.eatLeft ? 'The candies go through the boxes one after the other, and each box keeps only that fraction of what it gets. How many candies come out at the end?'
     : has(q.eq, '= 1') ? 'The fractions must add up to exactly one whole. Which number goes under the 1 in the last fraction?'
     : 'Split the fraction into two fractions with 1 on top. Which number goes in the yellow ? box?'),
+
+  // Pyramid Desert
+  'd-units': q => (isCmp(q) ? 'Turn both amounts into the same small unit, then compare. ' + CMP
+    : 'Change the amount into the other unit. 1 m = 100 cm, 1 cm = 10 mm, 1 km = 1,000 m, 1 kg = 1,000 g, 1 l = 1,000 ml. Which number goes in the yellow ? box?'),
+  'd-protr': q => (q.guess ? 'Guess the size of the angle without measuring. Which of these is it closest to? A square corner is 90°.'
+    : 'Read the protractor: one red arm lies on 0, so read the number where the other red arm crosses the scale. How many degrees is the angle?'),
+  'd-tri': q => (q.line ? 'Together the two angles make a straight line, and a straight line is 180°. How big is the angle with the ?'
+    : q.iso ? 'The corners marked = are equal, and the three corners of every triangle add up to 180°. How big is the angle with the ?'
+    : 'The three corners of every triangle add up to 180°. How big is the corner with the ?'),
+  'd-area': q => (q.shape === 'side' ? 'The area of this slanted rectangle is base × the red height. The area is given; how long is the base?'
+    : q.shape === 'tri' ? 'A triangle is half of a slanted rectangle: base × red height, then halve it. How many squares is its area?'
+    : 'Cut the slanted corner off and slide it to the other side: it becomes a rectangle. Area = base × the red height (not the slanted side). How many squares?'),
+  'd-trap': () => 'Flip a copy of this shape and put it next to it: together they make a slanted rectangle. So the area is (top + bottom) × red height, halved. How many squares?',
+  'd-circle': q => (q.pi3 ? 'Roll the wheel once. The distance it goes is just over how many times its width?'
+    : q.carea ? 'The area of a circle is about 3.14 × red radius × red radius. Which is closest?'
+    : q.back ? 'The wheel rolled this far in one turn, which is about 3.14 × its width. How wide is it?'
+    : 'In one turn a wheel goes about 3.14 × its width (the red line). About how far does it go?'),
+  'd-vol': q => (q.surface ? 'Paint the whole outside of the box: count the squares on all six faces. How many squares get painted?'
+    : has(q.eq, '×') ? 'The volume of a box is length × width × height. Which number goes in the yellow ? box?'
+    : 'How many small cubes are in the whole box, including the ones you cannot see? Tip: count one layer, then times the number of layers.'),
+  'd-map': q => (q.find ? 'The first number says how far to go right, the second how far to go up. Which thing is at that spot?'
+    : q.move ? 'Start at the camel and walk the arrows: right, then up. Where do you end? Write it as (right, up).'
+    : q.rect ? 'The palm trees are three corners of a rectangle. Where is the fourth corner, where the treasure is? Write it as (right, up).'
+    : 'Where is it on the map? Write the spot as (how far right, how far up).'),
+  'd-mean': q => (q.missing ? 'The mean (the level height) is given. Which number is hidden? Tip: all the numbers together must be the mean × how many there are.'
+    : q.nums ? 'Find the mean: if every card were the same, what would it be? Add all the numbers and share the total equally among the cards.'
+    : 'Move blocks from the tall towers to the short ones until all the towers are the same height. How tall is each tower then?'),
+  'd-median': q => (q.mode ? 'Each dot is one camel at that number. Which number has the most dots?'
+    : q.even ? 'Put the numbers in order. There are two in the middle: the median is exactly halfway between them.'
+    : 'Line them up from smallest to biggest. Which number is in the middle (the median)?'),
+  'd-fence': q => (q.most ? 'All these pens use the same length of fence. Which pen gives the camels the most room inside?'
+    : q.lshape ? 'How long is the fence all the way around the shape? Count the sides of the squares on the edge.'
+    : q.square ? 'A square pen uses this much fence, the same on all four sides. How many squares of room are inside?'
+    : 'Both pens hold the same number of squares. Which one needs more fence around it? ' + CMP),
+  'd-story': q => (q.time ? 'The camel walks the same distance every hour. How many hours does the long trip take?'
+    : q.price ? 'Every coconut costs the same. How much do the coconuts in the second picture cost?'
+    : q.meet ? 'The two camels walk toward each other, each at its own speed per hour. After how many hours do they meet?'
+    : 'The camel walks the same distance every hour. How far does it get?'),
 };
 
 const DIGIT = 'How much is the red underlined digit worth? It depends on its place: a digit in the tens place is worth that digit times 10, in the hundreds place times 100, and so on.';

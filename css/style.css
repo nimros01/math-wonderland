@@ -773,3 +773,16 @@ svg.die { display: block; margin: auto; }
 .ptag { display: inline-block; padding: 0 .3em; background: #fff4cc; border: 3px solid var(--ink); border-radius: 8px 22px 22px 8px; }
 .ratecard { display: flex; align-items: center; gap: 10px; font-size: 26px; padding: 6px 12px; border: 3px dashed var(--ink); border-radius: 14px; background: #fff; flex-wrap: wrap; justify-content: center; max-width: 280px; }
 .ratecard span { display: inline-flex; flex-wrap: wrap; max-width: 150px; }
+
+/* Pyramid Desert (world 4) */
+.map.w-desert { background: linear-gradient(180deg, #ffe7a8 0%, #f3c86b 50%, #d99a3a 100%); }
+.map.w-desert .trail polyline { stroke: #fff; opacity: .8; }
+.map.w-desert .node.locked { background: #ecd49c; }
+.rollrow { display: flex; align-items: center; gap: 6px; }
+.rolltrack { display: flex; flex-direction: column; align-items: flex-start; font-size: 22px; }
+.rolltrack i { display: block; width: 110px; border-top: 4px dashed var(--ink); margin-top: 4px; }
+.camels { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 290px; }
+.camel { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+.camel b { font-size: 16px; }
+.numcards { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
+.numcards b { min-width: 42px; padding: 6px 8px; font-size: 24px; font-weight: 800; text-align: center; background: #fff4d6; border: 3px solid var(--ink); border-radius: 10px; }
