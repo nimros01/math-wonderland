@@ -24,6 +24,8 @@ export function startRound(app, opts) {
   const world = opts.world || WORLDS[0];
   const bossPool = learnOf(world);
   const p = P.me();
+  const petWorld = mode === 'boss' ? world : mode === 'placement' ? WORLDS[0] : WORLDS.find(w => w.stages.some(s => s.id === stage.id)) || WORLDS[0];
+  const buddy = P.companion(p, petWorld.id);
   const total = mode === 'gate' ? GATE : ROUND;
   const startLvl = mode === 'normal' ? Math.max(0, (P.stageRec(p, stage.id).stars || 0) - 1) : 2;
   const st = {
@@ -55,7 +57,7 @@ export function startRound(app, opts) {
       <div class="answers" id="answers"></div>
       <div class="bottombar">
         <button class="icon-btn" id="hint" aria-label="Hint">💡</button>
-        <div class="pet-mini" id="petmini">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</div>
+        <div class="pet-mini" id="petmini">${P.petEmoji(buddy.pet, buddy.wid)}${buddy.pet.hat ? `<span class="hat">${buddy.pet.hat}</span>` : ''}</div>
         <button class="icon-btn" id="showme" aria-label="Show me how">👀</button>
       </div>
     </div>`;
