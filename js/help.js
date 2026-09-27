@@ -3,6 +3,7 @@
 import { WORLDS } from './worlds.js';
 
 const has = (s, t) => String(s || '').includes(t);
+const frac1Of = '<b>1</b><b>?</b>';
 const plain = s => String(s || '').replace(/<[^>]*>/g, ' ');
 const isCmp = q => q.input === 'choice' && ['<', '=', '>'].includes(String(q.answer)) && q.choices?.length === 3;
 const isSign = q => q.input === 'choice' && has(q.eq, '◯') && !isCmp(q);
@@ -105,6 +106,47 @@ const BY_STAGE = {
   'o-story': q => (q.choices?.some(c => has(c.html, 'class="ex"')) ? STORY_EXPR : STORY),
   'o-puz1': q => opuzzle(q),
   'o-puz2': q => opuzzle(q),
+
+  // Candy Factory
+  'c-rect': q => (q.boxes ? 'Which box holds exactly this many candies? Count the rows and the candies in each row.'
+    : q.shapes ? 'How many different rectangle boxes can hold all these candies, with no gaps and none left over? A box turned on its side counts as the same box.'
+    : q.prime ? 'Tap every number of candies that fits only one box shape: a single long row. These are the prime numbers.'
+    : q.input === 'multi' ? 'Tap every box size (rows × candies in a row) that holds exactly this many candies.'
+    : 'The candies fill a box in equal rows. How many candies are in each row?'),
+  'c-divis': q => (q.input === 'multi' ? `The machine only takes numbers that divide by ${q.divisor} with nothing left over. Tap every number it takes.`
+    : q.digit9 ? 'A number divides by 9 when its digits add up to 9, 18 or 27. Which hidden digit lets the number into the ÷9 machine?'
+    : 'Only one of these machines takes this number: the one it divides by exactly, with nothing left over. Which one?'),
+  'c-equiv': q => (q.equiv ? 'Tap every fraction that is the same amount as the fraction at the top. Cutting every piece into equal smaller pieces keeps the amount the same.'
+    : isCmp(q) ? 'Which fraction is more chocolate? ' + CMP
+    : 'Both fractions are the same amount of chocolate, cut into different pieces. Which number goes in the yellow ? box?'),
+  'c-mixed': q => (isCmp(q) ? 'Compare the fraction with the whole number of cakes. ' + CMP
+    : !has(q.eq, '=') ? 'Each cake is cut into equal slices. The bottom number is the slices in one cake. How many pink slices are there in all?'
+    : has(q.eq, 'mixn') ? 'Whole cakes and slices: the big number counts whole cakes, the fraction counts the extra slices. Which number goes in the yellow ? box?'
+    : 'How many whole cakes do these slices make?'),
+  'c-addf': q => (q.tf ? 'Is the robot right? To add slices of the same size, add the tops and keep the size (the bottom number) the same.'
+    : 'Add or take away the slices. If the slices are different sizes, first cut both into the size shown in the answer. How many of those slices are there?'),
+  'c-of': q => (has(q.eq, frac1Of) ? 'Fold the tray one way, then the other. What fraction of the whole tray is the part that is in both folds?'
+    : q.visual && has(q.visual, 'cgroup') ? 'Share the candies into equal groups, one group for each part of the bottom number. The top number says how many groups you take. How many candies is that?'
+    : 'A fraction of a fraction: fold the tray one way for the first fraction and the other way for the second. How many small squares are in both folds?'),
+  'c-scoop': q => (/^\?/.test(plain(q.eq).trim()) ? 'How many cups of flour make this many scoops of that size?'
+    : 'How many scoops of this size fill the amount on the left?'),
+  'c-dec': q => (isCmp(q) ? 'Compare the two decimals. Tip: 0.3 is 30 hundredths, so compare hundredths with hundredths. ' + CMP
+    : has(q.eq, 'frac') ? 'Write the decimal as a fraction: tenths or hundredths. Which number goes in the yellow ? box?'
+    : has(q.visual, '<line') ? 'Each small step on the number line is one tenth. Which number does the red arrow point to?'
+    : 'The chocolate has 100 squares. Each row is one tenth (0.1) and each square is one hundredth (0.01). What decimal is the dark part?'),
+  'c-reg': q => (has(q.eq, '× 10') || has(q.eq, '÷ 10') ? 'Multiplying by 10 moves every digit one place to the left (by 100, two places); dividing by 10 moves them one place to the right. What is the answer?'
+    : has(q.eq, '×') ? 'Multiply the decimal by the whole number. Tip: 0.4 × 12 is 4 tenths, twelve times.'
+    : 'Add or subtract the prices. Line up the decimal points first.'),
+  'c-pct': q => (q.sale ? 'The price is on the tag and the red sticker says how many percent is taken off. How much do you pay?'
+    : has(q.eq, '%') ? 'Percent means "out of 100": 10% of 1,000 is 10 out of every 100, so 100. How much is it?'
+    : 'How many percent of the picture is full? The whole thing is 100%.'),
+  'c-ratio': q => (q.rate ? 'Every candy costs the same. How many coins do the other candies cost?'
+    : q.input === 'choice' && q.layout === 'grid' ? 'Which drink tastes exactly the same? It must have the same number of strawberries for every lemon.'
+    : 'The drink must taste the same, so both fruits grow by the same times. Which number goes in the yellow ? box?'),
+  'c-puz': q => (q.share ? 'Share the cakes equally among the children. How much cake does each child get?'
+    : q.eatLeft ? 'Each box eats that fraction of what is LEFT at that moment, not of the start. How many candies are left at the end?'
+    : has(q.eq, '= 1') ? 'The fractions must add up to exactly one whole. Which number goes under the 1 in the last fraction?'
+    : 'Split the fraction into two fractions with 1 on top. Which number goes in the yellow ? box?'),
 };
 
 const DIGIT = 'How much is the red underlined digit worth? It depends on its place: a digit in the tens place is worth that digit times 10, in the hundreds place times 100, and so on.';

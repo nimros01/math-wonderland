@@ -2,10 +2,12 @@
 // Progress is keyed by stage id, so adding worlds never touches what players already earned.
 import { STAGES } from './skills.js';
 import { OCEAN } from './ocean.js';
+import { CANDY } from './candy.js';
 
 export const WORLDS = [
   { id: 'meadow', icon: '🌻', stages: STAGES, boss: '🧌' },
   { id: 'ocean', icon: '🌊', stages: OCEAN, boss: '🐙' },
+  { id: 'candy', icon: '🍭', stages: CANDY, boss: '🗿' },
 ];
 
 export const learnOf = w => w.stages.filter(s => !s.puzzle);

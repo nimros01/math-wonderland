@@ -742,3 +742,23 @@ svg.die { display: block; margin: auto; }
 .petpick.locked { opacity: .5; }
 .newworld.petborn div { flex-direction: row; gap: 12px; font-size: 70px; }
 .newworld.petborn .pet { font-size: 90px; }
+
+/* Candy Factory (world 3) */
+.map.w-candy { background: linear-gradient(180deg, #ffd6e8 0%, #f7a8cb 50%, #d9779f 100%); }
+.map.w-candy .trail polyline { stroke: #fff; opacity: .8; }
+.map.w-candy .node.locked { background: #f0c3d6; }
+.mixn { font-size: 1em; margin-right: .05em; }
+.cakes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
+.cgroups { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
+.cgroup { display: inline-flex; flex-wrap: wrap; max-width: 92px; justify-content: center; padding: 3px 5px; border: 3px dashed var(--ink); border-radius: 12px; font-size: 18px; line-height: 1.1; background: #fff; }
+.boxset { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; max-width: 290px; }
+.choice svg.shape { max-width: 100%; height: auto; max-height: 96px; }
+.onebox { font-size: 32px; }
+.saletag { display: inline-flex; align-items: center; gap: 10px; }
+.saletag .tagp { font-size: 42px; font-weight: 800; padding: 6px 18px; background: #fff4cc; border: 3px solid var(--ink); border-radius: 12px 30px 30px 12px; }
+.saletag .tagoff { font-size: 21px; letter-spacing: -.5px; font-weight: 800; color: #fff; background: var(--tomato, #ef5b52); border-radius: 50%; width: 80px; height: 80px; display: grid; place-items: center; transform: rotate(-12deg); }
+.mixes { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.mixrow { display: flex; gap: 12px; font-size: 24px; flex-wrap: wrap; justify-content: center; max-width: 290px; }
+.mixrow span { display: inline-flex; flex-wrap: wrap; }
+.mixc { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.mixc b { white-space: nowrap; }
