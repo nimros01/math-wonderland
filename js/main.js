@@ -36,7 +36,7 @@ function home() {
         ${ps.map(p => `<button class="player${p.id === P.state.current ? ' last' : ''}" data-id="${p.id}" aria-label="Player">
           <span class="av">${p.avatar}</span>
           ${p.name ? `<span class="pname">${esc(p.name)}</span>` : ''}
-          <span class="pmeta">${petHTML(p, 'tiny')}<span class="pst">★ ${Object.values(p.stages).reduce((t, r) => t + (r.stars || 0), 0)}</span></span>
+          <span class="pmeta">${petHTML(p, 'tiny')}<span class="pst">★ ${Object.entries(p.stages).reduce((t, [id, r]) => t + (id.startsWith('boss-') ? 0 : r.stars || 0), 0)}</span></span>
         </button>`).join('')}
         ${ps.length < MAX_PLAYERS ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
       </div>
@@ -137,7 +137,12 @@ function map(focusId) {
   const p = P.me();
   if (!p) return home();
   if (focusId) p.world = worldOfStage(focusId);
+  // A world that opened but was never visited (for example after an update) opens by itself, with a hello.
+  const seen = (p.seenW ||= [0]);
+  const fresh = focusId ? -1 : WORLDS.findIndex((_, k) => k > 0 && worldOpen(p, k) && !seen.includes(k));
+  if (fresh > 0) p.world = fresh;
   const wi = curWorld(p), W = WORLDS[wi], STAGES = W.stages;
+  if (!seen.includes(wi)) { seen.push(wi); P.save(); }
   const n = STAGES.length;
   const STEP = 116;
   const xs = STAGES.map((_, i) => 50 + Math.sin(i * 1.05) * 26);
@@ -145,8 +150,9 @@ function map(focusId) {
   const focus = focusId ? STAGES.findIndex(s => s.id === focusId) : firstOpen;
   const height = (n + 1) * STEP + 90;
   // The boss opens once every learning stage has a star.
-  const bossOpen = p.unlockAll || learnOf(W).every(s => (p.stages[s.id]?.stars || 0) > 0);
   const beaten = bossBeaten(p, W);
+  // A troll already beaten stays open, even when new stages join the world later.
+  const bossOpen = p.unlockAll || beaten || learnOf(W).every(s => (p.stages[s.id]?.stars || 0) > 0);
   const pts = [...xs, 50].map((x, i) => `${x},${i * STEP + 70}`).join(' ');
 
   app.innerHTML = `
@@ -156,8 +162,8 @@ function map(focusId) {
         <div class="gem-count"><span>💎</span><b>${p.gems}</b></div>
         <button class="pet-btn" id="petbtn" aria-label="Pet and stickers">${petHTML(p)}</button>
       </div>
+      <div class="world-tabs">${WORLDS.map((w, k) => `<button class="wtab${k === wi ? ' on' : ''}${worldOpen(p, k) ? '' : ' locked'}" data-w="${k}" aria-label="World ${k + 1}">${worldOpen(p, k) ? w.icon : '🔒'}<b>${k + 1}</b></button>`).join('')}</div>
       <div class="scroller" id="scroller">
-        <div class="world-tabs">${WORLDS.map((w, k) => `<button class="wtab${k === wi ? ' on' : ''}${worldOpen(p, k) ? '' : ' locked'}" data-w="${k}" aria-label="World ${k + 1}">${worldOpen(p, k) ? w.icon : '🔒'}<b>${k + 1}</b></button>`).join('')}</div>
         <div class="path" style="height:${height}px">
           <svg class="trail" viewBox="0 0 100 ${height}" preserveAspectRatio="none" aria-hidden="true">
             <polyline points="${pts}" fill="none" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
@@ -195,7 +201,7 @@ function map(focusId) {
       if (!worldOpen(p, k)) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
       sfx.tap();
       p.world = k;
-      P.writeLocal();
+      P.save();
       map();
     };
   });
@@ -205,6 +211,16 @@ function map(focusId) {
     startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r => bossResult(W, r) });
   };
   holdToOpen(app.querySelector('#gear'), app.querySelector('#gearfill'), parentCorner);
+
+  if (fresh > 0) {
+    sfx.chest();
+    const hi = document.createElement('div');
+    hi.className = 'newworld';
+    hi.innerHTML = `<div><span>${W.icon}</span><b>${wi + 1}</b></div>`;
+    app.querySelector('.map').appendChild(hi);
+    hi.onclick = () => hi.remove();
+    setTimeout(() => hi.remove(), 2600);
+  }
 
   const sc = app.querySelector('#scroller');
   const f = focus >= 0 ? focus : bossOpen ? n : -1;

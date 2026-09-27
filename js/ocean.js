@@ -1,4 +1,4 @@
-// Ocean (world 2): numbers to 10,000, big sums, bigger ×, division, fractions, time, angles,
+// Ocean (world 2): numbers to a million, long division, big sums, bigger ×, division, fractions, time, angles,
 // area and perimeter, turns and nets, and first probability. Same question format as Meadow.
 import { R, pick, chance, shuffle, numQ, tfQ, findAllQ, pairsQ, cmpQ, SYMBOLS, numChoices } from './skills.js';
 import { blocks, row, pair } from './visuals.js';
@@ -22,7 +22,7 @@ function place(n) {
 function coins(n) {
   const parts = [[1000, Math.floor(n / 1000)], [100, Math.floor(n / 100) % 10], [10, Math.floor(n / 10) % 10], [1, n % 10]];
   return '<div class="coins">' + parts.filter(([, k]) => k).map(([v, k]) =>
-    `<div class="stack">${`<span class="coin k${v}">${v}</span>`.repeat(k)}</div>`).join('') + '</div>';
+    `<div class="stackgrp">${[Math.min(k, 5), k - 5].filter(x => x > 0).map(m => `<div class="stack">${`<span class="coin k${v}">${v}</span>`.repeat(m)}</div>`).join('')}</div>`).join('') + '</div>';
 }
 
 // A number line from a to b with the number n marked.
@@ -208,12 +208,21 @@ function spinner(sectors, size = 150) {
       a = a1;
     }
   }
-  body += `<circle cx="60" cy="60" r="54" fill="none" stroke="${INK}" stroke-width="4"/><path d="M60 60 L88 30" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="60" r="6" fill="${INK}"/>`;
+  body += `<circle cx="60" cy="60" r="54" fill="none" stroke="${INK}" stroke-width="4"/><circle cx="60" cy="60" r="6" fill="${INK}"/>`;
   return svg(120, 120, body, 'shape', `width="${size}" height="${size}"`);
 }
 
-// A bar chart: labels are emoji or die faces, values are counts.
-function barChart(labels, values, max = null) {
+// A die face with n pips, drawn at (x, y) with side s.
+const PIPS = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]] };
+function dieFace(n, x, y, s) {
+  const c = v => (v + 1) * s / 4;
+  return `<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s / 6}" fill="#fff" stroke="${INK}" stroke-width="2.5"/>` +
+    PIPS[n].map(([i, j]) => `<circle cx="${x + c(i)}" cy="${y + c(j)}" r="${s / 10}" fill="${INK}"/>`).join('');
+}
+const dieSvg = n => svg(40, 40, dieFace(n, 3, 3, 34), 'shape die', 'width="44" height="44"');
+
+// A bar chart: labels are emoji or die faces (numbers 1 to 6), values are counts.
+function barChart(labels, values, max = null, maxW = 240) {
   const top = max || Math.ceil(Math.max(...values) / 2) * 2;
   const H = 120, bw = 34, gap = 14, ox = 30;
   let body = '';
@@ -224,11 +233,11 @@ function barChart(labels, values, max = null) {
   labels.forEach((l, i) => {
     const h = (values[i] / top) * H, x = ox + gap / 2 + i * (bw + gap);
     body += `<rect x="${x}" y="${10 + H - h}" width="${bw}" height="${h}" fill="${[COL.blue, COL.yellow, COL.green, COL.red, COL.purple, '#f48a82'][i]}" stroke="${INK}" stroke-width="2"/>`;
-    body += `<text x="${x + bw / 2}" y="${H + 30}" font-size="20" text-anchor="middle" dominant-baseline="central">${l}</text>`;
+    body += typeof l === 'number' ? dieFace(l, x + 2, H + 16, bw - 4) : `<text x="${x + bw / 2}" y="${H + 30}" font-size="20" text-anchor="middle" dominant-baseline="central">${l}</text>`;
   });
   body += `<line x1="${ox}" y1="10" x2="${ox}" y2="${H + 10}" stroke="${INK}" stroke-width="3"/><line x1="${ox}" y1="${H + 10}" x2="${ox + labels.length * (bw + gap)}" y2="${H + 10}" stroke="${INK}" stroke-width="3"/>`;
   const W = ox + labels.length * (bw + gap) + 10;
-  const sw = Math.min(240, W * 1.15);
+  const sw = Math.min(maxW, W * 1.15);
   return svg(W, H + 46, body, 'shape chart', `width="${Math.round(sw)}" height="${Math.round((sw * (H + 46)) / W)}"`);
 }
 
@@ -243,7 +252,7 @@ function genN1000(lvl) {
     return numQ('?', n, [h * 100 + o * 10 + t, t * 100 + h * 10 + o, n + 10, n - 10, n + 100].filter(v => v > 0 && v < 1000), { visual: place(n), show: true });
   }
   if (kind === 'cmp') {
-    const m = pick([n + pick([1, -1, 10, -10, 9, -9]), Number(String(n).split('').reverse().join('')), n + 100 * pick([1, -1])].filter(v => v >= 100 && v <= 999));
+    const m = pick([n + pick([1, -1, 10, -10, 9, -9]), Number(String(n).split('').reverse().join('')), n + 100 * pick([1, -1])].filter(v => v >= 100 && v <= 999)) ?? n - 1;
     const y = chance(0.1) ? n : m;
     return cmpQ(String(n), String(y), n, y);
   }
@@ -260,9 +269,14 @@ function genN1000(lvl) {
   let v = n;
   while (v % unit === unit / 2 || v % unit === 0) v = R(101, 999);
   const lo = Math.floor(v / unit) * unit, hi = lo + unit, ans = v - lo < hi - v ? lo : hi;
+  // Rounding to tens never offers a round hundred as a wrong answer, since that would be right for hundreds.
+  const opts = [ans];
+  for (const x of [lo, hi, lo - unit, hi + unit, lo - 2 * unit, hi + 2 * unit]) {
+    if (opts.length < 4 && !opts.includes(x) && !(unit === 10 && x % 100 === 0)) opts.push(x);
+  }
   return {
-    eq: `${v} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(lo, hi, v), show: lvl < 2,
-    choices: shuffle([lo, hi, lo - unit, hi + unit]).map(x => ({ value: x, html: String(x) })),
+    eq: `${v} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(lo, hi, v), show: unit === 10 || lvl < 2,
+    choices: shuffle(opts).map(x => ({ value: x, html: String(x) })),
   };
 }
 
@@ -308,6 +322,7 @@ function noCarry(a, b) { while (a || b) { if ((a % 10) + (b % 10) > 9) return fa
 function noBorrow(a, b) { while (b) { if (a % 10 < b % 10) return false; a = Math.floor(a / 10); b = Math.floor(b / 10); } return true; }
 function addNoCarryWrong(a, b) { let r = 0, p = 1; while (a || b) { r += (((a % 10) + (b % 10)) % 10) * p; a = Math.floor(a / 10); b = Math.floor(b / 10); p *= 10; } return r; }
 function genBigAdd(lvl) {
+  if (lvl > 0 && chance(0.25)) return estimateSum(lvl);
   const big = lvl === 2 && chance(0.5);
   const lo = big ? 1000 : 100, hi = big ? 9999 : 999;
   const plus = chance(0.55);
@@ -339,7 +354,8 @@ function genBigAdd(lvl) {
 
 // ---------- 4. Bigger × ----------
 function genBigMul(lvl) {
-  const kind = pick([['tens', 'tens', 'split'], ['split', 'split', 'tens'], ['split', 'split', 'three', 'missing']][lvl]);
+  const kind = pick([['tens', 'tens', 'split'], ['split', 'split', 'tens', 'two'], ['split', 'three', 'missing', 'two', 'two']][lvl]);
+  if (kind === 'two') return twoByTwo();
   if (kind === 'tens') {
     const a = R(2, lvl ? 99 : 20), m = pick(lvl ? [10, 100, 20, 30, 50] : [10, 100]);
     const c = a * m;
@@ -381,8 +397,8 @@ function genDivX(lvl) {
   }
   const r = R(1, a - 1 || 1), n = c + (a > 1 ? r : 0);
   const rr = n - Math.floor(n / a) * a;
-  if (lvl === 2 && chance(0.4)) return numQ(`? ÷ ${a} = ${Math.floor(n / a)} <small>r</small> ${rr}`, n, [n + 1, n - 1, c, n + a]);
-  return numQ(`${n} ÷ ${a} = ${Math.floor(n / a)} <small>r</small> ?`, rr, [rr + 1, rr - 1, a - rr, rr + a].filter(v => v >= 0), { visual: shareVis(n, a, true), show: false });
+  if (lvl === 2 && chance(0.4)) return numQ(`? ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ${rr}`, n, [n + 1, n - 1, c, n + a]);
+  return numQ(`${n} ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ?`, rr, [rr + 1, rr - 1, a - rr, rr + a].filter(v => v >= 0), { visual: shareVis(n, a, true), show: false });
 }
 
 // ---------- 7. Parts of a whole ----------
@@ -460,7 +476,17 @@ function genAngle(lvl) {
     return { eq: '?°', answer: d, input: 'choice', visual: angleVis(d, { rot: R(0, 5) * 15 }), show: true, choices: shuffle(opts).map(v => ({ value: v, html: v + '°' })) };
   }
   const a = R(3, 15) * 10;
-  return numQ(`${a}° + ?° = 180°`, 180 - a, [360 - a, 90 - a, a, 190 - a].filter(v => v > 0), { visual: angleVis(180, { mark: true }), show: true });
+  return numQ(`${a}° + ?° = 180°`, 180 - a, [360 - a, 90 - a, a, 190 - a].filter(v => v > 0), { visual: splitLine(a), show: true });
+}
+
+// A straight line with a ray that splits it into a° (red, on the right) and the rest.
+function splitLine(a) {
+  const t = a * Math.PI / 180, ex = 110 + 80 * Math.cos(t), ey = 100 - 80 * Math.sin(t);
+  const arc = r => `M${110 + r} 100 A${r} ${r} 0 0 0 ${(110 + r * Math.cos(t)).toFixed(1)} ${(100 - r * Math.sin(t)).toFixed(1)}`;
+  return svg(220, 110, `<path d="${arc(26)}" fill="none" stroke="${COL.red}" stroke-width="4"/>
+    <line x1="20" y1="100" x2="200" y2="100" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+    <line x1="110" y1="100" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+    ${txt(110 + 44 * Math.cos(t / 2), 100 - 44 * Math.sin(t / 2), a + '°', 13, `fill="${COL.red}"`)}`, 'shape', 'width="220" height="110"');
 }
 
 // ---------- 10. Perimeter and area ----------
@@ -558,7 +584,6 @@ function genLikely(lvl) {
 
 // ---------- 13. Try it and see: spinners, charts and an unfair die ----------
 const SEA = ['🐟', '🐠', '🐡', '🦀', '🐙'];
-const DIE = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 function genSpin(lvl) {
   const kind = pick([['spin', 'chartTop'], ['spin', 'chartRead', 'chartTop'], ['chartMore', 'die', 'spin', 'chartRead']][lvl]);
   if (kind === 'spin') {
@@ -588,9 +613,235 @@ function genSpin(lvl) {
     return numQ(`${labels[a]} − ${labels[b]} = ?`, vals[a] - vals[b], [vals[a] + vals[b], vals[a], vals[b], vals[a] - vals[b] + 1], { visual: barChart(labels, vals), show: true });
   }
   // an unfair die: one face comes up much more often in 60 rolls
-  const loaded = R(0, 5);
-  const counts = DIE.map((_, i) => (i === loaded ? R(20, 26) : R(5, 10)));
-  return { eq: '🎲 ?', answer: DIE[loaded], input: 'choice', visual: barChart(DIE, counts), show: true, choices: shuffle(shuffle(DIE.slice()).filter(d => d !== DIE[loaded]).slice(0, 3).concat(DIE[loaded])).map(d => ({ value: d, html: `<span class="die">${d}</span>` })) };
+  const loaded = R(1, 6), faces = [1, 2, 3, 4, 5, 6];
+  const counts = faces.map(f => (f === loaded ? R(20, 26) : R(5, 10)));
+  return { eq: '🎲 ?', answer: loaded, input: 'choice', visual: barChart(faces, counts, null, 300), show: true, choices: shuffle(shuffle(faces.filter(f => f !== loaded)).slice(0, 3).concat(loaded)).map(f => ({ value: f, html: dieSvg(f) })) };
+}
+
+// ---------- Numbers to a million: every zoom is ×10 ----------
+const big = n => n.toLocaleString('en-US');
+const bigChoices = (ans, wrong) => numChoices(ans, wrong).map(c => ({ value: c.value, html: `<span class="bign">${big(c.value)}</span>` }));
+const ZOOM = ['🐟', '🐠🐠', '🐡🐡🐡', '🐬', '🐋', '🌊', '🌍'];
+function genMillion(lvl) {
+  const kind = pick([['zoom', 'zoom', 'times', 'digit'], ['zoom', 'times', 'digit', 'cmp'], ['times', 'digit', 'cmp', 'cmp', 'zoom']][lvl]);
+  if (kind === 'zoom') {
+    // 1 → 10 → 100 → … with one step hidden; each step is a bigger picture
+    const from = lvl === 0 ? R(0, 2) : R(1, 3), len = 4;
+    const items = Array.from({ length: len }, (_, i) => 10 ** (from + i));
+    const hole = R(1, len - 1), ans = items[hole];
+    const cells = items.map((v, i) => `<span class="zc"><i>${ZOOM[from + i]}</i>${i === hole ? '<span class="slot">?</span>' : `<b>${big(v)}</b>`}${i < len - 1 ? '<em>×10 ▶</em>' : ''}</span>`);
+    return { eq: '', answer: ans, input: 'choice', small: true, choices: bigChoices(ans, [ans * 10, ans / 10, ans * 100, ans / 100].filter(v => Number.isInteger(v) && v >= 1)), visual: `<div class="zoom">${cells.join('')}</div>`, show: true };
+  }
+  if (kind === 'times') {
+    const div = lvl > 0 && chance(0.4);
+    const a = pick([R(2, 99) * 100, R(11, 999) * 10, R(2, 9) * 1000, R(12, 99) * 1000]);
+    const m = lvl === 2 ? pick([10, 100, 1000]) : 10;
+    if (div) return { ...numQ(`${big(a)} ÷ ${m} = ?`, a / m), small: true, choices: bigChoices(a / m, [a / m * 10, a / m / 10, a / m * 100].filter(Number.isInteger)) };
+    const c = a * m;
+    if (c > 9999999) return genMillion(lvl);
+    return { ...numQ(`${big(a)} × ${m} = ?`, c), small: true, choices: bigChoices(c, [c * 10, c / 10, a * (m + 1)].filter(Number.isInteger)) };
+  }
+  const n = R(lvl === 0 ? 10000 : 100000, 999999);
+  const s = String(n);
+  if (kind === 'digit') {
+    let i = R(0, s.length - 1);
+    while (s[i] === '0') i = R(0, s.length - 1);
+    const d = +s[i], p = s.length - 1 - i, val = d * 10 ** p;
+    let k = -1;
+    const html = big(n).replace(/\d/g, c => (++k === i ? `<u class="hl">${c}</u>` : c));
+    const opts = [val];
+    for (const q of shuffle([p + 1, p - 1, p + 2, p - 2, 0, 1, 2, 3, 4, 5])) {
+      const v = d * 10 ** q;
+      if (opts.length < 4 && q >= 0 && q <= 6 && !opts.includes(v)) opts.push(v);
+    }
+    return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, small: true, choices: shuffle(opts).map(v => ({ value: v, html: `<span class="bign">${big(v)}</span>` })) };
+  }
+  const swapped = +(s.slice(0, 1) + s[2] + s[1] + s.slice(3));
+  const m = pick([n + pick([1, -1, 1000, -1000, 100000, -100000]), swapped].filter(v => v >= 10000 && v <= 999999 && String(v).length === s.length));
+  const y = chance(0.1) || m === undefined ? n : m;
+  return { ...cmpQ(big(n), big(y), n, y), small: true };
+}
+
+// ---------- Long division: deal the hundreds, then the tens, then the ones ----------
+const chests = k => `<div class="chests">${'🧰'.repeat(k)}</div>`;
+function genLongDiv(lvl) {
+  const kind = pick([['easy', 'easy', 'regroup'], ['regroup', 'three', 'digit'], ['three', 'digit', 'rem', 'back']][lvl]);
+  let k, q;
+  if (kind === 'easy') { k = R(2, 4); const t = R(1, Math.floor(9 / k)), o = R(1, Math.floor(9 / k)); q = t * 10 + o; }
+  else if (kind === 'regroup') {
+    // the tens don't share out evenly, so one ten is broken into ones
+    do { k = R(2, 6); q = R(Math.ceil(12 / k), Math.floor(99 / k)); } while (Math.floor(q * k / 10) % k === 0);
+  }
+  else { k = R(2, 9); q = R(Math.ceil(100 / k), Math.floor(999 / k)); }
+  const n = q * k;
+  const vis = `<div class="deal">${place(n)}${chests(k)}</div>`;
+  if (kind === 'digit') {
+    // one digit of the answer is hidden
+    const s = String(q);
+    if (s.length < 3) return genLongDiv(lvl);
+    const i = R(0, s.length - 1), d = +s[i];
+    return numQ(`${n} ÷ ${k} = ${s.slice(0, i)}?${s.slice(i + 1)}`, d, [d + 1, d - 1, (d + k) % 10, k].filter(v => v >= 0 && v <= 9), { visual: vis, show: false });
+  }
+  if (kind === 'rem') {
+    const r = R(1, k - 1), m = n + r;
+    if (m > 999) return genLongDiv(lvl);
+    return numQ(`${m} ÷ ${k} = ${q} <small>r</small> ?`, r, [r + 1, r - 1, k - r, k].filter(v => v >= 0 && v !== r), { visual: `<div class="deal">${place(m)}${chests(k)}</div>`, show: false });
+  }
+  if (kind === 'back') return numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, q + k, n + 10]);
+  const wrongSplit = Number(String(Math.floor(n / 100 / k) || '') + String(Math.floor((n % 100) / 10 / k)) + String(Math.floor((n % 10) / k)));
+  return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, q + 10, q - 10, wrongSplit].filter(v => v > 0), { visual: vis, show: lvl === 0 });
+}
+
+// ---------- Shape sorter: right corners, equal sides, parallel sides ----------
+// Each shape: points (unit grid), and its facts.
+const QUADS = [
+  { p: [[0, 0], [4, 0], [4, 4], [0, 4]], right: true, par: 2, eq: true },            // square
+  { p: [[0, 0], [6, 0], [6, 3], [0, 3]], right: true, par: 2, eq: false },           // rectangle
+  { p: [[0, 0], [4, 0], [6, 3], [2, 3]], right: false, par: 2, eq: false },          // parallelogram
+  { p: [[0, 0], [3, 0], [5, 4], [2, 4]], right: false, par: 2, eq: false },          // parallelogram 2
+  { p: [[2, 0], [4, 3], [2, 6], [0, 3]], right: false, par: 2, eq: true },           // rhombus
+  { p: [[0, 0], [6, 0], [4, 3], [2, 3]], right: false, par: 1, eq: false },          // trapezoid
+  { p: [[0, 0], [5, 0], [3, 3], [0, 3]], right: true, par: 1, eq: false },           // right trapezoid
+  { p: [[2, 0], [4, 2], [2, 6], [0, 2]], right: false, par: 0, eq: false },          // kite
+  { p: [[0, 0], [5, 1], [4, 4], [1, 3]], right: false, par: 0, eq: false },          // any quad
+  { p: [[0, 0], [5, 0], [5, 3], [1, 4]], right: true, par: 0, eq: false },           // quad with right corners
+];
+const TRIS = [
+  { p: [[0, 0], [5, 0], [0, 4]], right: true, par: 0, eq: false },                   // right triangle
+  { p: [[0, 0], [6, 0], [3, 5.2]], right: false, par: 0, eq: true },                 // equilateral
+  { p: [[0, 0], [4, 0], [2, 5]], right: false, par: 0, eq: false },                  // isosceles
+  { p: [[0, 0], [6, 0], [4, 3]], right: false, par: 0, eq: false },                  // scalene
+  { p: [[0, 0], [4, 0], [4, 4]], right: true, par: 0, eq: false },                   // right isosceles
+];
+function shapeSvg(sh, { size = 76, rot = 0, marks = false } = {}) {
+  const a = rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  const r = sh.p.map(([x, y]) => [x * c - y * s, x * s + y * c]);
+  const xs = r.map(v => v[0]), ys = r.map(v => v[1]);
+  const mx = Math.min(...xs), my = Math.min(...ys), span = Math.max(Math.max(...xs) - mx, Math.max(...ys) - my);
+  const k = 80 / span, pt = r.map(([x, y]) => [10 + (x - mx) * k, 10 + (Math.max(...ys) - y) * k]);
+  let extra = '';
+  if (marks) {
+    pt.forEach((v, i) => {
+      const prev = pt[(i + pt.length - 1) % pt.length], next = pt[(i + 1) % pt.length];
+      const u = [prev[0] - v[0], prev[1] - v[1]], w = [next[0] - v[0], next[1] - v[1]];
+      const lu = Math.hypot(...u), lw = Math.hypot(...w);
+      if (Math.abs((u[0] * w[0] + u[1] * w[1]) / lu / lw) < 0.02) {
+        const e = 9, p1 = [v[0] + u[0] / lu * e, v[1] + u[1] / lu * e], p2 = [v[0] + w[0] / lw * e, v[1] + w[1] / lw * e];
+        extra += `<path d="M${p1} L${p1[0] + w[0] / lw * e},${p1[1] + w[1] / lw * e} L${p2}" fill="none" stroke="${COL.red}" stroke-width="3"/>`;
+      }
+    });
+  }
+  return svg(100, 100, `<polygon points="${pt.map(v => v.join(',')).join(' ')}" fill="#bfe3f7" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>${extra}`, 'shape', `width="${size}" height="${size}"`);
+}
+const PROP_ICON = {
+  right: svg(60, 60, `<path d="M12 10 V48 H50" fill="none" stroke="${INK}" stroke-width="5"/><path d="M12 36 H24 V48" fill="none" stroke="${COL.red}" stroke-width="4"/>`, 'shape', 'width="60" height="60"'),
+  par: '<span class="rails">🛤️</span>',
+  eq: svg(60, 60, `<polygon points="30,6 54,30 30,54 6,30" fill="none" stroke="${INK}" stroke-width="4"/>${[[18, 18], [42, 18], [42, 42], [18, 42]].map(([x, y]) => `<line x1="${x - 4}" y1="${y + (x < 30 === y < 30 ? 4 : -4)}" x2="${x + 4}" y2="${y - (x < 30 === y < 30 ? 4 : -4)}" stroke="${COL.red}" stroke-width="4"/>`).join('')}`, 'shape', 'width="60" height="60"'),
+};
+function genSort(lvl) {
+  const kind = pick([['find', 'find', 'sides'], ['find', 'par', 'sides'], ['find', 'par', 'odd']][lvl]);
+  const rot = () => (lvl === 2 ? R(0, 7) * 45 : pick([0, 90, 180, 270]));
+  const all = [...QUADS, ...TRIS];
+  if (kind === 'sides') {
+    const sh = pick(all);
+    return { eq: '?', answer: sh.p.length, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, choices: [3, 4, 5].map(v => ({ value: v, html: String(v) })) };
+  }
+  if (kind === 'par') {
+    const sh = pick(QUADS);
+    return { eq: `<span class="rails">🛤️</span> = ?`, answer: sh.par, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, choices: [0, 1, 2].map(v => ({ value: v, html: String(v) })) };
+  }
+  if (kind === 'odd') {
+    // three quads with two pairs of parallel sides and one without, or the reverse
+    const yes = shuffle(QUADS.filter(q => q.par === 2)).slice(0, 3), no = pick(QUADS.filter(q => q.par < 2));
+    const i = R(0, 3), set = yes.slice(); set.splice(i, 0, no);
+    return { eq: '?', answer: i, input: 'choice', layout: 'grid', visual: null, show: false, choices: set.map((sh, j) => ({ value: j, html: shapeSvg(sh, { size: 70, rot: rot() }) })) };
+  }
+  const prop = pick(lvl === 0 ? ['right', 'eq'] : ['right', 'par', 'eq']);
+  const test = sh => (prop === 'par' ? sh.par > 0 : sh[prop]);
+  const pool = prop === 'par' ? QUADS.concat(pick(TRIS)) : all;
+  const good = shuffle(pool.filter(test)).slice(0, R(2, 3)), bad = shuffle(pool.filter(sh => !test(sh))).slice(0, 6 - good.length);
+  const items = [...good.map(sh => ({ sh, ok: true })), ...bad.map(sh => ({ sh, ok: false }))];
+  return { eq: '', input: 'multi', target: PROP_ICON[prop], grid3: true, visual: null, show: false,
+    items: shuffle(items).map(({ sh, ok }) => ({ html: shapeSvg(sh, { size: 70, rot: rot(), marks: lvl === 0 && prop === 'right' }), ok })) };
+}
+
+// ---------- Picture stories 2: two-step comics with no words ----------
+const panel = html => `<div class="panel">${html}</div>`;
+const groupsPic = (k, b, e, box) => `<div class="groups">${Array.from({ length: k }, () => `<span class="grp"><i>${box}</i>${e.repeat(b)}</span>`).join('')}</div>`;
+function story(lvl) {
+  const kind = pick(lvl === 0 ? ['leave', 'come', 'share'] : ['leave', 'come', 'share', 'shop']);
+  const e = pick(['🐟', '🐠', '🦐', '🐚']);
+  if (kind === 'leave' || kind === 'come') {
+    const k = R(2, lvl ? 4 : 3), b = R(2, lvl ? 5 : 4), c = R(1, Math.min(9, k * b - 1));
+    const leave = kind === 'leave';
+    const ans = leave ? k * b - c : k * b + c;
+    const pics = [panel(groupsPic(k, b, e, '⛵')), panel(`<span class="move">${e.repeat(Math.min(c, 6))}${c > 6 ? '…' : ''}<b>${leave ? '→' : '←'}</b></span><span class="num">${leave ? '−' : '+'}${c}</span>`), panel('<span class="slot">?</span>')];
+    const expr = `${k} × ${b} ${leave ? '−' : '+'} ${c}`;
+    return { k: `${k}x${b}${leave ? '-' : '+'}${c}`, pics, ans, expr, wrongExpr: [`${k} + ${b} ${leave ? '−' : '+'} ${c}`, `${k} × ${b} ${leave ? '+' : '−'} ${c}`, `${k} × ${c} ${leave ? '−' : '+'} ${b}`], wrongs: [k + b + (leave ? -c : c), k * b, leave ? k * b + c : k * b - c, ans + 1] };
+  }
+  if (kind === 'share') {
+    const k = R(2, 4), q = R(2, lvl ? 6 : 4), c = R(1, q - 1 || 1);
+    const n = k * q, ans = q - c;
+    const pics = [panel(`<div class="fishrow">${e.repeat(n)}</div><div class="nets">${'<span class="net"></span>'.repeat(k)}</div>`), panel(`<span class="net">${e.repeat(q)}</span><span class="move"><b>→</b>${e.repeat(c)}</span>`), panel('<span class="net"><span class="slot">?</span></span>')];
+    return { pics, ans, expr: `${n} ÷ ${k} − ${c}`, wrongExpr: [`${n} − ${k} − ${c}`, `${n} ÷ ${c} − ${k}`, `${n} × ${k} − ${c}`], wrongs: [q, n - c, ans + 1, n - k - c] };
+  }
+  // shop: 3 shells at 4 💎 each, paid with 20 💎
+  const k = R(2, 4), p = R(2, 6), pay = Math.ceil((k * p + 1) / 10) * 10;
+  const ans = pay - k * p;
+  const pics = [panel(`${`<span class="tag">🐚<small>${p}💎</small></span>`.repeat(k)}`), panel(`<span class="num">${pay}💎</span><b>→</b>`), panel('<span class="slot">?</span>💎')];
+  return { pics, ans, expr: `${pay} − ${k} × ${p}`, wrongExpr: [`${pay} − ${k} − ${p}`, `${pay} + ${k} × ${p}`, `${k} × ${p}`], wrongs: [k * p, pay - k - p, ans + p, ans - 1].filter(v => v > 0) };
+}
+function genStory(lvl) {
+  const s = story(lvl);
+  const vis = `<div class="story">${s.pics.join('<b class="arrow">▶</b>')}</div>`;
+  if (lvl === 2 && chance(0.5)) {
+    // wrong stories: the planned mix-ups first, then the same numbers with one sign changed; every value differs
+    const val = x => Function('return ' + x.replace(/−/g, '-').replace(/×/g, '*').replace(/÷/g, '/'))();
+    const tok = s.expr.split(' '), swaps = [];
+    for (let i = 1; i < tok.length; i += 2) for (const o of ['+', '−', '×']) if (o !== tok[i]) swaps.push([...tok.slice(0, i), o, ...tok.slice(i + 1)].join(' '));
+    const opts = [s.expr], seen = new Set([val(s.expr)]);
+    for (const x of [...s.wrongExpr, ...shuffle(swaps)]) {
+      const v = val(x);
+      if (opts.length < 4 && v >= 0 && !seen.has(v)) { opts.push(x); seen.add(v); }
+    }
+    if (opts.length < 4) return genStory(lvl);
+    shuffle(opts);
+    return { eq: '', answer: s.expr, input: 'choice', layout: 'grid', visual: vis, show: true, choices: opts.map(x => ({ value: x, html: `<span class="ex">${x}</span>` })) };
+  }
+  return { ...numQ('', s.ans, s.wrongs.filter(v => v >= 0 && v !== s.ans)), visual: vis, show: true };
+}
+
+// ---------- 2-digit × 2-digit: the rectangle cut into four parts ----------
+function areaModel2(a, b) {
+  const [at, ao] = [Math.floor(a / 10) * 10, a % 10], [bt, bo] = [Math.floor(b / 10) * 10, b % 10];
+  const W = 190, H = 120, wx = Math.max(52, W * at / a), hy = Math.max(44, H * bt / b);
+  const cells = [[0, 0, wx, hy, at * bt, COL.blue], [wx, 0, W - wx, hy, ao * bt, COL.yellow], [0, hy, wx, H - hy, at * bo, COL.green], [wx, hy, W - wx, H - hy, ao * bo, '#f7b6d2']];
+  let body = '';
+  for (const [x, y, w, h, v, f] of cells) body += `<rect x="${40 + x}" y="${26 + y}" width="${w}" height="${h}" fill="${f}" stroke="${INK}" stroke-width="3"/>${txt(40 + x + w / 2, 26 + y + h / 2, v, 13)}`;
+  body += txt(40 + wx / 2, 12, at) + txt(40 + wx + (W - wx) / 2, 12, ao) + txt(20, 26 + hy / 2, bt) + txt(20, 26 + hy + (H - hy) / 2, bo);
+  return svg(240, 156, body, 'shape', 'width="240" height="156"');
+}
+function twoByTwo() {
+  const a = R(12, 39), b = R(11, 29);
+  if (a % 10 === 0 || b % 10 === 0) return twoByTwo();
+  const c = a * b;
+  const forgot = Math.floor(a / 10) * 10 * Math.floor(b / 10) * 10 + (a % 10) * (b % 10); // only the two corner parts
+  return numQ(`${a} × ${b} = ?`, c, [forgot, c + 10, c - 10, c + 100].filter(v => v !== c), { visual: areaModel2(a, b), show: false });
+}
+
+// ---------- Guess first: nearest hundred ----------
+function estimateSum(lvl) {
+  for (;;) {
+    const plus = chance(0.6);
+    const a = R(150, 899), b = R(110, plus ? 999 - a : a - 60);
+    if (b < 100) continue;
+    const c = plus ? a + b : a - b;
+    const m = c % 100;
+    if (Math.abs(m - 50) < 18 || c < 150) continue; // stay clear of the halfway mark, so only one hundred is nearest
+    const ans = Math.round(c / 100) * 100;
+    const opts = shuffle([ans, ans + 100, ans - 100, ans + 200 > 1100 ? ans - 200 : ans + 200].filter(v => v > 0));
+    return { eq: `${a} ${plus ? '+' : '−'} ${b} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(Math.floor(c / 100) * 100, Math.floor(c / 100) * 100 + 100, c), show: false, choices: opts.map(v => ({ value: v, html: String(v) })) };
+  }
 }
 
 // ---------- Puzzle stops ----------
@@ -666,17 +917,21 @@ function genOPuzzle(mixed) {
 export const OCEAN = [
   { id: 'o-1000', icon: '💯', gen: genN1000 },
   { id: 'o-10k', icon: '🪙', gen: genN10k },
+  { id: 'o-million', icon: '🐋', gen: genMillion },
   { id: 'o-add', icon: '🫧', gen: genBigAdd },
   { id: 'o-mul', icon: '🟧', gen: genBigMul },
   { id: 'o-share', icon: '🐟', gen: genShare },
   { id: 'o-divx', icon: '🔺', gen: genDivX },
+  { id: 'o-longdiv', icon: '🧰', gen: genLongDiv },
   { id: 'o-puz1', icon: '🧩', gen: genOPuzzle(false), puzzle: true },
   { id: 'o-frac', icon: '🍕', gen: genFrac },
   { id: 'o-clock', icon: '🕒', gen: genClock },
   { id: 'o-angle', icon: '📐', gen: genAngle },
   { id: 'o-area', icon: '🦀', gen: genArea },
+  { id: 'o-sort', icon: '🛤️', gen: genSort },
   { id: 'o-turn', icon: '🧊', gen: genTurn },
   { id: 'o-likely', icon: '🎱', gen: genLikely },
   { id: 'o-spin', icon: '🎡', gen: genSpin },
+  { id: 'o-story', icon: '🎬', gen: genStory },
   { id: 'o-puz2', icon: '🧩', gen: genOPuzzle(true), puzzle: true },
 ];
