@@ -806,9 +806,9 @@ svg.die { display: block; margin: auto; }
 .map.w-volcano { background: linear-gradient(180deg, #ffd3b0 0%, #f08a5d 50%, #b8452f 100%); }
 .map.w-volcano .trail polyline { stroke: #fff; opacity: .85; }
 .map.w-volcano .node.locked { background: #e9b8a0; }
-.mbox { display: inline-grid; place-items: center; min-width: 1.05em; height: 1.05em; box-sizing: border-box; border: 3px dashed #d99a00; border-radius: 8px; background: #fff4cc; color: #d99a00; font-size: .8em; vertical-align: -.1em; }
-.mbox::after { content: '?'; font-size: .8em; }
-.vx { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 700; color: #c2362d; padding: 0 .04em; }
+.mbox { display: inline-grid; place-items: center; min-width: 1.05em; height: 1.05em; box-sizing: border-box; border: 3px solid #6b4420; border-radius: 6px; background: linear-gradient(#c68a4e 0 28%, #6b4420 28% 34%, #c68a4e 34%); color: #fff; font-size: .8em; vertical-align: -.1em; }
+.mbox::after { content: '?'; font-size: .75em; padding-top: .15em; }
+.vx { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 700; color: #c2362d; padding: 0 .04em; margin-right: .08em; }
 .vbal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .veq { font-size: 30px; font-weight: 800; white-space: nowrap; letter-spacing: -.3px; }
 .magic { display: grid; grid-template-columns: repeat(3, 56px); gap: 4px; font-size: 26px; font-weight: 800; }
@@ -816,8 +816,11 @@ svg.die { display: block; margin: auto; }
 .magic span.slot { border-radius: 10px; }
 .magic .blank { background: #e9e2da; }
 .answers.col { grid-template-columns: 1fr; gap: 8px; }
-.answers.col .choice { min-height: 52px; }
+.answers.col .choice { min-height: 48px; padding-top: 2px; padding-bottom: 2px; }
 .choice .ex .mbox { font-size: 1em; }
+.choice .exs { font-size: 17px; letter-spacing: -.3px; }
+.eq sup.psup { font-size: .9em; vertical-align: .5em; line-height: 0; }
+.eq sup.psup .slot { font-size: 1em; min-width: 1.1em; min-height: 1.1em; }
 /* Picture stories: the middle picture moves instead of showing an arrow */
 .story .panel:has(.leave, .enter, .swimout, .swimin, .puff) { overflow: hidden; position: relative; }
 .story .perch { display: flex; align-items: flex-end; justify-content: center; gap: 2px; min-height: 26px; }

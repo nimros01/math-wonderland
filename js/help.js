@@ -204,22 +204,26 @@ const BY_STAGE = {
     : isCmp(q) ? 'Work out both powers, then compare. The small raised number says how many times to multiply the big number by itself. ' + CMP
     : q.tower ? 'Each floor of the tower is double the floor below. The small raised number is the floor. What is on the top floor?'
     : 'The small raised number says how many times to multiply the number by itself: 20² is 20 × 20, and 20³ is 20 × 20 × 20. What is the answer?'),
-  'v-box': q => (q.check ? 'Put this number in the yellow box. Does the scale stay level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
-    : 'The scale is level, so both sides weigh the same. Every yellow ? box hides the same number. Which number is it?'),
+  'v-box': q => (q.check ? 'Put this number in the brown box. Does the scale stay level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+    : q.minus ? 'Something was taken away from the box. Add it back: the box is the answer plus what was taken. Which number is in the box?'
+    : q.div ? 'The box was split into equal parts. Put the parts back together: the box is the answer times the number of parts. Which number is in the box?'
+    : 'The scale is level, so both sides weigh the same. Every brown ? box hides the same number. Which number is it?'),
   'v-keep': q => (q.move ? 'Which move keeps the scale level and leaves the ? box on its own? Whatever you do to one side, do the same to the other side. ÷ means split into equal parts.'
     : has(q.eq, '🤖') ? 'Is the robot right? Do the same to both sides of the scale to find the box, then check the robot. Tap ✓ or ✗.'
     : 'Take off what the red marks show from both sides (÷ means split into equal parts). The scale stays level. Which number is in each ? box?'),
-  'v-two': q => (q.check ? 'Put this number in every yellow box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+  'v-two': q => (q.check ? 'Put this number in every brown box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
     : q.step ? 'First step: take the loose weight off both sides, as the red marks show. How much do all the ? boxes weigh together?'
+    : q.minus ? 'Undo the take-away first: add the same number to both sides. Then split what is left equally between the boxes. Which number is in each box?'
+    : q.div ? 'Undo the + first: take that number off both sides. Then undo the ÷: the box is that many times bigger. Which number is in the box?'
     : 'Two steps: take the loose weight off both sides, then split what is left equally between the boxes. Which number is in each box?'),
   'v-both': q => (q.take ? 'Take the same number of boxes off both sides, as the red marks show. The scale stays level. Which equation is left?'
-    : q.check ? 'Put this number in every yellow box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+    : q.check ? 'Put this number in every brown box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
     : 'There are boxes on both sides. Take the same number of boxes off both sides until they are only on one side, then solve. Which number is in each box?'),
   'v-x': q => (q.check ? 'Put this number in place of x. Is the equation true? Tap ✓ if yes and ✗ if not.'
-    : 'The letter x is a mystery number, just like the yellow box. 3x means 3 × x. Solve the equation: which number is x? It can be a minus number.'),
+    : 'The letter x is a mystery number, just like the brown box. 3x means 3 × x. Solve the equation: which number is x? It can be a minus number.'),
   'v-ineq': q => (q.input === 'multi' ? 'The scale is tipped. Tap every number that keeps it tipped the same way if you put it in place of x. > means more than and < means less than; ≥ and ≤ also allow equal.'
     : q.line ? 'Which number line shows every number x can be? A filled dot means that number counts too; an empty dot means it does not.'
-    : q.edge ? `The scale must stay tipped this way. What is the ${q.big ? 'biggest' : 'smallest'} whole number x can be?`
+    : q.pick ? 'Only one of these numbers keeps the scale tipped the same way when you put it in place of x. Which one?'
     : q.check ? 'Put this number in place of x. Does the scale stay tipped the same way? Tap ✓ if yes and ✗ if not.' : null),
   'v-npuz': q => (q.magic ? 'Magic square: every row, every column and both diagonals add up to the same number. Which number goes in the yellow ? square?'
     : q.pyrx ? PYRAMID + ' Tip: the middle bottom brick is counted twice on the way to the top.'

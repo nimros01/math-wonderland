@@ -5,7 +5,7 @@ import { pyramid } from './visuals.js';
 import { frac } from './ocean.js';
 import { cuboid } from './desert.js';
 
-const INK = '#1e2650', LAVA = '#ef5b52', GOLD = '#ffc23d', ASH = '#e4e7ee', SKY = '#3e9be0', ROCK = '#8a6f5c';
+const BOXC = '#c68a4e', INK = '#1e2650', LAVA = '#ef5b52', GOLD = '#ffc23d', ASH = '#e4e7ee', SKY = '#3e9be0', ROCK = '#8a6f5c';
 const svg = (w, h, body, size = '') => `<svg class="shape" viewBox="0 0 ${w} ${h}" ${size || `width="${w}" height="${h}"`}>${body}</svg>`;
 const txt = (x, y, t, s = 14, extra = '') => `<text x="${x}" y="${y}" font-size="${s}" font-weight="800" fill="${INK}" text-anchor="middle" dominant-baseline="central" ${extra}>${t}</text>`;
 
@@ -19,25 +19,16 @@ const X = '<i class="vx">x</i>';
 const ex = s => `<span class="ex">${s}</span>`;
 
 // Answer bubbles that may be below zero.
-function intChoices(ans, near = []) {
-  const set = new Set();
-  for (const c of shuffle(near.slice())) if (set.size < 3 && Number.isInteger(c) && c !== ans) set.add(c);
-  for (let d = 1; set.size < 3; d++) for (const c of shuffle([ans + d, ans - d])) if (set.size < 3 && c !== ans) set.add(c);
+function intChoices(ans, near = [], neg = true) {
+  const set = new Set(), ok = c => c !== ans && (neg || c >= 0);
+  for (const c of shuffle(near.slice())) if (set.size < 3 && Number.isInteger(c) && ok(c)) set.add(c);
+  for (let d = 1; set.size < 3; d++) for (const c of shuffle([ans + d, ans - d])) if (set.size < 3 && ok(c)) set.add(c);
   return shuffle([ans, ...set]).map(v => ({ value: v, html: M(v) }));
 }
 function intQ(eq, ans, near, extra = {}) {
-  const q = { eq, answer: ans, input: 'choice', choices: intChoices(ans, near), visual: null, show: false, ...extra };
+  const q = { eq, answer: ans, input: 'choice', choices: intChoices(ans, near, extra.neg !== false), visual: null, show: false, ...extra };
   // The number keys have no minus and take three digits, so these stay as bubbles.
   if ((ans < 0 || ans > 999) && !q.layout) q.layout = 'grid';
-  return q;
-}
-// When the box shows up more than once, a right answer fills every slot.
-function fillAll(q) {
-  const n = q.eq.split('?').length - 1;
-  if (n > 1) {
-    q.layout ||= 'grid';
-    q.choices.forEach(c => { c.fill = Array(n).fill(c.html); });
-  }
   return q;
 }
 const tfOwn = (eq, truth, extra = {}) => ({
@@ -63,9 +54,9 @@ function panItems(items, cx, py) {
     const rh = Math.max(...r.map(it => size(it)[1]));
     for (const it of r) {
       const [iw, ih] = size(it), top = y - ih;
-      if (it === 'b') out += `<rect x="${x}" y="${top}" width="${iw}" height="${ih}" rx="5" fill="#fff4cc" stroke="#d99a00" stroke-width="3" stroke-dasharray="5 3"/>${txt(x + iw / 2, top + ih / 2 + 1, '?', 21, 'fill="#d99a00"')}`;
+      if (it === 'b') out += `<rect x="${x}" y="${top}" width="${iw}" height="${ih}" rx="4" fill="${BOXC}" stroke="#6b4420" stroke-width="2.5"/><line x1="${x + 2}" y1="${top + 8}" x2="${x + iw - 2}" y2="${top + 8}" stroke="#6b4420" stroke-width="1.5"/>${txt(x + iw / 2, top + ih / 2 + 3, '?', 20, 'fill="#fff"')}`;
       else if (it === 'x') out += `<rect x="${x}" y="${top}" width="${iw}" height="${ih}" rx="5" fill="${LAVA}" stroke="${INK}" stroke-width="2"/>${txt(x + iw / 2, top + ih / 2, 'x', 24, 'fill="#fff" font-style="italic" font-family="Georgia,serif"')}`;
-      else out += `<path d="M${x + 3} ${top} h${iw - 6} l3 ${ih} h${-iw} z" fill="${ASH}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>${txt(x + iw / 2, top + ih / 2 + 1, it, 17)}`;
+      else out += `<path d="M${x + 3} ${top} h${iw - 6} l3 ${ih} h${-iw} z" fill="${ASH}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>${txt(x + iw / 2, top + ih / 2 + 1, it, 19)}`;
       x += iw + 3;
     }
     y -= rh + 3;
@@ -84,16 +75,14 @@ function scale(left, right, { tilt = 0, take = null } = {}) {
   body += `<line x1="${L}" y1="${by + tilt}" x2="${Rt}" y2="${by - tilt}" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><circle cx="140" cy="${by}" r="7" fill="${GOLD}" stroke="${INK}" stroke-width="2"/>`;
   // A take-off mark: '−5' or '÷3' as text, or a number of boxes ({ boxes: 2 } draws −2 and a small box).
   const mark = (x, y, t) => (typeof t === 'object'
-    ? txt(x - 10, y, `−${t.boxes > 1 ? t.boxes : ''}`, 18, `fill="${LAVA}"`) + `<rect x="${x + (t.boxes > 1 ? 4 : -2)}" y="${y - 9}" width="18" height="18" rx="4" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 2"/>` + txt(x + (t.boxes > 1 ? 13 : 7), y + 1, '?', 12, 'fill="#d99a00"')
-    : txt(x, y, t, 18, `fill="${LAVA}"`));
+    ? txt(x - 12, y, `−${t.boxes > 1 ? t.boxes : ''}`, 22, `fill="${LAVA}"`) + `<rect x="${x + (t.boxes > 1 ? 4 : -2)}" y="${y - 10}" width="20" height="20" rx="4" fill="${BOXC}" stroke="#6b4420" stroke-width="2"/>` + txt(x + (t.boxes > 1 ? 14 : 8), y + 1, '?', 13, 'fill="#fff"')
+    : txt(x, y, t, 22, `fill="${LAVA}"`));
   if (take) body += mark(L, by + tilt - 20, take[0]) + mark(Rt, by - tilt - 20, take[1]);
   return svg(280, 192, body, 'width="250" height="171"');
 }
 const bal = (l, r, eqHtml, o) => `<div class="vbal">${scale(l, r, o)}${eqHtml ? `<div class="veq">${eqHtml}</div>` : ''}</div>`;
 const veq = h => `<div class="vbal"><div class="veq">${h}</div></div>`;
 const boxes = (k, it = 'b') => Array(k).fill(it);
-// '3?' in an answer equation, '3' + box elsewhere.
-const kq = k => (k === 1 ? '?' : `${k}?`);
 const kb = k => (k === 1 ? BOX : `${k}${BOX}`);
 const kx = k => (k === 1 ? X : `${k}${X}`);
 
@@ -106,14 +95,14 @@ function thermo(marks, lo, hi, step, lab) {
   for (let t = lo; t <= hi; t += step) {
     const long = t % lab === 0, yy = y(t).toFixed(1);
     body += `<line x1="${x + 9}" y1="${yy}" x2="${x + (long ? 24 : 16)}" y2="${yy}" stroke="${INK}" stroke-width="${long ? 2.5 : 1.3}"/>`;
-    if (long) body += txt(x + 46, yy, M(t), 14, t === 0 ? `fill="${SKY}"` : '');
+    if (long) body += txt(x + 48, yy, M(t), 17, t === 0 ? `fill="${SKY}"` : '');
   }
   body += `<line x1="${x - 24}" y1="${y(0)}" x2="${x - 9}" y2="${y(0)}" stroke="${SKY}" stroke-width="3"/><text x="${x - 30}" y="${y(0)}" font-size="14" text-anchor="middle" dominant-baseline="central">❄️</text>`;
   if (marks.length > 1) {
     const yy = y(marks[1]).toFixed(1);
     body += `<line x1="${x - 22}" y1="${yy}" x2="${x - 9}" y2="${yy}" stroke="${INK}" stroke-width="3"/><circle cx="${x - 24}" cy="${yy}" r="4" fill="${INK}"/>`;
   }
-  return svg(118, 236, body, 'width="109" height="218"');
+  return svg(124, 236, body, 'width="118" height="224"');
 }
 function shaft(a, lo, hi) {
   const n = hi - lo + 1, fh = Math.min(18, Math.floor(200 / n)), H = n * fh + 30;
@@ -211,8 +200,11 @@ function genOrder(lvl) {
     const expr = nums.map((x, i) => (i ? ` ${ops[i - 1]} ` : '') + (br >= 0 && i === br ? '(' : '') + x + (br >= 0 && i === br + 1 ? ')' : '')).join('');
     if (!okVal(ev(expr))) return genOrder(lvl);
     const parts = ops.map((o, i) => `${nums[i]} ${o} ${nums[i + 1]}`);
-    const first = br >= 0 ? br : ops.findIndex(o => o === '×') >= 0 ? ops.findIndex(o => o === '×') : 0;
-    if (new Set(parts).size < parts.length || parts.some(p => ev(p) < 0)) return genOrder(lvl);
+    // Every part that may honestly be worked out first. Keep only questions where exactly one part may.
+    const mults = ops.map((o, i) => (o === '×' ? i : -1)).filter(i => i >= 0);
+    const valid = br >= 0 ? [br, ...mults.filter(i => i !== br && Math.abs(i - br) > 1)] : mults;
+    if (valid.length !== 1 || new Set(parts).size < parts.length || parts.some(p => ev(p) < 0)) return genOrder(lvl);
+    const first = valid[0];
     return { eq: '1️⃣ ?', answer: `p${first}`, input: 'choice', layout: 'row', visual: veq(expr), show: true, first: true,
       choices: parts.map((p, i) => ({ value: `p${i}`, html: ex(p) })) };
   }
@@ -256,13 +248,13 @@ function tower(k, base = 2) {
   return svg(140, k * fh + 8, body);
 }
 function genPow(lvl) {
-  const kind = pick([['sq', 'sq', 'cube', 'double', 'cmp'], ['sq', 'cube', 'double', 'root', 'cmp', 'ten'], ['root', 'pow', 'cmp', 'ten', 'exp', 'pow']][lvl]);
+  const kind = pick([['sq', 'sq', 'cube', 'double', 'cmp', 'ten'], ['sq', 'cube', 'double', 'root', 'cmp', 'ten'], ['root', 'pow', 'cmp', 'ten', 'exp', 'pow']][lvl]);
   if (kind === 'sq') {
     const n = R(2, lvl ? 9 : 8), v = n * n;
     return numQ(`${n}² = ?`, v, [2 * n, n + 2, v + n, v - 1, (n + 1) * (n + 1)].filter(x => x !== v), { visual: tiles(n), show: !lvl });
   }
   if (kind === 'cube') {
-    const n = R(2, lvl ? 4 : 3), v = n ** 3;
+    const n = R(2, lvl ? 5 : 4), v = n ** 3;
     return numQ(`${n}³ = ?`, v, [3 * n, n * n, n + 3, v + n * n].filter(x => x !== v), { visual: cuboid(n, n, n, 150), show: !lvl });
   }
   if (kind === 'double') {
@@ -274,8 +266,11 @@ function genPow(lvl) {
     return numQ(`?² = ${v}`, n, [v / 2, n + 1, n - 1, n * 2].filter(x => Number.isInteger(x)), { visual: tiles(Math.min(n, 12)), show: false, root: true, layout: 'grid' });
   }
   if (kind === 'cmp') {
-    const pairs = [[2, 3, 3, 2], [2, 4, 4, 2], [2, 5, 5, 2], [2, 6, 6, 2], [3, 2, 2, 3], [3, 3, 2, 4], [10, 2, 5, 3], [4, 3, 8, 2], [2, 7, 5, 3], [3, 4, 9, 2], [5, 2, 2, 5]];
-    const [a, p, b, r] = pick(pairs.slice(0, lvl ? 11 : 8)), [x, y] = chance(0.5) ? [[a, p], [b, r]] : [[b, r], [a, p]];
+    // Two powers that are close in size, so they must be worked out, not guessed.
+    const top = [100, 300, 1000][lvl], all = [];
+    for (let b = 2; b <= 10; b++) for (let e = 2; e <= (lvl ? 6 : 4); e++) if (b ** e <= top) all.push([b, e]);
+    let x, y;
+    do { x = pick(all); y = pick(all); } while (x[0] === y[0] || x[1] === y[1] || Math.max(x[0] ** x[1], y[0] ** y[1]) > 2 * Math.min(x[0] ** x[1], y[0] ** y[1]));
     return cmpQ(`${x[0]}${sup(x[1])}`, `${y[0]}${sup(y[1])}`, x[0] ** x[1], y[0] ** y[1]);
   }
   if (kind === 'ten') {
@@ -283,10 +278,12 @@ function genPow(lvl) {
     return numQ(`10${sup(k)} = ?`, v, [10 * k, v * 10, v / 10, 10 + k].filter(x => x !== v), { layout: 'grid' });
   }
   if (kind === 'exp') {
-    const b = pick([2, 2, 3, 10]), k = R(3, b === 2 ? 7 : b === 3 ? 4 : 5), v = b ** k;
-    return numQ(`${Array(k).fill(b).join(' × ')} = ${b}<sup>?</sup>`, k, [k + 1, k - 1, v / b, b * k].filter(x => x > 1 && x < 50), { exp: true, small: k > 4, layout: 'grid' });
+    const b = pick([2, 2, 3, 5]), k = R(3, b === 2 ? 5 : 4), v = b ** k;
+    return numQ(`${Array(k).fill(b).join(' × ')} = ${b}<sup class="psup">?</sup>`, k, [k + 1, k - 1, v / b, b * k].filter(x => x > 1 && x < 50), { exp: true, layout: 'grid' });
   }
-  const [b, k] = pick([[3, 4], [5, 3], [2, 6], [4, 3], [3, 3], [6, 2], [2, 8], [7, 2]]), v = b ** k;
+  let b, k;
+  do { b = R(2, 9); k = R(2, 6); } while (b ** k > 999 || b ** k < 20);
+  const v = b ** k;
   return numQ(`${b}${sup(k)} = ?`, v, [b * k, b ** (k - 1), v + b, v - b, k ** b].filter(x => x !== v && x < 1000), { layout: v > 999 ? 'grid' : undefined });
 }
 
@@ -294,22 +291,24 @@ function genPow(lvl) {
 function genBox(lvl) {
   const kind = pick([['add', 'add', 'addL', 'check'], ['add', 'addL', 'twice', 'minus', 'check'], ['twice', 'minus', 'div', 'add', 'check']][lvl]);
   const b = R(lvl ? 3 : 1, lvl ? 15 : 9);
+  // The equation is written under the scale; from level 2 only the equation is shown.
+  const pic = (l, r, e) => (lvl < 2 ? bal(l, r, e) : veq(e));
   if (kind === 'add' || kind === 'addL') {
     const a = R(2, lvl ? 15 : 9), c = a + b, left = kind === 'add';
-    return numQ(left ? `? + ${a} = ${c}` : `${a} + ? = ${c}`, b, [c, a, b + 1, b - 1, c + a], { visual: bal(left ? ['b', a] : [a, 'b'], [c]), show: lvl < 2 });
+    return numQ(`${BOX} = ?`, b, [c, a, b + 1, b - 1, c + a], { visual: pic(left ? ['b', a] : [a, 'b'], [c], left ? `${BOX} + ${a} = ${c}` : `${a} + ${BOX} = ${c}`), show: true });
   }
   if (kind === 'twice') {
     const k = lvl === 1 ? 2 : R(2, 4), v = R(2, 9), c = k * v;
-    return fillAll(numQ(k === 2 ? `? + ? = ${c}` : `${k} × ? = ${c}`, v, [c - k, c / 2, v + 1, c + k, v - 1].filter(x => Number.isInteger(x) && x > 0 && x !== v), { visual: bal(boxes(k), [c]), show: lvl < 2 }));
+    return numQ(`${BOX} = ?`, v, [c - k, c / 2, v + 1, c + k, v - 1].filter(x => Number.isInteger(x) && x > 0 && x !== v), { visual: pic(boxes(k), [c], k === 2 ? `${BOX} + ${BOX} = ${c}` : `${k} × ${BOX} = ${c}`), show: true });
   }
   if (kind === 'minus') {
-    // No weight can pull a pan up, so the hint shows the box on its own: it weighs what is left plus what was taken.
+    // No weight can pull a pan up, so this one has no scale.
     const a = R(2, 9), c = R(2, 12), v = a + c;
-    return numQ(`? − ${a} = ${c}`, v, [c - a, c, v + a, v - 1].filter(x => x > 0), { visual: bal(['b'], [c, a], `${BOX} = ${c} + ${a}`), show: false });
+    return numQ(`${BOX} = ?`, v, [c - a, c, v + a, v - 1].filter(x => x > 0), { visual: veq(`${BOX} − ${a} = ${c}`), show: true, minus: true });
   }
   if (kind === 'div') {
     const k = R(2, 4), c = R(2, 9), v = k * c;
-    return numQ(`? ÷ ${k} = ${c}`, v, [c + k, c - k, v + c, k * (c + 1)].filter(x => x > 0), { visual: bal(['b'], Array(k).fill(c), `${BOX} = ${Array(k).fill(c).join(' + ')}`), show: false });
+    return numQ(`${BOX} = ?`, v, [c + k, c - k, v + c, k * (c + 1)].filter(x => x > 0), { visual: veq(`${BOX} ÷ ${k} = ${c}`), show: true, div: true });
   }
   // Try a number: does the scale balance?
   const a = R(2, 9), c = a + b, g = chance(0.5) ? b : b + pick([-2, -1, 1, 2, a]);
@@ -331,7 +330,7 @@ function genKeep(lvl) {
   }
   if (kind === 'take') {
     const a = R(2, 9), v = R(1, lvl ? 15 : 9), c = a + v;
-    return numQ(`? + ${a} = ${c}`, v, [c, c + a, v + 1, v - 1], { visual: bal(['b', a], [c], null, { take: [`−${a}`, `−${a}`] }), show: true });
+    return numQ(`${BOX} = ?`, v, [c, c + a, v + 1, v - 1], { visual: bal(['b', a], [c], `${BOX} + ${a} = ${c}`, { take: [`−${a}`, `−${a}`] }), show: true });
   }
   if (kind === 'minus') {
     const a = R(2, 9), c = R(2, 12);
@@ -339,7 +338,7 @@ function genKeep(lvl) {
   }
   if (kind === 'split') {
     const k = R(2, lvl > 1 ? 5 : 3), v = R(2, 9), c = k * v;
-    return fillAll(numQ(`${kq(k)} = ${c}`, v, [c - k, c, v + 1, v - 1, c + k].filter(x => x > 0), { visual: bal(boxes(k), [c], null, { take: [`÷${k}`, `÷${k}`] }), show: true }));
+    return numQ(`${BOX} = ?`, v, [c - k, c, v + 1, v - 1, c + k].filter(x => x > 0), { visual: bal(boxes(k), [c], `${kb(k)} = ${c}`, { take: [`÷${k}`, `÷${k}`] }), show: true });
   }
   if (kind === 'splitmove') {
     const k = R(2, 5), c = k * R(2, 9);
@@ -364,11 +363,11 @@ function genTwo(lvl) {
   if (kind === 'minus') {
     const c = k * v - a;
     if (c <= 0) return genTwo(lvl);
-    return numQ(`${BOX} = ?`, v, [(c - a) / k, c + a, v + 1, (c + a) / k + 1].filter(x => Number.isInteger(x) && x > 0 && x !== v), { visual: veq(`${kb(k)} − ${a} = ${c}`), show: true });
+    return numQ(`${BOX} = ?`, v, [(c - a) / k, c + a, v + 1, (c + a) / k + 1].filter(x => Number.isInteger(x) && x > 0 && x !== v), { visual: veq(`${kb(k)} − ${a} = ${c}`), show: true, minus: true });
   }
   if (kind === 'div') {
     const w = R(2, 9), n = k * w, c = w + a;
-    return numQ(`${BOX} = ?`, n, [c * k - a, w, c * k, n + k].filter(x => x > 0 && x !== n), { visual: veq(`${BOX} ÷ ${k} + ${a} = ${c}`), show: true, layout: n > 999 ? 'grid' : undefined });
+    return numQ(`${BOX} = ?`, n, [c * k - a, w, c * k, n + k].filter(x => x > 0 && x !== n), { visual: veq(`${BOX} ÷ ${k} + ${a} = ${c}`), show: true, div: true });
   }
   const c = k * v + a, g = chance(0.5) ? v : v + pick([-1, 1, 2]);
   if (g < 0) return genTwo(lvl);
@@ -388,7 +387,7 @@ function genBoth(lvl) {
     // Values stay plain words: the equations hold HTML, which can't go into a button's data attribute.
     const opts = [right, ...wrongs.filter(w => w !== right)].slice(0, 4);
     return { eq: '⚖️ ?', answer: 'e0', input: 'choice', layout: 'grid', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
-      choices: shuffle(opts.map((o, i) => ({ value: `e${i}`, html: ex(o) }))) };
+      choices: shuffle(opts.map((o, i) => ({ value: `e${i}`, html: `<span class="ex exs">${o}</span>` }))) };
   }
   if (kind === 'check') {
     const g = chance(0.5) ? v : v + pick([-1, 1, 2]);
@@ -402,7 +401,7 @@ function genBoth(lvl) {
 function genX(lvl) {
   const kind = pick([['morph', 'morph', 'one', 'two'], ['one', 'two', 'both', 'check', 'neg'], ['two', 'both', 'div', 'neg', 'check', 'two']][lvl]);
   const v = R(1, lvl ? 12 : 9), a = R(1, 9);
-  const ask = (eqHtml, ans, near, vis) => intQ(`${X} = ?`, ans, near.filter(x => x !== ans && (ans < 0 || x >= 0)), { visual: vis || veq(eqHtml), show: true });
+  const ask = (eqHtml, ans, near, vis) => intQ(`${X} = ?`, ans, near.filter(x => x !== ans && (ans < 0 || x >= 0)), { visual: vis || veq(eqHtml), show: true, neg: ans < 0 });
   if (kind === 'morph') {
     const k = R(1, 3), c = k * v + a;
     return ask(null, v, [c - a, c, v + 1, (c + a) / k | 0], bal([...boxes(k, 'x'), a], [c], `${kx(k)} + ${a} = ${c}`));
@@ -442,16 +441,16 @@ function genX(lvl) {
 const REL = { '>': (x, t) => x > t, '<': (x, t) => x < t, '≥': (x, t) => x >= t, '≤': (x, t) => x <= t };
 const HTML = { '>': '&gt;', '<': '&lt;', '≥': '≥', '≤': '≤' };
 function numberLine(t, rel, lo = 0, hi = 10) {
-  const W = 150, u = (W - 20) / (hi - lo), X0 = 10, y = 22, px = v => X0 + (v - lo) * u;
+  const W = 160, u = (W - 24) / (hi - lo), X0 = 12, y = 18, px = v => X0 + (v - lo) * u;
   let body = `<line x1="${X0 - 6}" y1="${y}" x2="${W - 4}" y2="${y}" stroke="${INK}" stroke-width="2"/>`;
-  for (let v = lo; v <= hi; v++) body += `<line x1="${px(v)}" y1="${y - 4}" x2="${px(v)}" y2="${y + 4}" stroke="${INK}" stroke-width="1.5"/>` + (v % 2 === 0 || hi - lo <= 10 ? txt(px(v), y + 14, v, 10) : '');
+  for (let v = lo; v <= hi; v++) body += `<line x1="${px(v)}" y1="${y - 4}" x2="${px(v)}" y2="${y + 4}" stroke="${INK}" stroke-width="1.5"/>` + (v % 2 === 0 ? txt(px(v), y + 20, v, 15) : '');
   const right = rel === '>' || rel === '≥', fillDot = rel === '≥' || rel === '≤';
   body += `<line x1="${px(t)}" y1="${y}" x2="${right ? W - 2 : 2}" y2="${y}" stroke="${LAVA}" stroke-width="5"/><path d="${right ? `M${W - 2} ${y} l-9 -6 v12 z` : `M2 ${y} l9 -6 v12 z`}" fill="${LAVA}"/>`;
   body += `<circle cx="${px(t)}" cy="${y}" r="6" fill="${fillDot ? LAVA : '#fff'}" stroke="${LAVA}" stroke-width="3"/>`;
-  return svg(W, 40, body, 'width="140" height="37"');
+  return svg(W, 48, body, 'width="160" height="48"');
 }
 function genIneq(lvl) {
-  const kind = pick([['multi', 'multi', 'check', 'small'], ['multi', 'line', 'small', 'check'], ['line', 'line', 'multi', 'small', 'check']][lvl]);
+  const kind = pick([['multi', 'multi', 'check', 'pick'], ['multi', 'line', 'pick', 'check'], ['line', 'line', 'multi', 'pick', 'check']][lvl]);
   const rel = pick(lvl > 1 ? ['>', '<', '≥', '≤'] : ['>', '<']);
   const k = lvl && chance(0.5) ? R(2, 3) : 1, t = R(1, 7), a = R(1, 9);
   // k·x + a  rel  k·t + a, so the answers are x rel t.
@@ -466,13 +465,17 @@ function genIneq(lvl) {
   if (kind === 'line') {
     const flip = { '>': '<', '<': '>', '≥': '≤', '≤': '≥' }, open = { '>': '≥', '≥': '>', '<': '≤', '≤': '<' };
     const opts = [[t, rel], [t, flip[rel]], [t + (heavyLeft ? 1 : -1), rel], lvl > 1 ? [t, open[rel]] : [t - (heavyLeft ? 1 : -1), rel]];
-    return { eq: ineq, answer: `${t}${rel}`, input: 'choice', layout: 'col', visual: vis, show: false, line: true,
+    return { eq: ineq, answer: `${t}${rel}`, input: 'choice', layout: 'col', visual: null, show: false, line: true,
       choices: shuffle(opts.map(([tt, r]) => ({ value: `${tt}${r}`, html: numberLine(tt, r) }))) };
   }
-  if (kind === 'small') {
-    const ans = rel === '>' ? t + 1 : rel === '≥' ? t : rel === '<' ? t - 1 : t;
-    if (ans < 0) return genIneq(lvl);
-    return numQ(`${heavyLeft ? '🔽' : '🔼'} ${X} = ?`, ans, [t, t + 1, t - 1, c, t + 2].filter(x => x >= 0 && x !== ans), { visual: vis, show: true, edge: true, big: !heavyLeft });
+  if (kind === 'pick') {
+    // Exactly one bubble keeps the scale tipped; the others are close by but tip it the other way (or level it).
+    const near = [...Array(13).keys()].filter(x => Math.abs(x - t) <= 4);
+    const yes = shuffle(near.filter(x => REL[rel](x, t))), no = shuffle(near.filter(x => !REL[rel](x, t)));
+    if (!yes.length || no.length < 3) return genIneq(lvl);
+    const ans = yes[0];
+    return { eq: `${X} = ?`, answer: ans, input: 'choice', layout: 'grid', visual: vis, show: true, pick: true,
+      choices: shuffle([ans, ...no.slice(0, 3)]).map(v => ({ value: v, html: String(v) })) };
   }
   const g = Math.max(0, t + pick([-2, -1, 0, 1, 2]));
   return tfOwn(`${X} = ${g}`, REL[rel](g, t), { visual: vis, show: true, check: true });
@@ -549,13 +552,14 @@ function rectPic(w, h, { top = '', left = '', mid = '', grid = false, fill = '#f
   return svg(W + ox + 12, H + oy + 12, body);
 }
 // An L: a W×H rectangle with a w×h corner cut from its top right.
-function lPic(W, H, w, h, labels) {
+function lPic(W, H, w, h, labels, fence = false) {
   const u = Math.min(Math.floor(180 / W), Math.floor(130 / H)), ox = 34, oy = 26;
   const P = (x, y) => `${ox + x * u},${oy + y * u}`;
   let body = `<polygon points="${[P(0, 0), P(W - w, 0), P(W - w, h), P(W, h), P(W, H), P(0, H)].join(' ')}" fill="#ffcf8a" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`;
+  if (fence) body += `<polygon points="${[P(0, 0), P(W - w, 0), P(W - w, h), P(W, h), P(W, H), P(0, H)].join(' ')}" fill="none" stroke="${LAVA}" stroke-width="6" stroke-dasharray="10 5" stroke-linejoin="round"/>`;
   const at = {
     bottom: [ox + (W * u) / 2, oy + H * u + 14], left: [ox - 16, oy + (H * u) / 2], top: [ox + ((W - w) * u) / 2, oy - 13],
-    notchV: [ox + (W - w) * u + 16, oy + (h * u) / 2], notchH: [ox + (W - w / 2) * u, oy + h * u - 13], right: [ox + W * u + 16, oy + h * u + ((H - h) * u) / 2],
+    notchV: [ox + (W - w) * u - 14, oy + (h * u) / 2 + 2], notchH: [ox + (W - w / 2) * u, oy + h * u - 13], right: [ox + W * u + 16, oy + h * u + ((H - h) * u) / 2],
   };
   for (const [k, t] of Object.entries(labels)) body += lab(...at[k], t);
   return svg(W * u + ox + 34, H * u + oy + 30, body);
@@ -584,7 +588,7 @@ function genShape(lvl) {
   }
   if (kind === 'lper') {
     const P = 2 * (W + H);
-    return numQ('🧱 = ?', P, [P - w - h, P + 2 * w, W * H - w * h, W + H + w + h].filter(x => x > 0 && x !== P), { visual: lPic(W, H, w, h, { bottom: W, left: H, notchH: w, notchV: h }), show: true, lper: true });
+    return numQ('🧱 = ?', P, [P - w - h, P + 2 * w, W * H - w * h, W + H + w + h].filter(x => x > 0 && x !== P), { visual: lPic(W, H, w, h, { bottom: W, left: H, notchH: w, notchV: h }, true), show: true, lper: true });
   }
   if (kind === 'lmiss') {
     const ans = H - h;
@@ -609,9 +613,9 @@ function diceGrid(op = '+', hi = null, vals = true) {
   for (let r = 1; r <= 6; r++) for (let k = 1; k <= 6; k++) {
     const v = OPF[op](r, k), x = o + (k - 1) * c, y = o + (r - 1) * c;
     body += `<rect x="${x}" y="${y}" width="${c}" height="${c}" fill="${hi !== null && v === hi ? GOLD : '#fff'}" stroke="${INK}" stroke-width="1"/>`;
-    if (vals) body += txt(x + c / 2, y + c / 2 + 1, v, 12);
+    if (vals) body += txt(x + c / 2, y + c / 2 + 1, v, 15);
   }
-  return svg(o + 6 * c + 4, o + 6 * c + 4, body, 'width="200" height="200"');
+  return svg(o + 6 * c + 4, o + 6 * c + 4, body, 'width="220" height="220"');
 }
 const waysOf = (t, op = '+') => { let n = 0; for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (OPF[op](a, b) === t) n++; return n; };
 function genDice(lvl) {
@@ -620,7 +624,6 @@ function genDice(lvl) {
     const most = kind === 'most';
     for (;;) {
       const ts = shuffle([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).slice(0, 4);
-      if (!lvl && most && !ts.includes(7)) continue;
       const w = ts.map(t => waysOf(t)), best = most ? Math.max(...w) : Math.min(...w);
       if (w.filter(x => x === best).length > 1) continue;
       const ans = ts[w.indexOf(best)];
