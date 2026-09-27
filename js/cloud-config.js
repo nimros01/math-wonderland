@@ -3,6 +3,6 @@
 // These are public identifiers, not passwords; access is controlled by the Firestore rules.
 // Leave them empty to play without sync.
 export const FIREBASE = {
-  apiKey: '',
-  projectId: '',
+  apiKey: 'AIzaSyAAx93FUkF5g9uf4dc6rQz4vygJ5QmPlwk',
+  projectId: 'math-wonderland',
 };

@@ -23,6 +23,14 @@ export const onRemoteChange = fn => changeFns.push(fn);
 export const formatCode = c => c.replace(/(.{4})(.{3})(.{3})/, '$1-$2-$3');
 export const cleanCode = c => String(c).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+// One quiet retry on a network hiccup before giving up until the next sync.
+async function fetch(url, opts) {
+  try { return await window.fetch(url, opts); } catch (e) {
+    await new Promise(r => setTimeout(r, 1500));
+    return window.fetch(url, opts);
+  }
+}
+
 // ---------- auth ----------
 async function token() {
   if (cfg.idToken && cfg.exp > Date.now() + 60000) return cfg.idToken;
