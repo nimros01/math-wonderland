@@ -5,6 +5,7 @@ import { LEARN, STICKERS, HATS, AVATARS } from './skills.js';
 import { startRound } from './play.js';
 import { WORLDS, learnOf, bossBeaten, setBossBeaten, worldOpen, worldOfStage } from './worlds.js';
 import * as C from './cloud.js';
+import { country, setCountry } from './country.js';
 
 const app = document.getElementById('app');
 const esc = t => String(t).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -12,6 +13,10 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const starsHTML = n => [1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('');
 
 document.addEventListener('pointerdown', unlockAudio, { capture: true });
+
+// A stage added in an update that this child has already moved past: no stars yet, and a later stage has stars.
+const isFresh = (p, stages, i) => !!stages[i].added && !(p.stages[stages[i].id]?.stars > 0) && stages.slice(i + 1).some(s => p.stages[s.id]?.stars > 0);
+const worldHasFresh = (p, w) => w.stages.some((_, i) => isFresh(p, w.stages, i));
 
 // The world this player is looking at (falls back to Meadow if it isn't open).
 function curWorld(p) {
@@ -162,7 +167,7 @@ function map(focusId) {
   // The boss opens once every learning stage has a star.
   const beaten = bossBeaten(p, W);
   // A troll already beaten stays open, even when new stages join the world later.
-  const bossOpen = p.unlockAll || beaten || learnOf(W).every(s => (p.stages[s.id]?.stars || 0) > 0);
+  const bossOpen = p.unlockAll || beaten || learnOf(W).filter(s => !s.added).every(s => (p.stages[s.id]?.stars || 0) > 0);
   const pts = [...xs, 50].map((x, i) => `${x},${i * STEP + 70}`).join(' ');
 
   app.innerHTML = `
@@ -172,7 +177,7 @@ function map(focusId) {
         <div class="gem-count"><span>💎</span><b>${p.gems}</b></div>
         <button class="pet-btn" id="petbtn" aria-label="Pet and stickers">${petHTML(p)}</button>
       </div>
-      <div class="world-tabs">${WORLDS.map((w, k) => `<button class="wtab${k === wi ? ' on' : ''}${worldOpen(p, k) ? '' : ' locked'}" data-w="${k}" aria-label="World ${k + 1}">${worldOpen(p, k) ? w.icon : '🔒'}<b>${k + 1}</b></button>`).join('')}</div>
+      <div class="world-tabs">${WORLDS.map((w, k) => `<button class="wtab${k === wi ? ' on' : ''}${worldOpen(p, k) ? '' : ' locked'}${worldOpen(p, k) && worldHasFresh(p, w) ? ' hasnew' : ''}" data-w="${k}" aria-label="World ${k + 1}">${worldOpen(p, k) ? w.icon : '🔒'}<b>${k + 1}</b></button>`).join('')}</div>
       <div class="scroller" id="scroller">
         <div class="path" style="height:${height}px">
           <svg class="trail" viewBox="0 0 100 ${height}" preserveAspectRatio="none" aria-hidden="true">
@@ -181,9 +186,10 @@ function map(focusId) {
           ${STAGES.map((s, i) => {
             const open = P.isUnlocked(p, STAGES, i);
             const stars = p.stages[s.id]?.stars || 0;
-            const cls = ['node', open ? 'open' : 'locked', i === firstOpen ? 'current' : '', stars ? 'done' : '', s.icon.startsWith('×') ? 'txt' : '', s.puzzle ? 'puzzle' : ''].join(' ');
+            const fresh = open && isFresh(p, STAGES, i);
+            const cls = ['node', open ? 'open' : 'locked', i === firstOpen ? 'current' : '', stars ? 'done' : '', s.icon.startsWith('×') ? 'txt' : '', s.puzzle ? 'puzzle' : '', fresh ? 'fresh' : ''].join(' ');
             return `<div class="node-wrap" style="left:${xs[i]}%;top:${i * STEP + 70}px">
-              <button class="${cls}" data-i="${i}" aria-label="Stage ${i + 1}">${open ? s.icon : '🔒'}</button>
+              <button class="${cls}" data-i="${i}" aria-label="Stage ${i + 1}">${open ? s.icon : '🔒'}${fresh ? '<span class="newbadge">✨</span>' : ''}</button>
               <div class="stars">${starsHTML(stars)}</div></div>`;
           }).join('')}
           <div class="node-wrap" style="left:50%;top:${n * STEP + 70}px">
@@ -502,6 +508,7 @@ function parentCorner() {
       <label class="pc-row">Name <input type="text" id="pc-name" maxlength="14" value="${esc(p.name || '')}" autocomplete="off"></label>
       <label class="pc-row"><input type="checkbox" id="pc-unlock" ${p.unlockAll ? 'checked' : ''}> Open all stages</label>
       <label class="pc-row"><input type="checkbox" id="pc-sound" ${P.state.muted ? '' : 'checked'}> Sound effects</label>
+      <div class="pc-row">Coins <span class="pc-seg"><button class="pc-cty${country() === 'IL' ? ' on' : ''}" data-c="IL">₪ Israel</button><button class="pc-cty${country() === 'US' ? ' on' : ''}" data-c="US">$ US</button></span></div>
       <div class="pc-btns">
         <button class="pc-btn danger" id="pc-del">Delete this player</button>
         <button class="pc-btn" id="pc-family">☁️ Family sync</button>
@@ -513,6 +520,7 @@ function parentCorner() {
   ov.querySelector('#pc-name').onchange = e => { p.name = e.target.value.trim().slice(0, 14); P.save(); };
   ov.querySelector('#pc-unlock').onchange = e => { p.unlockAll = e.target.checked; P.save(); };
   ov.querySelector('#pc-sound').onchange = e => { P.state.muted = !e.target.checked; P.save(); };
+  ov.querySelectorAll('.pc-cty').forEach(b => { b.onclick = () => { setCountry(b.dataset.c); ov.querySelectorAll('.pc-cty').forEach(x => x.classList.toggle('on', x === b)); }; });
   ov.querySelector('#pc-close').onclick = () => { ov.remove(); map(); };
   ov.querySelector('#pc-family').onclick = () => { ov.remove(); familyPanel(map); };
   const del = ov.querySelector('#pc-del');
