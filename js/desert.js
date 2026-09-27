@@ -241,7 +241,7 @@ function genCircle(lvl) {
 }
 
 // ---------- 7. Pyramid builder: volume and surface ----------
-function cuboid(l, w, h, size = 190) {
+export function cuboid(l, w, h, size = 190) {
   // Isometric stack of unit cubes, l along x, w along depth, h up.
   const u = Math.min(22, Math.floor(150 / (l + w * 0.6 + 1)), Math.floor(130 / (h + w * 0.5 + 1)));
   const dx = u * 0.6, dy = u * 0.5;

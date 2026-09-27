@@ -4,12 +4,14 @@ import { STAGES } from './skills.js';
 import { OCEAN } from './ocean.js';
 import { CANDY } from './candy.js';
 import { DESERT } from './desert.js';
+import { VOLCANO } from './volcano.js';
 
 export const WORLDS = [
   { id: 'meadow', icon: '🌻', stages: STAGES, boss: '🧌' },
   { id: 'ocean', icon: '🌊', stages: OCEAN, boss: '🐙' },
   { id: 'candy', icon: '🍭', stages: CANDY, boss: '🗿' },
   { id: 'desert', icon: '🏜️', stages: DESERT, boss: '🦁' },
+  { id: 'volcano', icon: '🌋', stages: VOLCANO, boss: '🐉' },
 ];
 
 export const learnOf = w => w.stages.filter(s => !s.puzzle);

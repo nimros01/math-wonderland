@@ -186,6 +186,58 @@ const BY_STAGE = {
     : q.price ? 'Every coconut costs the same. How much do the coconuts in the second picture cost?'
     : q.meet ? 'The two camels walk toward each other, each at its own speed per hour. After how many hours do they meet?'
     : 'The camel walks the same distance every hour. How far does it get?'),
+
+  // Volcano
+  'v-neg': q => (q.thermo ? 'Read the thermometer. Below 0 (the ❄️ line) it is freezing and the numbers have a minus sign. What temperature does the red line show?'
+    : q.lift ? 'The lift in the volcano starts at the floor with the first number, then goes up ⬆️ or down ⬇️ that many floors. Floors under the ground have a minus sign. Which floor does it stop at?'
+    : q.coldest ? 'Which temperature is the coldest? The coldest is the smallest number: the further below 0, the colder.'
+    : q.drop ? 'The temperature fell from the first number to the second. How many degrees did it drop? Count down to 0, then on below 0.'
+    : isCmp(q) ? 'Below 0, the bigger the number after the minus, the smaller it is: −50 is smaller than −10. ' + CMP
+    : has(q.eq, '(−') ? 'Taking away a minus number is the same as adding it: 30 − (−20) is 30 + 20. What is the answer?'
+    : 'Think of a number line: + moves up, − moves down, and you can go past 0 into the minus numbers. What is the answer?'),
+  'v-order': q => (q.first ? 'Which part of this calculation do you work out first? Brackets come first, then × and ÷, then + and −.'
+    : q.place ? 'Which calculation makes the number on the right? The part in brackets is worked out first, so moving the brackets changes the answer.'
+    : has(q.eq, '🤖') ? 'Is the robot right? Brackets first, then powers, then × and ÷, and + and − last. Tap ✓ or ✗.'
+    : 'Work out anything in brackets first, then powers like ², then × and ÷, and + and − last. What is the answer?'),
+  'v-pow': q => (q.root ? 'Which number times itself makes this number? Think of a square made of tiles.'
+    : q.exp ? 'The small raised number says how many times the number is multiplied by itself. How many are multiplied here?'
+    : isCmp(q) ? 'Work out both powers, then compare. The small raised number says how many times to multiply the big number by itself. ' + CMP
+    : q.tower ? 'Each floor of the tower is double the floor below. The small raised number is the floor. What is on the top floor?'
+    : 'The small raised number says how many times to multiply the number by itself: 20² is 20 × 20, and 20³ is 20 × 20 × 20. What is the answer?'),
+  'v-box': q => (q.check ? 'Put this number in the yellow box. Does the scale stay level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+    : 'The scale is level, so both sides weigh the same. Every yellow ? box hides the same number. Which number is it?'),
+  'v-keep': q => (q.move ? 'Which move keeps the scale level and leaves the ? box on its own? Whatever you do to one side, do the same to the other side. ÷ means split into equal parts.'
+    : has(q.eq, '🤖') ? 'Is the robot right? Do the same to both sides of the scale to find the box, then check the robot. Tap ✓ or ✗.'
+    : 'Take off what the red marks show from both sides (÷ means split into equal parts). The scale stays level. Which number is in each ? box?'),
+  'v-two': q => (q.check ? 'Put this number in every yellow box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+    : q.step ? 'First step: take the loose weight off both sides, as the red marks show. How much do all the ? boxes weigh together?'
+    : 'Two steps: take the loose weight off both sides, then split what is left equally between the boxes. Which number is in each box?'),
+  'v-both': q => (q.take ? 'Take the same number of boxes off both sides, as the red marks show. The scale stays level. Which equation is left?'
+    : q.check ? 'Put this number in every yellow box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
+    : 'There are boxes on both sides. Take the same number of boxes off both sides until they are only on one side, then solve. Which number is in each box?'),
+  'v-x': q => (q.check ? 'Put this number in place of x. Is the equation true? Tap ✓ if yes and ✗ if not.'
+    : 'The letter x is a mystery number, just like the yellow box. 3x means 3 × x. Solve the equation: which number is x? It can be a minus number.'),
+  'v-ineq': q => (q.input === 'multi' ? 'The scale is tipped. Tap every number that keeps it tipped the same way if you put it in place of x. > means more than and < means less than; ≥ and ≤ also allow equal.'
+    : q.line ? 'Which number line shows every number x can be? A filled dot means that number counts too; an empty dot means it does not.'
+    : q.edge ? `The scale must stay tipped this way. What is the ${q.big ? 'biggest' : 'smallest'} whole number x can be?`
+    : q.check ? 'Put this number in place of x. Does the scale stay tipped the same way? Tap ✓ if yes and ✗ if not.' : null),
+  'v-npuz': q => (q.magic ? 'Magic square: every row, every column and both diagonals add up to the same number. Which number goes in the yellow ? square?'
+    : q.pyrx ? PYRAMID + ' Tip: the middle bottom brick is counted twice on the way to the top.'
+    : has(q.visual, 'class="pyr"') ? PYRAMID
+    : 'One digit is hidden. Which digit makes the calculation right?'),
+  'v-shape': q => (q.side ? 'The number in the middle is the area. Area is one side × the other side. How long is the side with the ?'
+    : q.sqside ? 'This square has the area in the middle. Which side length, times itself, makes that area?'
+    : q.twosq ? 'Two squares stand side by side. What is their area together? Each square is its side × its side.'
+    : q.larea ? 'What is the area of this shape? Tip: see it as a big rectangle with a corner cut away.'
+    : q.lper ? 'How far is it all the way around the edge? Tip: the small steps add up to the same as the full width and height.'
+    : q.lmiss ? 'Which length is missing? The two short sides on the right together are as long as the whole left side.'
+    : q.frame ? 'The frame is the big square with the small white square cut out of the middle. What is the area of the frame?' : null),
+  'v-dice': q => (q.most ? 'Roll two dice and add them. The grid shows all 36 ways they can land. Which of these totals comes up most often?'
+    : q.least ? 'Roll two dice and add them. The grid shows all 36 ways they can land. Which of these totals comes up least often?'
+    : q.other ? `This time the two dice are ${has(q.eq, '×') ? 'multiplied' : 'taken away, big minus small'}. In how many squares of the grid is the result this number?`
+    : q.ways ? 'In how many ways can two dice add up to this total? Count the squares in the grid with that number.'
+    : q.prob ? 'Two dice can land in 36 ways. How many of the 36 make this total? That is its chance.'
+    : isCmp(q) ? 'Which total is more likely with two dice? Count the ways each can happen in the grid. ' + CMP : null),
 };
 
 const DIGIT = 'How much is the red underlined digit worth? It depends on its place: a digit in the tens place is worth that digit times 10, in the hundreds place times 100, and so on.';
@@ -239,7 +291,7 @@ function stageIdOf(gen) {
 
 // stageId is optional: without it the stage is found from the question's generator (boss and placement rounds).
 export function helpFor(q, stageId = stageIdOf(q.gen)) {
-  let task = q.tf && !has(q.eq, '🤖') ? TF : null;
+  let task = q.tf && !q.own && !has(q.eq, '🤖') ? TF : null;
   if (!task) try { task = BY_STAGE[stageId]?.(q); } catch { task = null; }
   task ||= general(q);
   const how = howTo(q);
