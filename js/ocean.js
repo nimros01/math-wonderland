@@ -620,8 +620,8 @@ function genSpin(lvl) {
 
 // ---------- Numbers to a million: every zoom is ×10 ----------
 const big = n => n.toLocaleString('en-US');
-const bigChoices = (ans, wrong) => numChoices(ans, wrong).map(c => ({ value: c.value, html: `<span class="bign">${big(c.value)}</span>` }));
-const ZOOM = ['🐟', '🐠🐠', '🐡🐡🐡', '🐬', '🐋', '🌊', '🌍'];
+const bigChoices = (ans, wrong) => numChoices(ans, wrong.filter(v => v <= 1000000)).map(c => ({ value: c.value, html: `<span class="bign">${big(c.value)}</span>` }));
+const ZOOM = ['🐟', '🐠', '🐡', '🐬', '🦈', '🐋', '🌊'];
 function genMillion(lvl) {
   const kind = pick([['zoom', 'zoom', 'times', 'digit'], ['zoom', 'times', 'digit', 'cmp'], ['times', 'digit', 'cmp', 'cmp', 'zoom']][lvl]);
   if (kind === 'zoom') {
@@ -629,8 +629,8 @@ function genMillion(lvl) {
     const from = lvl === 0 ? R(0, 2) : R(1, 3), len = 4;
     const items = Array.from({ length: len }, (_, i) => 10 ** (from + i));
     const hole = R(1, len - 1), ans = items[hole];
-    const cells = items.map((v, i) => `<span class="zc"><i>${ZOOM[from + i]}</i>${i === hole ? '<span class="slot">?</span>' : `<b>${big(v)}</b>`}${i < len - 1 ? '<em>×10 ▶</em>' : ''}</span>`);
-    return { eq: '', answer: ans, input: 'choice', small: true, choices: bigChoices(ans, [ans * 10, ans / 10, ans * 100, ans / 100].filter(v => Number.isInteger(v) && v >= 1)), visual: `<div class="zoom">${cells.join('')}</div>`, show: true };
+    const cells = items.map((v, i) => `<span class="zc"><i style="font-size:${22 + i * 6}px">${ZOOM[from + i]}</i>${i === hole ? '<span class="slot">?</span>' : `<b>${big(v)}</b>`}${i < len - 1 ? '<em>×10 ▶</em>' : ''}</span>`);
+    return { eq: '', answer: ans, input: 'choice', small: true, choices: bigChoices(ans, [ans * 10, ans / 10, ans * 100, ans / 100, ans / 1000].filter(v => Number.isInteger(v) && v >= 1)), visual: `<div class="zoom">${cells.join('')}</div>`, show: true };
   }
   if (kind === 'times') {
     const div = lvl > 0 && chance(0.4);
@@ -639,7 +639,7 @@ function genMillion(lvl) {
     if (div && a % m) return genMillion(lvl);
     if (div) return { ...numQ(`${big(a)} ÷ ${m} = ?`, a / m), small: true, choices: bigChoices(a / m, [a / m * 10, a / m / 10, a / m * 100].filter(Number.isInteger)) };
     const c = a * m;
-    if (c > 9999999) return genMillion(lvl);
+    if (c > 1000000) return genMillion(lvl);
     return { ...numQ(`${big(a)} × ${m} = ?`, c), small: true, choices: bigChoices(c, [c * 10, c / 10, a * (m + 1)].filter(Number.isInteger)) };
   }
   const n = R(lvl === 0 ? 10000 : 100000, 999999);
@@ -653,7 +653,7 @@ function genMillion(lvl) {
     const opts = [val];
     for (const q of shuffle([p + 1, p - 1, p + 2, p - 2, 0, 1, 2, 3, 4, 5])) {
       const v = d * 10 ** q;
-      if (opts.length < 4 && q >= 0 && q <= 6 && !opts.includes(v)) opts.push(v);
+      if (opts.length < 4 && q >= 0 && v <= 1000000 && !opts.includes(v)) opts.push(v);
     }
     return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, small: true, choices: shuffle(opts).map(v => ({ value: v, html: `<span class="bign">${big(v)}</span>` })) };
   }
@@ -707,6 +707,10 @@ export const QUADS = [
   [[0, 0], [5, 1], [4, 5], [1, 3]],   // any four corners
   [[0, 0], [5, 0], [5, 3], [1, 4]],   // two right corners
 ].map(p => facts(p));
+const PENTAS = [
+  [[0, 0], [4, 0], [5, 3], [2, 5], [-1, 3]],
+  [[0, 0], [5, 0], [5, 3], [2.5, 5], [0, 3]],
+].map(p => facts(p));
 export const TRIS = [
   [[0, 0], [5, 0], [0, 4]],           // right
   [[0, 0], [6, 0], [3, 3 * Math.sqrt(3)]], // equal sides
@@ -755,7 +759,7 @@ function genSort(lvl) {
   const rot = () => (lvl === 2 ? R(0, 7) * 45 : pick([0, 90, 180, 270]));
   const all = [...QUADS, ...TRIS];
   if (kind === 'sides') {
-    const sh = pick(all);
+    const sh = chance(0.25) ? pick(PENTAS) : pick(all);
     return { eq: '?', answer: sh.p.length, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, choices: [3, 4, 5].map(v => ({ value: v, html: String(v) })) };
   }
   if (kind === 'par') {

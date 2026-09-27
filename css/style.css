@@ -678,3 +678,7 @@ svg.die { display: block; margin: auto; }
 .story .panel:last-child { min-width: 52px; }
 .story .groups { max-width: 100%; }
 @media (max-width: 340px) { .story .grp { font-size: 13px; } .story .grp i { font-size: 16px; } .zoom .zc i { font-size: 28px; } }
+.zoom .zc em { font-size: 12px; right: -16px; }
+@media (max-width: 340px) { .zoom .zc em { font-size: 11px; } }
+.zoom { align-items: end; }
+.zoom .zc i { line-height: 1; white-space: nowrap; }
