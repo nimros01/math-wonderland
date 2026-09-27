@@ -385,9 +385,10 @@ function genBoth(lvl) {
   if (kind === 'take') {
     const right = `${kb(a - c)}${b ? ` + ${b}` : ''} = ${d}`;
     const wrongs = [`${kb(a + c)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)}${b ? ` + ${b}` : ''} = ${d - c}`, `${kb(a)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)} = ${d + c}`];
+    // Values stay plain words: the equations hold HTML, which can't go into a button's data attribute.
     const opts = [right, ...wrongs.filter(w => w !== right)].slice(0, 4);
-    return { eq: '⚖️ ?', answer: right, input: 'choice', layout: 'col', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
-      choices: shuffle(opts.map(o => ({ value: o, html: ex(o) }))) };
+    return { eq: '⚖️ ?', answer: 'e0', input: 'choice', layout: 'col', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
+      choices: shuffle(opts.map((o, i) => ({ value: `e${i}`, html: ex(o) }))) };
   }
   if (kind === 'check') {
     const g = chance(0.5) ? v : v + pick([-1, 1, 2]);
