@@ -82,7 +82,11 @@ function scale(left, right, { tilt = 0, take = null } = {}) {
   let body = `<line x1="140" y1="${by}" x2="140" y2="184" stroke="${INK}" stroke-width="6"/><rect x="104" y="180" width="72" height="9" rx="4" fill="${ROCK}" stroke="${INK}" stroke-width="2"/>`;
   body += pan(L, by + tilt, left) + pan(Rt, by - tilt, right);
   body += `<line x1="${L}" y1="${by + tilt}" x2="${Rt}" y2="${by - tilt}" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><circle cx="140" cy="${by}" r="7" fill="${GOLD}" stroke="${INK}" stroke-width="2"/>`;
-  if (take) body += txt(L, by + tilt - 20, take[0], 18, `fill="${LAVA}"`) + txt(Rt, by - tilt - 20, take[1], 18, `fill="${LAVA}"`);
+  // A take-off mark: '−5' or '÷3' as text, or a number of boxes ({ boxes: 2 } draws −2 and a small box).
+  const mark = (x, y, t) => (typeof t === 'object'
+    ? txt(x - 10, y, `−${t.boxes > 1 ? t.boxes : ''}`, 18, `fill="${LAVA}"`) + `<rect x="${x + (t.boxes > 1 ? 4 : -2)}" y="${y - 9}" width="18" height="18" rx="4" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 2"/>` + txt(x + (t.boxes > 1 ? 13 : 7), y + 1, '?', 12, 'fill="#d99a00"')
+    : txt(x, y, t, 18, `fill="${LAVA}"`));
+  if (take) body += mark(L, by + tilt - 20, take[0]) + mark(Rt, by - tilt - 20, take[1]);
   return svg(280, 192, body, 'width="250" height="171"');
 }
 const bal = (l, r, eqHtml, o) => `<div class="vbal">${scale(l, r, o)}${eqHtml ? `<div class="veq">${eqHtml}</div>` : ''}</div>`;
@@ -208,7 +212,7 @@ function genOrder(lvl) {
     if (!okVal(ev(expr))) return genOrder(lvl);
     const parts = ops.map((o, i) => `${nums[i]} ${o} ${nums[i + 1]}`);
     const first = br >= 0 ? br : ops.findIndex(o => o === '×') >= 0 ? ops.findIndex(o => o === '×') : 0;
-    if (new Set(parts).size < parts.length) return genOrder(lvl);
+    if (new Set(parts).size < parts.length || parts.some(p => ev(p) < 0)) return genOrder(lvl);
     return { eq: '1️⃣ ?', answer: `p${first}`, input: 'choice', layout: 'row', visual: veq(expr), show: true, first: true,
       choices: parts.map((p, i) => ({ value: `p${i}`, html: ex(p) })) };
   }
@@ -382,7 +386,7 @@ function genBoth(lvl) {
     const right = `${kb(a - c)}${b ? ` + ${b}` : ''} = ${d}`;
     const wrongs = [`${kb(a + c)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)}${b ? ` + ${b}` : ''} = ${d - c}`, `${kb(a)}${b ? ` + ${b}` : ''} = ${d}`, `${kb(a - c)} = ${d + c}`];
     const opts = [right, ...wrongs.filter(w => w !== right)].slice(0, 4);
-    return { eq: `➖ ${kb(c)} ⚖️ ?`, answer: right, input: 'choice', layout: 'col', visual: bal(L, Rr, eqH, { take: [`−${kb(c)}`, `−${kb(c)}`] }), show: true, take: true,
+    return { eq: '⚖️ ?', answer: right, input: 'choice', layout: 'col', visual: bal(L, Rr, eqH, { take: [{ boxes: c }, { boxes: c }] }), show: true, take: true,
       choices: shuffle(opts.map(o => ({ value: o, html: ex(o) }))) };
   }
   if (kind === 'check') {
