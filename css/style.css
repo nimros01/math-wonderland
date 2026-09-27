@@ -710,3 +710,16 @@ svg.die { display: block; margin: auto; }
 .pc-seg { display: inline-flex; gap: 6px; margin-left: 8px; }
 .pc-cty { font: inherit; font-size: 15px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--card); }
 .pc-cty.on { background: var(--sun); font-weight: 800; }
+
+/* Ten-rods: thicker, further apart, and a small gap after every five so they are easy to count */
+.blocks { gap: 7px; }
+.blocks .bar { width: 18px; border-width: 2.5px; }
+.blocks .bar:nth-of-type(5) { margin-right: 7px; }
+.blocks .ones { grid-template-columns: repeat(2, 16px); gap: 3px; margin-left: 6px; }
+.blocks .ones i { width: 16px; height: 16px; }
+.pairvis { flex-wrap: wrap; justify-content: center; }
+.pairvis .blocks { gap: 5px; }
+.pairvis .blocks .bar { width: 14px; }
+.pairvis .blocks .bar:nth-of-type(5) { margin-right: 5px; }
+.pairvis .blocks .ones { grid-template-columns: repeat(2, 13px); gap: 2px; margin-left: 4px; }
+.pairvis .blocks .ones i { width: 13px; height: 13px; }
