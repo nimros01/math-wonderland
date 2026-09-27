@@ -107,7 +107,7 @@ const BY_STAGE = {
   'o-puz2': q => opuzzle(q),
 };
 
-const DIGIT = 'How much is the red underlined digit worth? For example, in 738 the 7 is worth 700, the 3 is worth 30 and the 8 is worth 8.';
+const DIGIT = 'How much is the red underlined digit worth? It depends on its place: a digit in the tens place is worth that digit times 10, in the hundreds place times 100, and so on.';
 const REM = '🐟 is the remainder: what is left over after sharing equally. For example, 65 ÷ 12 = 5 🐟 5. Find the number in the yellow box.';
 
 function puzzle(q) {
