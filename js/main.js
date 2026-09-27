@@ -14,7 +14,9 @@ function petHTML(p, cls = '') {
   return `<span class="pet ${cls} s${p.pet.stage}">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</span>`;
 }
 
-// Players
+// Players. Each child picks their own animal at every launch; each keeps separate progress.
+const MAX_PLAYERS = 6;
+
 function home() {
   const ps = P.state.profiles;
   app.innerHTML = `
@@ -22,8 +24,11 @@ function home() {
       <h1 class="logo">Math<br>Wonderland</h1>
       <div class="logo-art">🌻 ➕ 🌈 ✖️ 🦋</div>
       <div class="players">
-        ${ps.map(p => `<button class="player" data-id="${p.id}"><span class="av">${p.avatar}</span><span class="pg">💎 ${p.gems}</span></button>`).join('')}
-        ${ps.length < 4 ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
+        ${ps.map(p => `<button class="player${p.id === P.state.current ? ' last' : ''}" data-id="${p.id}" aria-label="Player">
+          <span class="av">${p.avatar}</span>
+          <span class="pmeta">${petHTML(p, 'tiny')}<span class="pst">★ ${Object.values(p.stages).reduce((t, r) => t + (r.stars || 0), 0)}</span></span>
+        </button>`).join('')}
+        ${ps.length < MAX_PLAYERS ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
       </div>
     </div>`;
   app.querySelectorAll('.player[data-id]').forEach(b => {
@@ -38,7 +43,7 @@ function newPlayer() {
     <div class="home">
       <button class="icon-btn back" id="back" aria-label="Back">⬅</button>
       <div class="big-q">🙂 ❓</div>
-      <div class="avatars">${AVATARS.map(a => `<button class="avatar" data-a="${a}">${a}</button>`).join('')}</div>
+      <div class="avatars">${AVATARS.filter(a => !P.state.profiles.some(p => p.avatar === a)).map(a => `<button class="avatar" data-a="${a}">${a}</button>`).join('')}</div>
     </div>`;
   app.querySelector('#back').onclick = () => { sfx.tap(); home(); };
   app.querySelectorAll('.avatar').forEach(b => {
@@ -407,4 +412,4 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-P.me() ? map() : home();
+home();
