@@ -59,7 +59,7 @@ function protractor(deg, { size = 250, label = true } = {}) {
   for (let a = 0; a <= 180; a += 5) {
     const [x1, y1] = pt(a, r), [x2, y2] = pt(a, r - (a % 30 === 0 ? 16 : a % 10 === 0 ? 11 : 6));
     body += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${INK}" stroke-width="${a % 10 ? 1 : 2}"/>`;
-    if (a % 30 === 0) { const [tx, ty] = pt(a, r - 28); body += txt(tx.toFixed(1), ty.toFixed(1), a, 12); }
+    if (a % 30 === 0) { const [tx, ty] = pt(a, r - 28); body += txt(tx.toFixed(1), ty.toFixed(1), a, 14); }
   }
   const [ax, ay] = pt(deg, r + 12);
   body += `<line x1="${cx}" y1="${cy}" x2="${cx + r + 12}" y2="${cy}" stroke="${RED}" stroke-width="5" stroke-linecap="round"/>`;
@@ -280,7 +280,7 @@ function mapGrid(n, marks, { size = 210, route = null } = {}) {
   for (let i = 0; i <= n; i++) {
     body += `<line x1="${o + i * u}" y1="${T}" x2="${o + i * u}" y2="${T + n * u}" stroke="#e0cf9c" stroke-width="${i ? 1 : 3}" ${i ? '' : `stroke="${INK}"`}/>`;
     body += `<line x1="${o}" y1="${T + i * u}" x2="${o + n * u}" y2="${T + i * u}" stroke="#e0cf9c" stroke-width="1"/>`;
-    body += txt(o + i * u, T + n * u + 12, i, 11) + txt(o - 12, T + (n - i) * u, i, 11);
+    body += txt(o + i * u, T + n * u + 12, i, 13) + txt(o - 12, T + (n - i) * u, i, 13);
   }
   body += `<line x1="${o}" y1="${T + n * u}" x2="${o + n * u}" y2="${T + n * u}" stroke="${INK}" stroke-width="3"/><line x1="${o}" y1="${T}" x2="${o}" y2="${T + n * u}" stroke="${INK}" stroke-width="3"/>`;
   if (route) body += `<polyline points="${route.map(([x, y]) => `${o + x * u},${T + (n - y) * u}`).join(' ')}" fill="none" stroke="${RED}" stroke-width="3" stroke-dasharray="6 4"/>`;

@@ -20,19 +20,19 @@ function clipsRow(x, y, n) {
   return out;
 }
 function ruler(x, y, n) {
-  let out = `<rect x="${x - 6}" y="${y}" width="${n * U + 12}" height="30" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2.5"/>`;
+  let out = `<rect x="${x - 9}" y="${y}" width="${n * U + 18}" height="30" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2.5"/>`;
   for (let i = 0; i <= n; i++) {
     out += `<line x1="${x + i * U}" y1="${y}" x2="${x + i * U}" y2="${y + 11}" stroke="${INK}" stroke-width="2"/>`;
-    if (i <= 10 || i % 2 === 0) out += `<text x="${x + i * U}" y="${y + 23}" font-size="12" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
+    if (i <= 10 || i % 2 === 0) out += `<text x="${x + i * U}" y="${y + 23}" font-size="15" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
   }
   return out;
 }
 // A ruler with steps of u picture units.
 function rulerU(x, y, n, u) {
-  let out = `<rect x="${x - 4}" y="${y}" width="${n * u + 8}" height="26" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/>`;
+  let out = `<rect x="${x - 8}" y="${y}" width="${n * u + 16}" height="27" rx="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/>`;
   for (let i = 0; i <= n; i++) {
     out += `<line x1="${x + i * u}" y1="${y}" x2="${x + i * u}" y2="${y + 9}" stroke="${INK}" stroke-width="2"/>`;
-    if (u >= 20 || i % 2 === 0) out += `<text x="${x + i * u}" y="${y + 20}" font-size="11" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
+    if (u >= 20 || i % 2 === 0) out += `<text x="${x + i * u}" y="${y + 21}" font-size="14" font-weight="800" fill="${INK}" text-anchor="middle">${i}</text>`;
   }
   return out;
 }
@@ -67,12 +67,16 @@ function genMeasure(lvl) {
     const a = R(5, 12), b = R(2, a - 1);
     return numQ(`${dot('red')} − ${dot('blue')} = ?`, a - b, [a, b, a + b, a - b + 1], { visual: pic(12 * U + 20, 86, snake(10, 6, a, COL.red) + snake(10, 30, b, COL.blue) + ruler(10, 52, 12)), show: true });
   }
-  // guess first: one centimetre is shown, the answers are far apart
-  const len = R(3, 13);
+  // guess first: one unit square is shown, and its size changes, so the answers range from 2 to about 30
+  const len = R(2, 30), u = pick([8, 10, 12, 15, 20, 25, 32, 40].filter(k => k * len <= 262));
   const opts = [len];
-  for (const d of shuffle([4, -4, 8, -8]).concat([12])) if (opts.length < 4 && len + d > 0 && len + d <= 21) opts.push(len + d);
+  for (const f of shuffle([0.5, 0.6, 1.5, 2, 2.5])) {
+    const v = Math.max(1, Math.round(len * f));
+    if (opts.length < 4 && opts.every(o => Math.abs(o - v) >= Math.max(2, Math.round(len * 0.3)))) opts.push(v);
+  }
+  for (let d = 3; opts.length < 4; d += 2) if (opts.every(o => Math.abs(o - (len + d)) >= 2)) opts.push(len + d);
   return {
-    eq: '≈ ?', answer: len, input: 'choice', layout: 'grid', visual: pic(14 * U + 20, 56, snake(10, 6, len, COL.green) + `<rect x="10" y="32" width="${U}" height="${U}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + U + 6}" y="${32 + U / 2 + 4}" font-size="11" font-weight="800" fill="${INK}">1</text>`), show: true,
+    eq: '≈ ?', answer: len, input: 'choice', layout: 'grid', visual: pic(14 * U + 20, 32 + Math.max(u, 18) + 6, snake(10, 6, len, COL.green, u) + `<rect x="10" y="32" width="${u}" height="${u}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + u + 6}" y="${32 + u / 2 + 5}" font-size="15" font-weight="800" fill="${INK}">1</text>`), show: true,
     choices: shuffle(opts).map(v => ({ value: v, html: String(v) })),
   };
 }
