@@ -208,13 +208,28 @@ function wheel(d, { area = false } = {}) {
     : `<line x1="${60 - R0}" y1="60" x2="${60 + R0}" y2="60" stroke="${RED}" stroke-width="4"/>${txt(60, 44, d, 18, `fill="${RED}" paint-order="stroke" stroke="#fff" stroke-width="5"`)}`;
   return svg(120, 120, body, 'width="120" height="120"');
 }
-const roll = d => `<div class="rollrow">${wheel(d)}<span class="rolltrack"><b>🛞 ➜</b><i></i></span></div>`;
+// One turn: the red rim unrolls flat along the ground, from where the wheel starts to where it stops.
+const slotC = (x, y) => `<circle cx="${x}" cy="${y}" r="13" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 3"/>${txt(x, y, '?', 15, 'fill="#d99a00"')}`;
+function roll(d, c) {
+  const r = 32, x0 = 38, cy = 58, g = cy + r, x1 = x0 + Math.PI * 2 * r;
+  let body = `<line x1="4" y1="${g}" x2="276" y2="${g}" stroke="#c9c2b0" stroke-width="3"/>`;
+  body += `<circle cx="${x1.toFixed(1)}" cy="${cy}" r="${r}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="5 4" opacity=".45"/>`;
+  body += `<line x1="${x0}" y1="${g}" x2="${x1.toFixed(1)}" y2="${g}" stroke="${RED}" stroke-width="7" stroke-linecap="round"/>`;
+  body += `<circle cx="${x0}" cy="${cy}" r="${r}" fill="#fff" stroke="${RED}" stroke-width="7"/><circle cx="${x0}" cy="${cy}" r="4" fill="${INK}"/>`;
+  body += `<line x1="${x0 - r + 5}" y1="${cy}" x2="${x0 + r - 5}" y2="${cy}" stroke="${SKY}" stroke-width="4"/>`;
+  body += d === '?' ? slotC(x0, cy - 14) : txt(x0, cy - 14, d, 17, `fill="${SKY}" paint-order="stroke" stroke="#fff" stroke-width="5"`);
+  body += `<path d="M${x0 + 14} ${cy - r - 6} Q${(x0 + x1) / 2} ${cy - r - 20} ${(x1 - 14).toFixed(1)} ${cy - r - 6}" fill="none" stroke="${INK}" stroke-width="2.5" stroke-dasharray="6 4"/><path d="M${(x1 - 22).toFixed(1)} ${cy - r - 12} l9 6 -9 5" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>`;
+  const mx = ((x0 + x1) / 2).toFixed(1);
+  body += `<path d="M${x0} ${g + 12} v8 H${x1.toFixed(1)} v-8" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+  body += c === '?' ? slotC(mx, g + 34) : txt(mx, g + 34, '≈ ' + c, 18, `fill="${RED}"`);
+  return `<div class="rollpic">${svg(280, g + 50, body, 'width="280" height="' + (g + 50) + '"')}</div>`;
+}
 // The track one turn covers, marked off in wheel widths: three and a bit.
 function rollWidths() {
   const u = 58;
-  let body = `<circle cx="22" cy="22" r="18" fill="#fff" stroke="${INK}" stroke-width="3"/><line x1="4" y1="22" x2="40" y2="22" stroke="${RED}" stroke-width="3"/>`;
+  let body = `<circle cx="22" cy="22" r="18" fill="#fff" stroke="${INK}" stroke-width="3"/><line x1="4" y1="22" x2="40" y2="22" stroke="${SKY}" stroke-width="3"/>`;
   body += `<line x1="4" y1="56" x2="${4 + 3.14 * u}" y2="56" stroke="${INK}" stroke-width="4"/>`;
-  for (let i = 0; i < 3; i++) body += `<line x1="${4 + i * u + 2}" y1="66" x2="${4 + (i + 1) * u - 2}" y2="66" stroke="${RED}" stroke-width="4"/>`;
+  for (let i = 0; i < 3; i++) body += `<line x1="${4 + i * u + 2}" y1="66" x2="${4 + (i + 1) * u - 2}" y2="66" stroke="${SKY}" stroke-width="4"/>`;
   for (let i = 0; i <= 3; i++) body += `<line x1="${4 + i * u}" y1="48" x2="${4 + i * u}" y2="64" stroke="${INK}" stroke-width="2"/>`;
   body += `<line x1="${4 + 3.14 * u}" y1="44" x2="${4 + 3.14 * u}" y2="64" stroke="${INK}" stroke-width="3"/>`;
   return svg(200, 76, body);
@@ -228,7 +243,7 @@ function genCircle(lvl) {
   if (kind === 'around') {
     const d = lvl === 0 ? R(1, 10) : lvl === 1 ? R(2, 20) : pick([R(6, 30), 40, 50, 100]);
     const c = f1(3.14 * d);
-    return textQ('🛞 ➜ ≈ ?', String(c), [String(d), String(2 * d), String(f1(3.14 * d * d)), String(f1(3.14 * d / 2)), String(4 * d)], { visual: roll(d), show: true, around: true });
+    return textQ('🛞 ➜ ≈ ?', String(c), [String(d), String(2 * d), String(f1(3.14 * d * d)), String(f1(3.14 * d / 2)), String(4 * d)], { visual: roll(d, '?'), show: true, around: true });
   }
   if (kind === 'area') {
     const r = lvl < 2 ? R(1, 10) : R(2, 12);
@@ -237,7 +252,7 @@ function genCircle(lvl) {
   }
   // The wheel went about 31.4 in one turn: how wide is it?
   const d = pick([2, 3, 4, 5, 6, 8, 10, 20, 50]);
-  return textQ(`🛞 ➜ ≈ ${f1(3.14 * d)}`, String(d), [String(f1(d / 2)), String(2 * d), String(3 * d), String(d * d)], { visual: roll('?'), show: true, back: true });
+  return textQ(`🛞 ➜ ≈ ${f1(3.14 * d)}`, String(d), [String(f1(d / 2)), String(2 * d), String(3 * d), String(d * d)], { visual: roll('?', f1(3.14 * d)), show: true, back: true });
 }
 
 // ---------- 7. Pyramid builder: volume and surface ----------
@@ -357,15 +372,21 @@ function genMean(lvl) {
 function dotPlot(vals, lo, hi) {
   const u = Math.floor(230 / (hi - lo + 1));
   const count = {}; vals.forEach(v => (count[v] = (count[v] || 0) + 1));
-  const H = Math.max(...Object.values(count)) * 18 + 30, W = (hi - lo + 1) * u + 10;
-  let body = `<line x1="4" y1="${H - 20}" x2="${W - 4}" y2="${H - 20}" stroke="${INK}" stroke-width="2.5"/>`;
+  const H = Math.max(...Object.values(count)) * 18 + 34, W = (hi - lo + 1) * u + 10;
+  let body = `<line x1="4" y1="${H - 24}" x2="${W - 4}" y2="${H - 24}" stroke="${INK}" stroke-width="2.5"/>`;
   for (let v = lo; v <= hi; v++) {
     const x = 5 + (v - lo) * u + u / 2;
-    body += txt(x, H - 8, v, 11);
-    for (let k = 0; k < (count[v] || 0); k++) body += `<circle cx="${x}" cy="${H - 30 - k * 18}" r="7" fill="${SANDD}" stroke="${INK}" stroke-width="1.5"/>`;
+    body += txt(x, H - 6, v, 14);
+    for (let k = 0; k < (count[v] || 0); k++) body += `<circle cx="${x}" cy="${H - 34 - k * 18}" r="7" fill="${SANDD}" stroke="${INK}" stroke-width="1.5"/>`;
   }
   return svg(W, H, body);
 }
+// Sign for "which number has the most dots": a tiny plot whose tallest pile wears a crown, with a yellow box under it (no '?' here: the eq turns every '?' into a slot).
+const TALLEST = `<svg class="tallest" viewBox="0 0 64 64" width="64" height="64" style="vertical-align:middle">`
+  + [[12, 1, '#b9b4a6'], [32, 3, SANDD], [52, 2, '#b9b4a6']].map(([x, n, f]) => Array.from({ length: n }, (_, k) => `<circle cx="${x}" cy="${40 - k * 11}" r="5" fill="${f}" stroke="${INK}" stroke-width="1.5"/>`).join('')).join('')
+  + `<path d="M24 12 l2 -9 5 5 3 -6 3 6 5 -5 2 9 z" fill="#ffc53d" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>`
+  + `<line x1="2" y1="48" x2="62" y2="48" stroke="${INK}" stroke-width="2.5"/>`
+  + `<rect x="25" y="51" width="14" height="12" rx="3" fill="#fff4cc" stroke="#d99a00" stroke-width="2" stroke-dasharray="3 2"/></svg>`;
 function genMedian(lvl) {
   const kind = pick([['camels', 'camels', 'nums'], ['nums', 'camels', 'mode', 'even'], ['even', 'mode', 'nums', 'even']][lvl]);
   if (kind === 'camels') {
@@ -394,7 +415,7 @@ function genMedian(lvl) {
   const best = Math.max(...Object.values(count)), modes = Object.keys(count).filter(v => count[v] === best);
   if (modes.length !== 1) return genMedian(lvl);
   const mode = +modes[0];
-  return numQ('●●● ➜ ?', mode, [mode + 1, mode - 1, mode + 2, mode - 2, lo, hi].filter(v => v > 0 && v !== mode && v !== best), { visual: dotPlot(vals, lo, hi), show: true, mode: true });
+  return numQ(`${TALLEST} ➜ ?`, mode, [mode + 1, mode - 1, mode + 2, mode - 2, lo, hi].filter(v => v > 0 && v !== mode && v !== best), { visual: dotPlot(vals, lo, hi), show: true, mode: true });
 }
 
 // ---------- 11. Same fence, new shape (puzzle stop) ----------

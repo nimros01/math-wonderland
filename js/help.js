@@ -160,10 +160,10 @@ const BY_STAGE = {
     : q.shape === 'tri' ? 'A triangle is half of a slanted rectangle: base × red height, then halve it. How many squares is its area?'
     : 'Cut the slanted corner off and slide it to the other side: it becomes a rectangle. Area = base × the red height (not the slanted side). How many squares?'),
   'd-trap': () => 'Flip a copy of this shape and put it next to it: together they make a slanted rectangle. So the area is (top + bottom) × red height, halved. How many squares?',
-  'd-circle': q => (q.pi3 ? 'Roll the wheel once along the line. The distance it goes is just over how many times its width (the red line)?'
+  'd-circle': q => (q.pi3 ? 'Roll the wheel once along the line. The distance it goes is just over how many times its width (the blue line)?'
     : q.carea ? 'The area of a circle is about 3.14 × red radius × red radius. Which is closest?'
-    : q.back ? 'The wheel rolled this far in one turn, which is about 3.14 × its width. How wide is it?'
-    : 'In one turn a wheel goes about 3.14 × its width (the red line). About how far does it go?'),
+    : q.back ? 'The red edge of the wheel unrolls flat in one turn. That red length is about 3.14 × the blue width. How wide is the wheel?'
+    : 'In one turn the red edge of the wheel unrolls flat along the ground. That red length is about 3.14 × the blue width. How long is it?'),
   'd-vol': q => (q.surface ? 'Paint the whole outside of the box: count the squares on all six faces. How many squares get painted?'
     : has(q.eq, '🧊 ×') ? 'The number shows how many cubes are in one layer. How many cubes are in all the layers together?'
     : has(q.eq, '×') ? 'The volume of a box is length × width × height. Which number goes in the yellow ? box?'
@@ -175,7 +175,7 @@ const BY_STAGE = {
   'd-mean': q => (q.missing ? 'The mean (the level height) is given. Which number is hidden? Tip: all the numbers together must be the mean × how many there are.'
     : q.nums ? 'Find the mean: if every card were the same, what would it be? Add all the numbers and share the total equally among the cards.'
     : 'Move blocks from the tall towers to the short ones until all the towers are the same height. How tall is each tower then?'),
-  'd-median': q => (q.mode ? 'Each dot is one camel at the number under it. Which number under the line has the most dots above it?'
+  'd-median': q => (q.mode ? 'Each dot is one camel at the number under it. Which number under the line has the tallest pile of dots above it (the crown in the sign)?'
     : q.even ? 'Put the numbers in order. There are two in the middle: the median is exactly halfway between them.'
     : 'Line them up from smallest to biggest. Which number is in the middle (the median)?'),
   'd-fence': q => (q.most ? 'All these pens use the same length of fence. Which pen has the most room inside for camels?'
