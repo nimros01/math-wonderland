@@ -2,7 +2,7 @@
 
 A math adventure game for kids that plays in a phone browser. It uses pictures, numbers and sounds, so children who can't read English yet can play.
 
-This is the first prototype: **Meadow**, the first of four worlds, with 13 stages:
+This is the first prototype: **Meadow**, the first of four worlds, with 17 stages and a boss:
 
 | Stage | Skill |
 |---|---|
@@ -13,12 +13,17 @@ This is the first prototype: **Meadow**, the first of four worlds, with 13 stage
 | 🧱 | Tens and ones to 100 |
 | ➕ | Add and subtract to 100, no carrying |
 | 🔄 | Add and subtract to 100, with carrying |
+| 🧩 | Puzzle stop: missing signs, pyramids, balances, pairs |
 | ×2 | Times tables 1, 2, 10 |
 | ×5 | Times table 5 |
 | ×3 | Times tables 3, 4 |
 | ×7 | Times tables 6, 7 |
 | ×9 | Times tables 8, 9 |
 | ✖️ | Table mixer |
+| 🔷 | Shapes: corners and sides, find every matching shape |
+| 🦋 | Mirror pictures, 3D solids, counting triangles |
+| 🧩 | Puzzle stop with times tables |
+| 🧌 | Meadow boss, opens when every stage has a star |
 
 ## How it plays
 
@@ -31,7 +36,35 @@ This is the first prototype: **Meadow**, the first of four worlds, with 13 stage
 - **Rewards**: gems, streak multipliers (×2 at 5 in a row, ×3 at 10), a surprise chest after each cleared round (stickers, pet hats, gems), and a pet that hatches and grows when fed with gems.
 - **Parent corner**: press and hold ⚙️ on the map. It shows progress, can open all stages, turns sound on or off, and deletes a player.
 
-Progress is saved in the browser on the device. Up to 4 players are supported.
+Up to 6 players can share a device; each child taps their own animal when the game opens. Progress is saved in the browser on the device, and can also be shared between devices with family sync.
+
+## Family sync (optional)
+
+Family sync shares players between phones and tablets. One device creates a family code, and every other device types the same code. The game keeps working offline and syncs when it's back online. It stores only the animal, stars, gems, pet and stickers, never names.
+
+It uses a free Firebase project. One-time setup:
+
+1. Go to https://console.firebase.google.com, click **Create a project**, name it (for example `math-wonderland`) and turn Google Analytics off.
+2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable → Save.**
+3. **Build → Firestore Database → Create database.** Pick a location near you and choose **production mode**.
+4. In Firestore open the **Rules** tab, replace everything with the rules below and click **Publish**:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /families/{code} {
+         allow get, create, update: if request.auth != null && code.size() == 10;
+       }
+     }
+   }
+   ```
+
+   Devices can only open a family whose code they know; nobody can list families or delete them.
+5. **Project settings (⚙️ next to Project Overview) → General → Your apps → Web (`</>`).** Give it a nickname and click **Register app** (Firebase Hosting isn't needed).
+6. From the config it shows, copy `apiKey` and `projectId` into `js/cloud-config.js`. These two values are public identifiers, not passwords.
+
+Then, on the player screen, press and hold ⚙️ in the corner to open **Family sync**.
 
 ## Run it
 
@@ -46,9 +79,10 @@ Then open http://localhost:8000. On GitHub Pages, publish the `main` branch root
 ## Code map
 
 - `js/skills.js`: stages and their question generators
-- `js/play.js`: a round (normal, golden gate, placement) and the watch-then-try demo
+- `js/play.js`: a round (normal, golden gate, placement, boss) and the watch-then-try demo
 - `js/main.js`: screens (players, map, results, pet, parent corner)
 - `js/visuals.js`: picture aids
 - `js/progress.js`: saving, players, pet growth
+- `js/cloud.js`, `js/cloud-config.js`: family sync (Firebase REST, no SDK)
 - `js/audio.js`: sound effects made with Web Audio
 - `sw.js`: offline support

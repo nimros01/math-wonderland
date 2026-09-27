@@ -1,8 +1,8 @@
 // Offline support. Game files come from the network when it's there, so a new version shows up on
 // the next launch; the cache is only a fallback for playing offline.
-const CACHE = 'mw-v2';
+const CACHE = 'mw-v3';
 const FILES = ['./', 'index.html', 'css/style.css', 'js/main.js', 'js/play.js', 'js/skills.js',
-  'js/visuals.js', 'js/progress.js', 'js/audio.js', 'icon.svg', 'manifest.webmanifest'];
+  'js/visuals.js', 'js/progress.js', 'js/audio.js', 'js/cloud.js', 'js/cloud-config.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -13,6 +13,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (/googleapis\.com$/.test(new URL(e.request.url).hostname) && !e.request.url.includes('fonts.')) return; // family sync goes straight to the network
   e.respondWith(
     fetch(e.request)
       .then(r => {

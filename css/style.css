@@ -550,3 +550,11 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
 .player .pet.tiny { font-size: 22px; position: relative; }
 .player .pst { color: #d99a00; }
 .player.last { box-shadow: 0 6px 0 var(--ink), 0 0 0 5px var(--sun); }
+
+/* family sync */
+.pc-btn.primary { background: var(--mint); color: #fff; border-color: var(--ink); font-weight: 700; }
+.fam-join { display: flex; gap: 8px; }
+.fam-join input { flex: 1; min-width: 0; font: 600 18px ui-monospace, monospace; letter-spacing: 1px; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 12px; text-transform: uppercase; }
+.fam-code { font: 800 28px ui-monospace, monospace; letter-spacing: 2px; text-align: center; background: #fff4cc; border: 2px dashed #d99a00; border-radius: 14px; padding: 10px; user-select: all; }
+.fam-msg { margin: 0; font-size: 15px; font-weight: 600; color: #1e7a52; }
+.fam-err { color: #b3261e; font-weight: 400; }

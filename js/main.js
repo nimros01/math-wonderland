@@ -3,6 +3,7 @@ import * as P from './progress.js';
 import { sfx, unlockAudio } from './audio.js';
 import { STAGES, LEARN, STICKERS, HATS, AVATARS } from './skills.js';
 import { startRound, BOSS } from './play.js';
+import * as C from './cloud.js';
 
 const app = document.getElementById('app');
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -30,7 +31,9 @@ function home() {
         </button>`).join('')}
         ${ps.length < MAX_PLAYERS ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
       </div>
+      <button class="gear" id="cloud" aria-label="Family sync, press and hold"><span>⚙️</span><i id="cloudfill"></i></button>
     </div>`;
+  holdToOpen(app.querySelector('#cloud'), app.querySelector('#cloudfill'), () => familyPanel(home));
   app.querySelectorAll('.player[data-id]').forEach(b => {
     b.onclick = () => { sfx.tap(); P.state.current = b.dataset.id; P.save(); map(); };
   });
@@ -392,14 +395,16 @@ function parentCorner() {
       <label class="pc-row"><input type="checkbox" id="pc-sound" ${P.state.muted ? '' : 'checked'}> Sound effects</label>
       <div class="pc-btns">
         <button class="pc-btn danger" id="pc-del">Delete this player</button>
+        <button class="pc-btn" id="pc-family">☁️ Family sync</button>
         <button class="pc-btn" id="pc-close">Close</button>
       </div>
-      <p class="pc-note">Progress is saved in this browser on this device only.</p>
+      <p class="pc-note">${C.family() ? 'Players are shared with every device that uses your family code.' : 'Progress is saved in this browser on this device only.'}</p>
     </div>`;
   app.appendChild(ov);
   ov.querySelector('#pc-unlock').onchange = e => { p.unlockAll = e.target.checked; P.save(); };
   ov.querySelector('#pc-sound').onchange = e => { P.state.muted = !e.target.checked; P.save(); };
   ov.querySelector('#pc-close').onclick = () => { ov.remove(); map(); };
+  ov.querySelector('#pc-family').onclick = () => { ov.remove(); familyPanel(map); };
   const del = ov.querySelector('#pc-del');
   del.onclick = () => {
     if (del.dataset.sure) { P.removeProfile(p.id); ov.remove(); home(); return; }
@@ -408,8 +413,73 @@ function parentCorner() {
   };
 }
 
+// Family sync panel (for parents, so it uses words). Players sync between devices with the same code.
+function familyPanel(back) {
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  const ago = t => { const m = Math.round((Date.now() - t) / 60000); return !t ? 'not yet' : m < 1 ? 'just now' : m < 60 ? `${m} min ago` : new Date(t).toLocaleString(); };
+  const render = (msg = '') => {
+    const fam = C.family();
+    let body;
+    if (!C.configured()) {
+      body = `<p class="pc-sum">Family sync isn't switched on for this copy of the game yet. It needs a free Firebase project; see the setup steps in the game's README.</p>`;
+    } else if (!fam) {
+      body = `
+        <p class="pc-sum">Share players between phones and tablets. Create a family code here, then type the same code on each other device.</p>
+        <button class="pc-btn primary" id="fam-new">Create a family code</button>
+        <div class="fam-join">
+          <input id="fam-code" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXX-XXX" maxlength="14">
+          <button class="pc-btn" id="fam-join">Join</button>
+        </div>`;
+    } else {
+      body = `
+        <p class="pc-sum">Family code</p>
+        <div class="fam-code">${C.formatCode(fam)}</div>
+        <p class="pc-note">Type this code on another device (hold ⚙️ on the player screen) to share these players. Keep it in the family: anyone with the code can see and change the players.</p>
+        <p class="pc-sum">Last synced: <b>${ago(C.lastSync())}</b>${C.lastError ? ` <span class="fam-err">(${C.lastError === 'offline' ? 'offline, will retry' : 'couldn’t reach the server, will retry'})</span>` : ''}</p>
+        <div class="pc-btns">
+          <button class="pc-btn" id="fam-sync">Sync now</button>
+          <button class="pc-btn danger" id="fam-leave">Stop syncing</button>
+        </div>`;
+    }
+    ov.innerHTML = `
+      <div class="popup parent">
+        <h2>☁️ Family sync</h2>
+        ${body}
+        ${msg ? `<p class="fam-msg">${msg}</p>` : ''}
+        <label class="pc-row"><input type="checkbox" id="pc-sound" ${P.state.muted ? '' : 'checked'}> Sound effects</label>
+        <button class="pc-btn" id="fam-close">Close</button>
+      </div>`;
+    const $ = id => ov.querySelector('#' + id);
+    const busy = b => { b.disabled = true; b.textContent = '…'; };
+    $('fam-close').onclick = () => { ov.remove(); back(); };
+    $('pc-sound').onchange = e => { P.state.muted = !e.target.checked; P.writeLocal(); };
+    if ($('fam-new')) $('fam-new').onclick = async e => { busy(e.target); await C.createFamily(); render(C.lastError ? 'Couldn’t reach the server. The code is saved and will sync when the connection is back.' : ''); };
+    if ($('fam-join')) $('fam-join').onclick = async e => {
+      busy(e.target);
+      const r = await C.joinFamily($('fam-code').value);
+      render({ ok: 'Joined! Players from the family are now on this device.', short: 'The code has 10 letters and numbers.', missing: 'No family with that code. Check the letters and try again.', error: 'Couldn’t reach the server. Check the internet connection.' }[r]);
+    };
+    if ($('fam-sync')) $('fam-sync').onclick = async e => { busy(e.target); await C.sync(); render(); };
+    if ($('fam-leave')) $('fam-leave').onclick = e => {
+      if (!e.target.dataset.sure) { e.target.dataset.sure = '1'; e.target.textContent = 'Tap again to stop'; return; }
+      C.leaveFamily(); render('This device stopped syncing. Its players stay here.');
+    };
+  };
+  render();
+  app.appendChild(ov);
+}
+
+// When another device changes the players, refresh the player screen or map if it's showing.
+C.onRemoteChange(() => {
+  if (document.querySelector('.overlay')) return;
+  if (app.querySelector('.players')) home();
+  else if (app.querySelector('#scroller')) map();
+});
+
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 home();
+C.sync();

@@ -9,8 +9,19 @@ let saved = null;
 try { saved = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* storage blocked */ }
 export const state = saved && saved.v === 1 ? saved : fresh();
 
-export function save() {
+// save() marks the current player as changed (for family sync); writeLocal() only stores.
+const listeners = [];
+export const onSave = fn => listeners.push(fn);
+
+export function writeLocal() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+}
+
+export function save() {
+  const p = me();
+  if (p) p.updated = Date.now();
+  writeLocal();
+  listeners.forEach(fn => fn());
 }
 
 export function me() {
@@ -27,6 +38,7 @@ export function addProfile(avatar) {
     stickers: [],
     hats: [],
     unlockAll: false,
+    updated: Date.now(),
   };
   state.profiles.push(p);
   state.current = p.id;
@@ -37,6 +49,7 @@ export function addProfile(avatar) {
 export function removeProfile(id) {
   state.profiles = state.profiles.filter(p => p.id !== id);
   if (state.current === id) state.current = null;
+  (state.deleted ||= {})[id] = Date.now(); // so other synced devices remove it too
   save();
 }
 
