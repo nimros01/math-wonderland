@@ -242,6 +242,45 @@ const BY_STAGE = {
     : q.ways ? 'In how many ways can two dice add up to this total? Count the squares in the grid with that number.'
     : q.prob ? 'Two dice can land in 36 ways. How many of the 36 make this total? That is its chance.'
     : isCmp(q) ? 'Which total is more likely with two dice? Count the ways each can happen in the grid. ' + CMP : null),
+  's-grid': q => (q.find ? 'The star map goes below zero both ways. The first number says how far right (or left, if it has a minus), the second how far up (or down). Which thing is at that spot?'
+    : q.move ? 'Start at the alien. Go the steps shown: first left or right, then up or down. At which point do you end?'
+    : q.dist ? 'Both things are on one line. Count the squares from one to the other, across zero. How many steps apart are they?'
+    : q.mirror ? 'The red dashed line is a mirror. Where is the reflection of the thing: the same distance on the other side of the mirror?'
+    : 'Which pair of numbers tells where the thing is? First how far right or left (minus means left), then how far up or down (minus means down).'),
+  's-pair': q => (has(q.eq, '+') ? 'Each picture stands for a secret number, the same every time it appears. Use one line to find a picture, then use it in the next line. What do all three pictures add up to?'
+    : 'Each picture stands for a secret number, the same every time it appears. Start with the line that has only one kind of picture, then use it in the next line. Which number is the picture in the question?'),
+  's-sys': q => (q.double ? 'The first line says one big picture is worth the same as a few of the other picture. Swap it in the second line, then share out the total. Which number is the picture?'
+    : q.times ? 'A number in front of a picture means that many of it. Compare the two lines: take the second away from the first as many times as helps. Which number is the picture?'
+    : 'Each picture is a secret number. Two clues: what they make together and what they make taken away (or the same pictures in different amounts). Which number is the picture?'),
+  's-swap': q => (q.which ? 'The first line says the blue picture on the left is the same as the blue part on its right. Put that part in place of the blue picture in the second line. Which line do you get?'
+    : 'The first line says the blue picture is the same as the blue part on its right. Put that part in its place in the second line, so only one kind of picture is left, and solve it. ' + (q.solveB || q.dbl ? 'Then find the picture in the question.' : 'Which number is the picture?')),
+  's-stack': q => (q.add ? 'Add the two lines together, left sides and right sides. The crossed-out pictures cancel: one is added and one taken away. What is the total?'
+    : q.sub ? 'Take the second line away from the first, left sides and right sides. The crossed-out pictures are in both lines, so they cancel. What is left?'
+    : q.scale ? 'Take the second line away from the first. The crossed-out pictures cancel and one picture is left on its own. Find it, then use the second line to find the picture in the question.'
+    : q.askB ? 'Add the two lines to cancel the crossed-out pictures and find the other picture. Then put it back into the first line. Which number is the picture in the question?'
+    : 'Add the two lines together: the crossed-out pictures cancel. Then share the total. Which number is the picture?'),
+  's-rule': q => (q.rule ? 'A machine changes each top number (x) into the bottom number (y) with the same rule every time. Which rule works for every pair in the table?'
+    : q.back ? 'The machine uses the same rule for every pair in the table. Which number went in to make this number come out?'
+    : 'A machine changes each top number (x) into the bottom number (y) with the same rule every time. Find the rule, then use it on the new number. What comes out?'),
+  's-xy': q => (q.cross ? 'Each coloured line is every point that fits one clue. The point where the two lines cross fits both. Which point is it?'
+    : q.check ? 'Put these numbers in place of x and y in both lines. Do both lines come out right? Tap ✓ or ✗.'
+    : q.sub ? 'The first line says what y is made of. Put that in place of y in the second line, then solve it. Which number is the letter in the question?'
+    : q.sneg ? 'Add the two lines: the y parts cancel, which gives x. Then put x back into a line to find y. Numbers can be below zero.'
+    : 'x and y are secret numbers. Add the two lines together: the y parts cancel and you get two x. Then find the letter in the question.'),
+  's-story': q => (q.legs ? 'Read the story: there are this many chickens and rabbits, and this many legs in all. A chicken has 2 legs, a rabbit 4. How many rabbits are there?'
+    : q.price ? 'Read the story: the first picture shows what some ice creams and a doughnut cost, the second one ice cream and a doughnut. What does one ice cream cost?'
+    : q.double ? 'Read the story: cats and dogs together, and there are twice as many dogs as cats. How many cats are there?'
+    : q.more3 ? 'Read the story: cats, dogs and birds together. There are a few more dogs than cats, and the same number more birds than dogs. How many cats are there?'
+    : 'Read the story: cats and dogs together, and there are this many more dogs than cats. How many are there of the animal in the last picture?'),
+  's-mix': q => (q.kenken ? `Logic grid: each row and each column has every number from 1 to ${q.n} once. The numbers in a box with thick walls make the small number in its corner with its sign. Which number goes in the yellow ? square?`
+    : q.pgrid ? 'Each picture stands for a secret number. Every row adds up to the number on its right. Start with the row of three same pictures. ' + (q.all ? 'What do the three pictures add up to?' : 'Which number is the picture in the question?')
+    : q.trail ? 'Start with the first number and do each step in turn, from left to right. Where do you end?' : null),
+  's-speed': q => (q.x ? 'Find x: take away the added number, then share out what is left.'
+    : q.sq ? 'The small 2 means the number times itself.'
+    : q.half ? 'Half of the number: share it into two equal parts.'
+    : q.pct ? 'Percent means out of 100: 50% is half, 25% is a quarter and 10% is a tenth.'
+    : q.neg ? 'Start below zero and go up by the number added.'
+    : 'A quick one from all the worlds: work out the calculation in your head.'),
 };
 
 const DIGIT = 'How much is the red underlined digit worth? It depends on its place: a digit in the tens place is worth that digit times 10, in the hundreds place times 100, and so on.';

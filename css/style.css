@@ -819,6 +819,35 @@ svg.die { display: block; margin: auto; }
 .answers.col .choice { min-height: 48px; padding-top: 2px; padding-bottom: 2px; }
 .choice .ex .mbox { font-size: 1em; }
 .choice .exs { font-size: 17px; letter-spacing: -.3px; }
+/* Space */
+.map.w-space { background: linear-gradient(180deg, #2a2466 0%, #3d3a8f 45%, #6b5bd6 100%); }
+.map.w-space .trail polyline { stroke: #ffe680; opacity: .8; }
+.map.w-space .node.locked { background: #9c95d6; }
+.vy { color: #2f6fd0; }
+.choice .pt { white-space: nowrap; font-size: 22px; letter-spacing: -.5px; }
+.answers.col .choice .exs { font-size: 21px; }
+.sys { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 26px; font-weight: 800; }
+.sys > div { white-space: nowrap; letter-spacing: -.3px; }
+.swp { display: inline-block; border: 3px solid #3e9be0; border-radius: 10px; padding: 0 5px; background: #e3f1fc; }
+.stk { display: inline-flex; flex-direction: column; align-items: stretch; gap: 4px; font-size: 25px; font-weight: 800; }
+.stk > div { white-space: nowrap; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stk .op { font-size: .8em; min-width: 1.1em; }
+.stk hr { width: 100%; border: 0; border-top: 4px solid var(--ink); margin: 2px 0; }
+.gone { position: relative; display: inline-block; opacity: .5; }
+.gone::after { content: ''; position: absolute; left: -2px; right: -2px; top: 50%; border-top: 4px solid #ef5b52; transform: rotate(-20deg); }
+.rtab { border-collapse: collapse; font-size: 22px; font-weight: 800; }
+.rtab th, .rtab td { border: 3px solid var(--ink); padding: 4px 10px; min-width: 34px; text-align: center; background: #fff; }
+.rtab th { background: #e6e3ff; }
+.ntrail { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 4px; max-width: 290px; font-size: 24px; font-weight: 800; }
+.ntrail b { min-width: 40px; height: 40px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 50%; background: #fff4cc; padding: 0 4px; }
+.ntrail span { padding: 2px 8px; border-radius: 10px; background: #e6e3ff; white-space: nowrap; }
+.ntrail i { font-style: normal; font-size: 18px; opacity: .6; }
+.sstory .panel { font-size: 21px; max-width: 136px; }
+.sstory .panel > span { white-space: nowrap; }
+.sstory .panel .num { font-size: 22px; }
+.pgrid { border-collapse: separate; border-spacing: 4px; font-size: 26px; }
+.pgrid td { width: 44px; height: 44px; text-align: center; background: #eef0ff; border-radius: 10px; }
+.pgrid th { padding-left: 8px; font-size: 24px; font-weight: 800; color: #8a5cf6; }
 .eq sup.psup { font-size: .9em; vertical-align: .5em; line-height: 0; }
 .eq sup.psup .slot { font-size: 1em; min-width: 1.1em; min-height: 1.1em; }
 /* Picture stories: the middle picture moves instead of showing an arrow */

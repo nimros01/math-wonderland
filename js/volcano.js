@@ -10,12 +10,12 @@ const svg = (w, h, body, size = '') => `<svg class="shape" viewBox="0 0 ${w} ${h
 const txt = (x, y, t, s = 14, extra = '') => `<text x="${x}" y="${y}" font-size="${s}" font-weight="800" fill="${INK}" text-anchor="middle" dominant-baseline="central" ${extra}>${t}</text>`;
 
 // A number with a real minus sign.
-const M = n => (n < 0 ? `−${-n}` : String(n));
+export const M = n => (n < 0 ? `−${-n}` : String(n));
 const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 const sup = n => String(n).split('').map(d => SUP[d]).join('');
 // The mystery box outside the answer slot (a '?' in eq always becomes the slot), and the letter x.
 const BOX = '<span class="mbox"></span>';
-const X = '<i class="vx">x</i>';
+export const X = '<i class="vx">x</i>';
 const ex = s => `<span class="ex">${s}</span>`;
 
 // Answer bubbles that may be below zero.
@@ -25,13 +25,13 @@ function intChoices(ans, near = [], neg = true) {
   for (let d = 1; set.size < 3; d++) for (const c of shuffle([ans + d, ans - d])) if (set.size < 3 && ok(c)) set.add(c);
   return shuffle([ans, ...set]).map(v => ({ value: v, html: M(v) }));
 }
-function intQ(eq, ans, near, extra = {}) {
+export function intQ(eq, ans, near, extra = {}) {
   const q = { eq, answer: ans, input: 'choice', choices: intChoices(ans, near, extra.neg !== false), visual: null, show: false, ...extra };
   // The number keys have no minus and take three digits, so these stay as bubbles.
   if ((ans < 0 || ans > 999) && !q.layout) q.layout = 'grid';
   return q;
 }
-const tfOwn = (eq, truth, extra = {}) => ({
+export const tfOwn = (eq, truth, extra = {}) => ({
   eq, answer: truth ? 'y' : 'n', input: 'choice', layout: 'row', visual: null, show: false,
   choices: [{ value: 'y', html: '✓' }, { value: 'n', html: '✗' }], tf: true, own: true, ...extra,
 });
