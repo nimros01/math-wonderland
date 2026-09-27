@@ -28,10 +28,11 @@ export function me() {
   return state.profiles.find(p => p.id === state.current) || null;
 }
 
-export function addProfile(avatar) {
+export function addProfile(avatar, name = '') {
   const p = {
     id: Date.now().toString(36),
     avatar,
+    name: name.trim().slice(0, 14),
     gems: 0,
     pet: { kind: Math.floor(Math.random() * 3), stage: 0, xp: 0, hat: null },
     stages: {},

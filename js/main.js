@@ -6,6 +6,7 @@ import { startRound, BOSS } from './play.js';
 import * as C from './cloud.js';
 
 const app = document.getElementById('app');
+const esc = t => String(t).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const starsHTML = n => [1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('');
 
@@ -27,6 +28,7 @@ function home() {
       <div class="players">
         ${ps.map(p => `<button class="player${p.id === P.state.current ? ' last' : ''}" data-id="${p.id}" aria-label="Player">
           <span class="av">${p.avatar}</span>
+          ${p.name ? `<span class="pname">${esc(p.name)}</span>` : ''}
           <span class="pmeta">${petHTML(p, 'tiny')}<span class="pst">★ ${Object.values(p.stages).reduce((t, r) => t + (r.stars || 0), 0)}</span></span>
         </button>`).join('')}
         ${ps.length < MAX_PLAYERS ? '<button class="player add" id="add" aria-label="New player"><span class="av">＋</span></button>' : ''}
@@ -50,8 +52,30 @@ function newPlayer() {
     </div>`;
   app.querySelector('#back').onclick = () => { sfx.tap(); home(); };
   app.querySelectorAll('.avatar').forEach(b => {
-    b.onclick = () => { sfx.ok(); P.addProfile(b.dataset.a); startChoice(); };
+    b.onclick = () => { sfx.ok(); nameStep(b.dataset.a); };
   });
+}
+
+// A grown-up types the child's name, so the same child is easy to spot on every device. Optional.
+function nameStep(avatar) {
+  app.innerHTML = `
+    <div class="home">
+      <button class="icon-btn back" id="back" aria-label="Back">⬅</button>
+      <div class="big-q">${avatar}</div>
+      <form class="namebox" id="nameform">
+        <input id="pname" maxlength="14" autocomplete="off" placeholder="✏️" aria-label="Child's name">
+        <button class="bigbtn green" id="nameok" aria-label="OK">✔</button>
+      </form>
+    </div>`;
+  const input = app.querySelector('#pname');
+  setTimeout(() => input.focus(), 50);
+  app.querySelector('#back').onclick = () => { sfx.tap(); newPlayer(); };
+  app.querySelector('#nameform').onsubmit = e => {
+    e.preventDefault();
+    sfx.ok();
+    P.addProfile(avatar, input.value);
+    startChoice();
+  };
 }
 
 // Start from the beginning, or take the placement quest to skip what you know.
@@ -387,10 +411,11 @@ function parentCorner() {
   ov.innerHTML = `
     <div class="popup parent">
       <h2>Parent corner</h2>
-      <p class="pc-sum">${p.avatar} has cleared <b>${done} of ${STAGES.length}</b> Meadow stages and holds <b>${p.gems}</b> gems.</p>
+      <p class="pc-sum">${p.avatar}${p.name ? ' ' + esc(p.name) : ''} has cleared <b>${done} of ${STAGES.length}</b> Meadow stages and holds <b>${p.gems}</b> gems.</p>
       <table class="pc-table">
         ${STAGES.map(s => { const r = p.stages[s.id]; return `<tr><td>${s.icon}</td><td><span class="stars">${starsHTML(r?.stars || 0)}</span></td><td>${r?.plays || 0} plays</td></tr>`; }).join('')}
       </table>
+      <label class="pc-row">Name <input type="text" id="pc-name" maxlength="14" value="${esc(p.name || '')}" autocomplete="off"></label>
       <label class="pc-row"><input type="checkbox" id="pc-unlock" ${p.unlockAll ? 'checked' : ''}> Open all stages</label>
       <label class="pc-row"><input type="checkbox" id="pc-sound" ${P.state.muted ? '' : 'checked'}> Sound effects</label>
       <div class="pc-btns">
@@ -401,6 +426,7 @@ function parentCorner() {
       <p class="pc-note">${C.family() ? 'Players are shared with every device that uses your family code.' : 'Progress is saved in this browser on this device only.'}</p>
     </div>`;
   app.appendChild(ov);
+  ov.querySelector('#pc-name').onchange = e => { p.name = e.target.value.trim().slice(0, 14); P.save(); };
   ov.querySelector('#pc-unlock').onchange = e => { p.unlockAll = e.target.checked; P.save(); };
   ov.querySelector('#pc-sound').onchange = e => { P.state.muted = !e.target.checked; P.save(); };
   ov.querySelector('#pc-close').onclick = () => { ov.remove(); map(); };
@@ -435,7 +461,7 @@ function familyPanel(back) {
       body = `
         <p class="pc-sum">Family code</p>
         <div class="fam-code">${C.formatCode(fam)}</div>
-        <p class="pc-note">Type this code on another device (hold ⚙️ on the player screen) to share these players. Keep it in the family: anyone with the code can see and change the players.</p>
+        <p class="pc-note">Type this code on another device (hold ⚙️ on the player screen) to share these players. Keep it in the family: anyone with the code can see and change the players (animal, name and progress).</p>
         <p class="pc-sum">Last synced: <b>${ago(C.lastSync())}</b>${C.lastError ? ` <span class="fam-err">(${C.lastError === 'offline' ? 'offline, will retry' : 'couldn’t reach the server, will retry'})</span>` : ''}</p>
         <div class="pc-btns">
           <button class="pc-btn" id="fam-sync">Sync now</button>

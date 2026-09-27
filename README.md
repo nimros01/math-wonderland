@@ -40,7 +40,7 @@ Up to 6 players can share a device; each child taps their own animal when the ga
 
 ## Family sync (optional)
 
-Family sync shares players between phones and tablets. One device creates a family code, and every other device types the same code. The game keeps working offline and syncs when it's back online. It stores only the animal, stars, gems, pet and stickers, never names.
+Family sync shares players between phones and tablets. One device creates a family code, and every other device types the same code. The game keeps working offline and syncs when it's back online. It stores each player's animal, the name a parent typed (a first name or nickname is enough), stars, gems, pet and stickers. A child added separately on two devices with the same animal and name becomes one player after syncing.
 
 It uses a free Firebase project. One-time setup:
 

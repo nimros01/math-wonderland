@@ -112,6 +112,32 @@ function replaceInPlace(target, src) {
   Object.assign(target, src);
 }
 
+// A child added separately on two devices (same animal and name) becomes one player.
+// Every device picks the same survivor (the smallest id), so they all end up agreeing.
+const twinKey = p => (p.name ? p.avatar + '|' + p.name.trim().toLowerCase() : null);
+function mergeTwins(st) {
+  const groups = {};
+  for (const p of st.profiles) { const k = twinKey(p); if (k) (groups[k] ||= []).push(p); }
+  let changed = false;
+  for (const g of Object.values(groups)) {
+    if (g.length < 2) continue;
+    g.sort((a, b) => (a.id < b.id ? -1 : 1));
+    const keep = g[0];
+    let m = keep;
+    for (const other of g.slice(1)) {
+      m = mergeProfiles(m, other);
+      st.deleted[other.id] = Date.now();
+      if (st.current === other.id) st.current = keep.id;
+    }
+    m.id = keep.id;
+    m.updated = Math.max(...g.map(p => p.updated || 0));
+    replaceInPlace(keep, m);
+    st.profiles = st.profiles.filter(p => p === keep || !g.includes(p));
+    changed = true;
+  }
+  return changed;
+}
+
 let running = null;
 export function sync() {
   if (!configured() || !family()) return Promise.resolve(false);
@@ -127,7 +153,6 @@ async function doSync() {
   let changed = false;
   try {
     const remote = (await readFamily(code)) || {};
-    const push = [];
     for (const [id, r] of Object.entries(remote)) {
       const local = st.profiles.find(p => p.id === id);
       const tomb = st.deleted[id];
@@ -138,17 +163,20 @@ async function doSync() {
           changed = true;
         }
         if (!tomb || tomb < r.updated) st.deleted[id] = r.updated;
-        if (local && (local.updated || 0) > r.updated) push.push([id, local]);
         continue;
       }
-      if (tomb && tomb >= (r.updated || 0)) { push.push([id, { deleted: true, updated: tomb }]); continue; }
+      if (tomb && tomb >= (r.updated || 0)) continue;
       if (!local) { st.profiles.push(r); changed = true; continue; }
       const m = mergeProfiles(local, r);
       if (!same(m, local)) { replaceInPlace(local, m); changed = true; }
-      if (!same(m, r)) push.push([id, m]);
     }
-    for (const p of st.profiles) if (!remote[p.id]) push.push([p.id, p]);
-    for (const [id, t] of Object.entries(st.deleted)) if (!remote[id]) push.push([id, { deleted: true, updated: t }]);
+    if (mergeTwins(st)) changed = true;
+    // Send whatever the server doesn't have yet.
+    const push = [];
+    for (const p of st.profiles) if (!same(p, remote[p.id])) push.push([p.id, p]);
+    for (const [id, t] of Object.entries(st.deleted)) {
+      if (!remote[id]?.deleted && !st.profiles.some(p => p.id === id)) push.push([id, { deleted: true, updated: t }]);
+    }
     await writePlayers(code, push);
     cfg.last = Date.now();
     store();
