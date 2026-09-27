@@ -102,6 +102,8 @@ function mergeProfiles(a, b) {
   m.stickers = [...new Set([...(m.stickers || []), ...(older.stickers || [])])];
   m.hats = [...new Set([...(m.hats || []), ...(older.hats || [])])];
   m.bossMeadow = !!(m.bossMeadow || older.bossMeadow);
+  // Worlds already said hello on either phone don't say it again.
+  if (m.seenW || older.seenW) m.seenW = [...new Set([...(m.seenW || [0]), ...(older.seenW || [])])].sort((x, y) => x - y);
   // Each world's pet keeps the more grown copy (a phone on an older version may not have them all).
   for (const [w, pet] of Object.entries(older.pets || {})) {
     const n = (m.pets ||= {})[w];

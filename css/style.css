@@ -243,7 +243,7 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
   background: var(--card);
   border: 4px solid var(--ink);
   border-radius: 28px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center;
   gap: 14px;
   padding: 14px 10px;
   min-height: 0;
@@ -762,3 +762,14 @@ svg.die { display: block; margin: auto; }
 .mixrow span { display: inline-flex; flex-wrap: wrap; }
 .mixc { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; }
 .mixc b { white-space: nowrap; }
+
+.cgroups.many .cgroup { font-size: 13px; max-width: 70px; }
+.onebox { display: inline-flex; align-items: center; gap: 6px; font-size: 26px; }
+.rowbox { display: inline-grid; grid-template-columns: repeat(6, 12px); gap: 3px; padding: 4px; border: 3px solid var(--ink); border-radius: 8px; background: #ffe3ef; }
+.rowbox.two { grid-template-columns: repeat(3, 12px); }
+.rowbox i { width: 12px; height: 12px; border-radius: 50%; background: #f28dbb; border: 1.5px solid var(--ink); box-sizing: border-box; }
+.okmark { color: #2fb383; font-size: 26px; }
+.nomark { color: #ef5b52; font-size: 26px; margin-right: 4px; }
+.ptag { display: inline-block; padding: 0 .3em; background: #fff4cc; border: 3px solid var(--ink); border-radius: 8px 22px 22px 8px; }
+.ratecard { display: flex; align-items: center; gap: 10px; font-size: 26px; padding: 6px 12px; border: 3px dashed var(--ink); border-radius: 14px; background: #fff; flex-wrap: wrap; justify-content: center; max-width: 280px; }
+.ratecard span { display: inline-flex; flex-wrap: wrap; max-width: 150px; }

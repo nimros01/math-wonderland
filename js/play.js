@@ -30,7 +30,7 @@ export function startRound(app, opts) {
   const startLvl = mode === 'normal' ? Math.max(0, (P.stageRec(p, stage.id).stars || 0) - 1) : 2;
   const st = {
     i: 0, correct: 0, streak: 0, best: 0, lvl: startLvl, gems: 0, redo: [], busy: true, demo: false, lastKey: '',
-    goldenUsed: false, hp: BOSS_HP, hearts: BOSS_HEARTS,
+    goldenUsed: false, hp: BOSS_HP, hearts: BOSS_HEARTS, keys: new Set(),
   };
   const pl = { si: 0, right: 0, miss: 0 }; // placement: current stage index and its score
   let q = null;
@@ -359,10 +359,11 @@ export function startRound(app, opts) {
 
   function fresh(gen, lvl) {
     let nq;
-    for (let k = 0; k < 6; k++) {
+    // Avoid asking the same question twice in a round (and never twice in a row).
+    for (let k = 0; k < 12; k++) {
       nq = gen(lvl);
-      const key = nq.eq + (nq.visual || '') + nq.answer + (nq.target || '');
-      if (key !== st.lastKey) { st.lastKey = key; break; }
+      const key = nq.eq + (nq.visual || '') + nq.answer + (nq.target || '') + (nq.items || []).map(it => it.html).join();
+      if (key !== st.lastKey && (!st.keys.has(key) || k >= 11)) { st.lastKey = key; st.keys.add(key); break; }
     }
     nq.gen = gen;
     return nq;

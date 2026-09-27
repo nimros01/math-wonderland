@@ -109,8 +109,8 @@ const BY_STAGE = {
 
   // Candy Factory
   'c-rect': q => (q.boxes ? 'Which box holds exactly this many candies? Count the rows and the candies in each row.'
-    : q.shapes ? 'How many different rectangle boxes can hold all these candies, with no gaps and none left over? A box turned on its side counts as the same box.'
-    : q.prime ? 'Tap every number of candies that fits only one box shape: a single long row. These are the prime numbers.'
+    : q.shapes ? 'How many different rectangle boxes can hold all these candies, with no gaps and none left over? A box turned on its side counts as the same box, and one long row counts too.'
+    : q.prime ? 'Tap every number of candies that can only be packed in one long row, never in a box with 2 or more rows. These are the prime numbers.'
     : q.input === 'multi' ? 'Tap every box size (rows × candies in a row) that holds exactly this many candies.'
     : 'The candies fill a box in equal rows. How many candies are in each row?'),
   'c-divis': q => (q.input === 'multi' ? `The machine only takes numbers that divide by ${q.divisor} with nothing left over. Tap every number it takes.`
@@ -120,7 +120,7 @@ const BY_STAGE = {
     : isCmp(q) ? 'Which fraction is more chocolate? ' + CMP
     : 'Both fractions are the same amount of chocolate, cut into different pieces. Which number goes in the yellow ? box?'),
   'c-mixed': q => (isCmp(q) ? 'Compare the fraction with the whole number of cakes. ' + CMP
-    : !has(q.eq, '=') ? 'Each cake is cut into equal slices. The bottom number is the slices in one cake. How many pink slices are there in all?'
+    : !has(plain(q.eq), '=') ? 'Each cake is cut into equal slices. The bottom number is the slices in one cake. How many pink slices are there in all?'
     : has(q.eq, 'mixn') ? 'Whole cakes and slices: the big number counts whole cakes, the fraction counts the extra slices. Which number goes in the yellow ? box?'
     : 'How many whole cakes do these slices make?'),
   'c-addf': q => (q.tf ? 'Is the robot right? To add slices of the same size, add the tops and keep the size (the bottom number) the same.'
@@ -130,7 +130,7 @@ const BY_STAGE = {
     : 'A fraction of a fraction: fold the tray one way for the first fraction and the other way for the second. How many small squares are in both folds?'),
   'c-scoop': q => (/^\?/.test(plain(q.eq).trim()) ? 'How many cups of flour make this many scoops of that size?'
     : 'How many scoops of this size fill the amount on the left?'),
-  'c-dec': q => (isCmp(q) ? 'Compare the two decimals. Tip: 0.3 is 30 hundredths, so compare hundredths with hundredths. ' + CMP
+  'c-dec': q => (isCmp(q) ? 'Compare the two decimals. Tip: one tenth is the same as ten hundredths, so turn both into hundredths before you compare. ' + CMP
     : has(q.eq, 'frac') ? 'Write the decimal as a fraction: tenths or hundredths. Which number goes in the yellow ? box?'
     : has(q.visual, '<line') ? 'Each small step on the number line is one tenth. Which number does the red arrow point to?'
     : 'The chocolate has 100 squares. Each row is one tenth (0.1) and each square is one hundredth (0.01). What decimal is the dark part?'),
@@ -140,11 +140,11 @@ const BY_STAGE = {
   'c-pct': q => (q.sale ? 'The price is on the tag and the red sticker says how many percent is taken off. How much do you pay?'
     : has(q.eq, '%') ? 'Percent means "out of 100": 10% of 1,000 is 10 out of every 100, so 100. How much is it?'
     : 'How many percent of the picture is full? The whole thing is 100%.'),
-  'c-ratio': q => (q.rate ? 'Every candy costs the same. How many coins do the other candies cost?'
+  'c-ratio': q => (q.rate ? 'Every candy costs the same. The picture shows what some candies cost. How many coins do the candies at the top cost?'
     : q.input === 'choice' && q.layout === 'grid' ? 'Which drink tastes exactly the same? It must have the same number of strawberries for every lemon.'
     : 'The drink must taste the same, so both fruits grow by the same times. Which number goes in the yellow ? box?'),
   'c-puz': q => (q.share ? 'Share the cakes equally among the children. How much cake does each child get?'
-    : q.eatLeft ? 'Each box eats that fraction of what is LEFT at that moment, not of the start. How many candies are left at the end?'
+    : q.eatLeft ? 'The candies go through the boxes one after the other, and each box keeps only that fraction of what it gets. How many candies come out at the end?'
     : has(q.eq, '= 1') ? 'The fractions must add up to exactly one whole. Which number goes under the 1 in the last fraction?'
     : 'Split the fraction into two fractions with 1 on top. Which number goes in the yellow ? box?'),
 };
@@ -200,7 +200,7 @@ function stageIdOf(gen) {
 
 // stageId is optional: without it the stage is found from the question's generator (boss and placement rounds).
 export function helpFor(q, stageId = stageIdOf(q.gen)) {
-  let task = q.tf ? TF : null;
+  let task = q.tf && !has(q.eq, '🤖') ? TF : null;
   if (!task) try { task = BY_STAGE[stageId]?.(q); } catch { task = null; }
   task ||= general(q);
   const how = howTo(q);
