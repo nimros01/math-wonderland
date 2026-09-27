@@ -1,8 +1,9 @@
 // Screens: players, map, stage popup, results, pet and sticker book, parent corner.
 import * as P from './progress.js';
 import { sfx, unlockAudio } from './audio.js';
-import { STAGES, LEARN, STICKERS, HATS, AVATARS } from './skills.js';
-import { startRound, BOSS } from './play.js';
+import { LEARN, STICKERS, HATS, AVATARS } from './skills.js';
+import { startRound } from './play.js';
+import { WORLDS, learnOf, bossBeaten, setBossBeaten, worldOpen, worldOfStage } from './worlds.js';
 import * as C from './cloud.js';
 
 const app = document.getElementById('app');
@@ -11,6 +12,12 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const starsHTML = n => [1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('');
 
 document.addEventListener('pointerdown', unlockAudio, { capture: true });
+
+// The world this player is looking at (falls back to Meadow if it isn't open).
+function curWorld(p) {
+  const wi = p.world || 0;
+  return WORLDS[wi] && worldOpen(p, wi) ? wi : 0;
+}
 
 function petHTML(p, cls = '') {
   return `<span class="pet ${cls} s${p.pet.stage}">${P.petEmoji(p)}${p.pet.hat ? `<span class="hat">${p.pet.hat}</span>` : ''}</span>`;
@@ -129,6 +136,8 @@ function placementDone(r) {
 function map(focusId) {
   const p = P.me();
   if (!p) return home();
+  if (focusId) p.world = worldOfStage(focusId);
+  const wi = curWorld(p), W = WORLDS[wi], STAGES = W.stages;
   const n = STAGES.length;
   const STEP = 116;
   const xs = STAGES.map((_, i) => 50 + Math.sin(i * 1.05) * 26);
@@ -136,18 +145,19 @@ function map(focusId) {
   const focus = focusId ? STAGES.findIndex(s => s.id === focusId) : firstOpen;
   const height = (n + 1) * STEP + 90;
   // The boss opens once every learning stage has a star.
-  const bossOpen = p.unlockAll || LEARN.every(s => (p.stages[s.id]?.stars || 0) > 0);
+  const bossOpen = p.unlockAll || learnOf(W).every(s => (p.stages[s.id]?.stars || 0) > 0);
+  const beaten = bossBeaten(p, W);
   const pts = [...xs, 50].map((x, i) => `${x},${i * STEP + 70}`).join(' ');
 
   app.innerHTML = `
-    <div class="map">
+    <div class="map w-${W.id}">
       <div class="topbar">
         <button class="avatar-btn" id="who" aria-label="Change player">${p.avatar}</button>
         <div class="gem-count"><span>💎</span><b>${p.gems}</b></div>
         <button class="pet-btn" id="petbtn" aria-label="Pet and stickers">${petHTML(p)}</button>
       </div>
       <div class="scroller" id="scroller">
-        <div class="world-banner">🌻 <b>1</b></div>
+        <div class="world-tabs">${WORLDS.map((w, k) => `<button class="wtab${k === wi ? ' on' : ''}${worldOpen(p, k) ? '' : ' locked'}" data-w="${k}" aria-label="World ${k + 1}">${worldOpen(p, k) ? w.icon : '🔒'}<b>${k + 1}</b></button>`).join('')}</div>
         <div class="path" style="height:${height}px">
           <svg class="trail" viewBox="0 0 100 ${height}" preserveAspectRatio="none" aria-hidden="true">
             <polyline points="${pts}" fill="none" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
@@ -161,8 +171,8 @@ function map(focusId) {
               <div class="stars">${starsHTML(stars)}</div></div>`;
           }).join('')}
           <div class="node-wrap" style="left:50%;top:${n * STEP + 70}px">
-            <button class="node boss ${bossOpen ? 'open' : 'locked'} ${bossOpen && firstOpen < 0 && !p.bossMeadow ? 'current' : ''}" id="bossnode" aria-label="Boss">${bossOpen ? BOSS : '🔒'}</button>
-            <div class="stars soon">${p.bossMeadow ? '🏆' : ''}</div>
+            <button class="node boss ${bossOpen ? 'open' : 'locked'} ${bossOpen && firstOpen < 0 && !beaten ? 'current' : ''}" id="bossnode" aria-label="Boss">${bossOpen ? W.boss : '🔒'}</button>
+            <div class="stars soon">${beaten ? '🏆' : ''}</div>
           </div>
         </div>
       </div>
@@ -176,13 +186,23 @@ function map(focusId) {
     b.onclick = () => {
       if (!P.isUnlocked(p, STAGES, i)) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
       sfx.tap();
-      stagePopup(i);
+      stagePopup(STAGES, i);
+    };
+  });
+  app.querySelectorAll('.wtab').forEach(b => {
+    const k = +b.dataset.w;
+    b.onclick = () => {
+      if (!worldOpen(p, k)) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
+      sfx.tap();
+      p.world = k;
+      P.writeLocal();
+      map();
     };
   });
   app.querySelector('#bossnode').onclick = e => {
     if (!bossOpen) { sfx.bad(); e.currentTarget.classList.add('wobble'); setTimeout(() => e.currentTarget?.classList.remove('wobble'), 500); return; }
     sfx.tap();
-    startRound(app, { mode: 'boss', onQuit: () => map(), onDone: bossResult });
+    startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r => bossResult(W, r) });
   };
   holdToOpen(app.querySelector('#gear'), app.querySelector('#gearfill'), parentCorner);
 
@@ -191,7 +211,7 @@ function map(focusId) {
   if (f >= 0) sc.scrollTop = Math.max(0, f * STEP + 70 - sc.clientHeight / 2 + 60);
 }
 
-function stagePopup(i) {
+function stagePopup(STAGES, i) {
   const p = P.me();
   const s = STAGES[i];
   const rec = P.stageRec(p, s.id);
@@ -211,18 +231,18 @@ function stagePopup(i) {
   const close = () => ov.remove();
   ov.querySelector('.close').onclick = () => { sfx.tap(); close(); };
   ov.onclick = e => { if (e.target === ov) close(); };
-  ov.querySelector('#play').onclick = () => { sfx.tap(); play(i, 'normal'); };
+  ov.querySelector('#play').onclick = () => { sfx.tap(); play(STAGES, i, 'normal'); };
   const g = ov.querySelector('#gate');
-  if (g) g.onclick = () => { sfx.tap(); play(i, 'gate'); };
+  if (g) g.onclick = () => { sfx.tap(); play(STAGES, i, 'gate'); };
 }
 
-function play(i, mode) {
+function play(STAGES, i, mode) {
   const s = STAGES[i];
-  startRound(app, { mode, stage: s, onQuit: () => map(s.id), onDone: r => result(i, r) });
+  startRound(app, { mode, stage: s, onQuit: () => map(s.id), onDone: r => result(STAGES, i, r) });
 }
 
 // After a round: stars, gems and a surprise chest.
-function result(i, r) {
+function result(STAGES, i, r) {
   const p = P.me();
   const s = STAGES[i];
   const rec = P.stageRec(p, s.id);
@@ -264,27 +284,29 @@ function result(i, r) {
       }, 500);
     };
   }
-  app.querySelector('#again').onclick = () => { sfx.tap(); play(i, r.mode === 'gate' ? 'gate' : 'normal'); };
+  app.querySelector('#again').onclick = () => { sfx.tap(); play(STAGES, i, r.mode === 'gate' ? 'gate' : 'normal'); };
   app.querySelector('#map').onclick = () => { sfx.tap(); map(nextOpen ? STAGES[i + 1].id : s.id); };
 }
 
-// The Meadow boss: win for a big chest with three prizes.
-function bossResult(r) {
+// A world's boss: win for a big chest with three prizes. The first win opens the next world.
+function bossResult(W, r) {
   const p = P.me();
-  const first = r.win && !p.bossMeadow;
-  if (r.win) p.bossMeadow = true;
+  const first = r.win && !bossBeaten(p, W);
+  if (r.win) setBossBeaten(p, W);
+  const wi = WORLDS.indexOf(W), nextW = first && WORLDS[wi + 1];
+  if (nextW) p.world = wi + 1;
   P.save();
   if (r.win) sfx.chest(); else sfx.fail();
   app.innerHTML = `
     <div class="result">
-      <div class="res-top boss-end ${r.win ? 'beaten' : ''}">${r.win ? '💥' : BOSS}</div>
+      <div class="res-top boss-end ${r.win ? 'beaten' : ''}">${r.win ? '💥' : W.boss}</div>
       <div class="res-top">${r.win ? '🏆' : '💪'}</div>
       <div class="res-gems">💎 +${r.gems}</div>
       ${r.win ? '<button class="chest big" id="chest" aria-label="Open chest">🎁</button>' : ''}
       <div class="reward three" id="reward" hidden></div>
       <div class="res-btns">
         <button class="bigbtn" id="again" aria-label="Fight again">🔁</button>
-        <button class="bigbtn green" id="map" aria-label="Map">🗺️</button>
+        <button class="bigbtn green" id="map" aria-label="Map">${nextW ? `${nextW.icon} ▶` : '🗺️'}</button>
       </div>
     </div>`;
   const chest = app.querySelector('#chest');
@@ -302,7 +324,7 @@ function bossResult(r) {
       P.save();
     }, 500);
   };
-  app.querySelector('#again').onclick = () => { sfx.tap(); startRound(app, { mode: 'boss', onQuit: () => map(), onDone: bossResult }); };
+  app.querySelector('#again').onclick = () => { sfx.tap(); startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r2 => bossResult(W, r2) }); };
   app.querySelector('#map').onclick = () => { sfx.tap(); map(); };
 }
 
@@ -405,13 +427,14 @@ function holdToOpen(btn, fillEl, fn) {
 
 function parentCorner() {
   const p = P.me();
+  const W = WORLDS[curWorld(p)], STAGES = W.stages;
   const done = STAGES.filter(s => p.stages[s.id]?.stars > 0).length;
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `
     <div class="popup parent">
       <h2>Parent corner</h2>
-      <p class="pc-sum">${p.avatar}${p.name ? ' ' + esc(p.name) : ''} has cleared <b>${done} of ${STAGES.length}</b> Meadow stages and holds <b>${p.gems}</b> gems.</p>
+      <p class="pc-sum">${p.avatar}${p.name ? ' ' + esc(p.name) : ''} has cleared <b>${done} of ${STAGES.length}</b> stages in world ${W.icon} and holds <b>${p.gems}</b> gems.</p>
       <table class="pc-table">
         ${STAGES.map(s => { const r = p.stages[s.id]; return `<tr><td>${s.icon}</td><td><span class="stars">${starsHTML(r?.stars || 0)}</span></td><td>${r?.plays || 0} plays</td></tr>`; }).join('')}
       </table>

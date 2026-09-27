@@ -1,12 +1,12 @@
 // One round of questions: a normal stage round, a golden-gate skip test, the placement quest or the boss.
 import * as P from './progress.js';
 import { sfx } from './audio.js';
-import { STAGES, LEARN } from './skills.js';
+import { LEARN } from './skills.js';
+import { WORLDS, learnOf } from './worlds.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const ROUND = 10, GATE = 8, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
-export const BOSS = '🧌';
 
 // Stars for a 10-question round: 7 right opens the next stage.
 export const starsFor = correct => (correct >= 10 ? 3 : correct >= 9 ? 2 : correct >= 7 ? 1 : 0);
@@ -17,9 +17,11 @@ function toPad(q) {
   return q;
 }
 
-// opts: { mode: 'normal' | 'gate' | 'placement' | 'boss', stage, onQuit, onDone(result) }
+// opts: { mode: 'normal' | 'gate' | 'placement' | 'boss', stage, world (for the boss), onQuit, onDone(result) }
 export function startRound(app, opts) {
   const { mode, stage } = opts;
+  const world = opts.world || WORLDS[0];
+  const bossPool = learnOf(world);
   const p = P.me();
   const total = mode === 'gate' ? GATE : ROUND;
   const startLvl = mode === 'normal' ? Math.max(0, (P.stageRec(p, stage.id).stars || 0) - 1) : 2;
@@ -40,7 +42,7 @@ export function startRound(app, opts) {
         <div class="prog"><i id="progfill"></i></div>
         <div class="gem-count"><span>💎</span><b id="gems">${p.gems}</b></div>
       </div>
-      ${mode === 'boss' ? `<div class="bossbar"><span class="boss" id="boss">${BOSS}</span><div class="hp"><i id="hpfill"></i></div><span class="hearts" id="hearts"></span></div>` : ''}
+      ${mode === 'boss' ? `<div class="bossbar"><span class="boss" id="boss">${world.boss}</span><div class="hp"><i id="hpfill"></i></div><span class="hearts" id="hearts"></span></div>` : ''}
       <div class="streak" id="streak" aria-live="polite"></div>
       <div class="card" id="card">
         ${mode === 'gate' ? '<div class="modebadge">⚡</div>' : mode === 'placement' ? '<div class="modebadge">🚀</div>' : ''}
@@ -76,7 +78,7 @@ export function startRound(app, opts) {
 
   // ---------- small helpers ----------
   const currentGen = () => (mode === 'placement' ? LEARN[Math.min(pl.si, LEARN.length - 1)].gen
-    : mode === 'boss' ? (q?.gen || LEARN[0].gen) : stage.gen);
+    : mode === 'boss' ? (q?.gen || bossPool[0].gen) : stage.gen);
 
   function setProgress() {
     const f = mode === 'placement' ? pl.si / LEARN.length : mode === 'boss' ? 1 - st.hp / BOSS_HP : st.i / total;
@@ -359,7 +361,7 @@ export function startRound(app, opts) {
       nq = fresh(LEARN[pl.si].gen, 2);
     } else if (mode === 'boss') {
       if (st.hp <= 0 || st.hearts <= 0) return finish();
-      nq = fresh(pick(STAGES).gen, Math.random() < 0.6 ? 2 : 1);
+      nq = fresh(pick(bossPool).gen, Math.random() < 0.6 ? 2 : 1);
     } else if (st.i < total) {
       nq = fresh(stage.gen, st.lvl);
       if (mode === 'gate' && Math.random() < 0.6) toPad(nq);

@@ -564,3 +564,48 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
 .namebox { display: flex; gap: 12px; align-items: center; width: min(320px, 100%); }
 .namebox input { flex: 1; min-width: 0; font-family: inherit; font-size: 26px; font-weight: 800; padding: 12px 14px; border: 4px solid var(--ink); border-radius: 18px; text-align: center; background: #fff; }
 .pc-row #pc-name { flex: 1; width: auto; height: auto; font-size: 16px; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; }
+
+/* ---------- worlds ---------- */
+.world-tabs { display: flex; justify-content: center; gap: 10px; margin: 6px auto 0; }
+.wtab { display: flex; align-items: center; gap: 4px; padding: 4px 14px; font: inherit; font-size: 24px; color: var(--ink); background: rgba(255, 255, 255, .75); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); }
+.wtab b { font-size: 18px; }
+.wtab.on { background: var(--sun); }
+.wtab.locked { opacity: .6; }
+.map.w-ocean { background: linear-gradient(180deg, #7fd3f7 0%, #3aa6d8 45%, #1f6fa8 100%); }
+.map.w-ocean .trail polyline { stroke: #fff; opacity: .7; }
+.map.w-ocean .node.locked { background: #9fc3dc; }
+
+/* ---------- Ocean pictures ---------- */
+.place { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 280px; }
+.place .flats { display: flex; flex-wrap: wrap; gap: 4px; max-width: 150px; }
+.flat { width: 44px; height: 44px; border: 2px solid var(--ink); border-radius: 3px; background-color: #ffd978;
+  background-image: linear-gradient(rgba(30, 38, 80, .35) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 38, 80, .35) 1px, transparent 1px); background-size: 4.4px 4.4px; }
+.coins { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
+.coins .stack { display: flex; flex-direction: column-reverse; align-items: center; }
+.coins .stack .coin + .coin { margin-bottom: -26px; }
+.coin { display: grid; place-items: center; width: 50px; height: 34px; border-radius: 50%; border: 3px solid var(--ink); font-weight: 800; font-size: 13px; box-shadow: 0 3px 0 rgba(30, 38, 80, .35); }
+.coin.k1000 { background: #ffd24a; font-size: 12px; }
+.coin.k100 { background: #cfd6e4; }
+.coin.k10 { background: #e59a5b; }
+.coin.k1 { background: #f2c9a0; width: 40px; }
+.share { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.fishrow { font-size: 22px; line-height: 1.1; max-width: 260px; text-align: center; word-break: break-all; }
+.fishrow.left { opacity: .9; outline: 2px dashed var(--tomato); border-radius: 8px; padding: 2px 4px; }
+.nets { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 290px; }
+.net { min-width: 44px; min-height: 44px; max-width: 70px; padding: 3px; border: 3px dashed var(--ink); border-radius: 50%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; font-size: 16px; line-height: 1; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1; font-size: .72em; margin: 0 .1em; }
+.frac b { font-weight: 800; }
+.frac b + b { border-top: .09em solid currentColor; padding-top: .06em; }
+.frac .slot { font-size: 1em !important; min-width: 1.4em; }
+.choice .frac { font-size: 30px; }
+.cdot { display: inline-block; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--ink); vertical-align: middle; }
+.eq .cdot { width: .8em; height: .8em; }
+.column { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 30px; font-weight: 800; line-height: 1.15; text-align: right; }
+.colline { border-top: 4px solid var(--ink); margin-top: 2px; }
+u.hl { text-decoration: none; color: var(--tomato); border-bottom: 5px solid var(--tomato); }
+.mach { display: inline-block; font-size: .7em; padding: 0 .25em; border: 3px solid var(--ink); border-radius: 10px; background: #e7f4ff; }
+.die { font-size: 46px; line-height: 1; }
+.eq small { font-size: .55em; }
+.eq svg.shape { vertical-align: middle; }
+.choice svg.shape { max-width: 100%; height: auto; }
+.answers.pair .choice svg.shape { max-height: 120px; }

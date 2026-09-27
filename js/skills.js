@@ -476,3 +476,6 @@ export const LEARN = STAGES.filter(s => !s.puzzle);
 export const STICKERS = ['🌻', '🐞', '🦋', '🍄', '🌈', '🐝', '🌷', '🐌', '🍓', '🐢', '🦔', '🌳', '🐇', '🪺', '☘️', '🌼'];
 export const HATS = ['🎩', '👑', '🎀', '🧢', '🕶️', '🎓'];
 export const AVATARS = ['🦊', '🐼', '🐯', '🐸', '🐵', '🦁', '🐰', '🐨'];
+
+// Shared with the other worlds' stage files.
+export { R, pick, chance, shuffle, numQ, tfQ, findAllQ, pairsQ, cmpQ, SYMBOLS, OPS, productsOf };
