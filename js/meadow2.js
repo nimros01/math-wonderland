@@ -147,6 +147,7 @@ function genShop(lvl) {
 // ---------- Picture stories: a three-picture comic with no words ----------
 const panel = html => `<div class="panel">${html}</div>`;
 const many = (e, n) => `<span class="crowd">${e.repeat(n)}</span>`;
+const branch = html => `<div class="perch">${html}</div><i class="branch"></i>`;
 function genStory1(lvl) {
   const kind = pick([['away', 'more'], ['away', 'more', 'expr'], ['missing', 'expr', 'away', 'more']][lvl]);
   const top = lvl ? 18 : 10;
@@ -156,12 +157,14 @@ function genStory1(lvl) {
   const left = away ? n - c : n + c;
   if (kind === 'missing') {
     // the middle picture is the question: how many flew away?
-    const vis = `<div class="story">${[panel(many(e, n)), panel(`<span class="slot">?</span><b class="fly">↗</b>`), panel(many(e, left))].join('<b class="arrow">▶</b>')}</div>`;
+    const vis = `<div class="story">${[panel(branch(many(e, n))), panel(branch(`<span class="slot">?</span><span class="puff">💨</span>`)), panel(branch(many(e, left)))].join('<b class="arrow">▶</b>')}</div>`;
     return numQ('', c, [n, left, c + 1, c - 1].filter(v => v > 0), { visual: vis, show: true });
   }
+  // The middle picture moves: the birds lift off the branch and fly out, or the fruit drops into the basket.
+  // A small arrow stands in for the movement when the phone asks for reduced motion.
   const pics = away
-    ? [panel(many(e, n)), panel(`${many(e, c)}<b class="fly">↗</b>`), panel('<span class="slot">?</span>')]
-    : [panel(`${many(e, n)}<i class="box">${box}</i>`), panel(`<b class="fly">⬇</b>${many(e, c)}`), panel(`<span class="slot">?</span><i class="box">${box}</i>`)];
+    ? [panel(branch(many(e, n))), panel(branch(`<span class="crowd leave">${e.repeat(c)}</span><b class="still">↗</b>`)), panel(branch('<span class="slot">?</span>'))]
+    : [panel(`${many(e, n)}<i class="box">${box}</i>`), panel(`<b class="still">⬇</b><span class="crowd enter">${e.repeat(c)}</span><i class="box">${box}</i>`), panel(`<span class="slot">?</span><i class="box">${box}</i>`)];
   const vis = `<div class="story">${pics.join('<b class="arrow">▶</b>')}</div>`;
   if (kind === 'expr') {
     const right = `${n} ${away ? '−' : '+'} ${c}`;
