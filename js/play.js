@@ -76,7 +76,7 @@ export function startRound(app, opts) {
   };
   // ⓘ: what this question asks, in words, for parents and kids who read. Free, and it doesn't pause scoring.
   $('info').onclick = () => {
-    if (!q || over || document.querySelector('.overlay')) return;
+    if (!q || over || (st.busy && !st.demo) || document.querySelector('.overlay')) return; // not in the pause before the next question
     sfx.tap();
     const ov = document.createElement('div');
     ov.className = 'overlay infoov';

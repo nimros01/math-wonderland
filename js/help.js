@@ -55,14 +55,14 @@ const BY_STAGE = {
 
   // Ocean
   'o-1000': q => (q.eq === '?' ? 'Each big square is 100, each rod is 10 and each small cube is 1. What number do the blocks show?'
-    : has(q.eq, '≈') ? 'Round the number: which round number on the line is it closest to?' : null),
+    : has(q.eq, '≈') ? 'Round the number: which of the round numbers (tens or hundreds) is it closest to?' : null),
   'o-10k': q => (q.eq === '?' ? 'Add up all the coins. What is their total?'
     : has(q.eq, '→') ? DIGIT : null),
   'o-million': q => (has(q.visual, 'zoom') ? 'Each step is 10 times bigger than the one before. Which number is missing?'
     : has(q.eq, '→') ? DIGIT
     : has(q.eq, '×') || has(q.eq, '÷') ? 'Multiply or divide by 10, 100 or 1000. Tip: × 10 adds a zero, ÷ 10 takes one away.' : null),
   'o-add': q => (has(q.eq, '≈') ? 'Don\'t work it out exactly. Which hundred is the answer closest to?' : null),
-  'o-share': () => '÷ means sharing equally: 12 ÷ 3 shares 12 fish into 3 nets, 4 in each net. ' + MISSING,
+  'o-share': () => '÷ means sharing equally: every net gets the same number of fish. ' + MISSING,
   'o-divx': q => (q.eq === '?' ? 'Fact triangle: the top number is the two bottom numbers multiplied together. Which number is missing?'
     : has(q.eq, '<br>') ? '× and ÷ are partners. Use the first fact to solve the second.'
     : has(q.eq, '🐟') ? REM : null),
@@ -71,14 +71,14 @@ const BY_STAGE = {
   'o-frac': q => (q.input === 'multi' ? 'Tap every fraction that is the same as one half.'
     : q.eq === '?' ? 'What part is coloured? The bottom number is how many equal pieces there are, the top number how many are coloured.'
     : isCmp(q) ? 'Which fraction is bigger? ' + CMP
-    : has(q.eq, '×') ? '½ × 12 means half of 12. Work out that part of the number.' : null),
+    : has(q.eq, '×') ? '½ × 100 means half of 100. Work out that part of the number.' : null),
   'o-clock': q => (q.eq === '?' ? 'What time does the clock show? The short hand shows the hour, the long hand the minutes.'
     : q.eq.startsWith('+') ? 'What time will the clock show after these many minutes?'
     : 'Which clock shows this time?'),
   'o-angle': q => (q.input === 'multi' ? 'Tap every right angle: a square corner of 90°, like the one at the top.'
     : isCmp(q) ? 'Which angle is opened wider, red or blue? The length of the lines does not matter. Pick > if red is wider, < if blue is wider.'
     : has(q.eq, '180') ? 'A straight line is 180°. How many degrees is the other part?'
-    : 'How many degrees is this angle? A square corner is 90°.'),
+    : 'How many degrees is this angle? Compare it with a square corner and with a straight line.'),
   'o-area': q => (has(q.eq, '🟦') ? 'Area: how many squares cover the blue shape?'
     : has(q.eq, '🦀') ? FENCE
     : 'Which rectangle has this area (is made of this many squares)?'),
@@ -107,8 +107,8 @@ const BY_STAGE = {
   'o-puz2': q => opuzzle(q),
 };
 
-const DIGIT = 'How much is the red underlined digit worth? For example, in 4,527 the 5 is worth 500 and the 2 is worth 20.';
-const REM = '🐟 is the remainder: what is left over after sharing equally. For example, 14 ÷ 4 = 3 🐟 2. Find the number in the yellow box.';
+const DIGIT = 'How much is the red underlined digit worth? For example, in 527 the 5 is worth 500 and the 2 is worth 20.';
+const REM = '🐟 is the remainder: what is left over after sharing equally. For example, 65 ÷ 12 = 5 🐟 5. Find the number in the yellow box.';
 
 function puzzle(q) {
   if (has(q.visual, 'class="pyr"')) return PYRAMID;
@@ -123,7 +123,7 @@ function opuzzle(q) {
   if (has(q.eq, '□')) return SQUARES;
   if (has(q.eq, '🦀')) return FENCE;
   if (/\d\?|\?\d/.test(plain(q.eq))) return 'One digit is hidden. Which digit makes the calculation right?';
-  if (has(q.eq, 'frac')) return 'Work from the right: ½ × ¼ × 16 means half of a quarter of 16.';
+  if (has(q.eq, 'frac')) return 'Work from the right: ½ × ¼ × 80 means half of a quarter of 80.';
   return null;
 }
 
