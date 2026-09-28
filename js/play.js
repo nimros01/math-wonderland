@@ -13,8 +13,9 @@ const ROUND = 10, GATE = 8, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
 export const starsFor = correct => (correct >= 10 ? 3 : correct >= 9 ? 2 : correct >= 7 ? 1 : 0);
 
 // Turn a tap-a-bubble number question into a typed one (used to make skip tests harder).
+// The number keys take up to three digits and have no minus, so bigger or negative answers stay as bubbles.
 function toPad(q) {
-  if (q.input === 'choice' && typeof q.answer === 'number' && !q.layout && /\?/.test(q.eq)) q.input = 'pad';
+  if (q.input === 'choice' && Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 999 && !q.layout && /\?/.test(q.eq)) q.input = 'pad';
   return q;
 }
 
@@ -116,6 +117,8 @@ export function startRound(app, opts) {
       s.classList.remove('typing');
       s.classList.add(fix ? 'fixed' : 'filled');
     });
+    // A long answer in the slot (a whole equation) must not push the line past the card.
+    fitEq();
   }
   const rightParts = () => {
     if (q.input === 'pad') return [String(q.answer)];
