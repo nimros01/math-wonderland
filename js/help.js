@@ -208,7 +208,7 @@ const BY_STAGE = {
     : q.minus ? 'Something was taken away from the box. Add it back: the box is the answer plus what was taken. Which number is in the box?'
     : q.div ? 'The box was split into equal parts. Put the parts back together: the box is the answer times the number of parts. Which number is in the box?'
     : 'The scale is level, so both sides weigh the same. Every brown ? box hides the same number. Which number is it?'),
-  'v-keep': q => (q.move ? 'Pick the move that goes in both yellow boxes: one after the left side and one after the right side. It must leave the brown box on its own and keep both sides equal, so do the same to both sides. ÷ means split into equal parts.'
+  'v-keep': q => (q.move ? 'Which equation means the same as the one on top, with the brown box on its own? Do the same to both sides: a number added to the box is taken away from the other side, a number taken away is added, and times becomes ÷.'
     : has(q.eq, '🤖') ? 'Is the robot right? Do the same to both sides of the scale to find the box, then check the robot. Tap ✓ or ✗.'
     : 'Take off what the red marks show from both sides (÷ means split into equal parts). The scale stays level. Which number is in each ? box?'),
   'v-two': q => (q.check ? 'Put this number in every brown box. Is the scale level (are both sides the same)? Tap ✓ if yes and ✗ if not.'
