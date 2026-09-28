@@ -317,16 +317,19 @@ function genBox(lvl) {
 }
 
 // ---------- 5. Keep it balanced: do the same to both sides ----------
+// Which move, done to both sides, leaves the box on its own? The equation shows a slot after each side,
+// and the chosen move fills both slots, so the child sees it done to the left and to the right.
 function moveQ(eqHtml, right, wrongs, visual) {
   const opts = [right, ...wrongs.filter(w => w !== right)].slice(0, 4);
-  return { eq: '⚖️ ?', answer: right, input: 'choice', layout: 'grid', visual, show: true, move: true,
-    choices: shuffle(opts.map(o => ({ value: o, html: ex(o.replace('|', ' ⚖️ ')) }))) };
+  const [l, r] = eqHtml.split(' = ');
+  return { eq: `${l} ? = ${r} ?`, answer: right, input: 'choice', layout: 'grid', visual, show: !!visual, move: true,
+    choices: shuffle(opts.map(o => { const [a, b] = o.split('|'); return { value: o, html: `<span class="mvs"><span class="mv">${a}</span><span class="mv">${b}</span></span>`, fill: [a, b] }; })) };
 }
 function genKeep(lvl) {
   const kind = pick([['move', 'move', 'take', 'take'], ['move', 'take', 'minus', 'split'], ['move', 'minus', 'split', 'robot', 'splitmove']][lvl]);
   if (kind === 'move') {
     const a = R(2, 9), v = R(2, lvl ? 15 : 9), c = a + v;
-    return moveQ(null, `−${a}|−${a}`, shuffle([`−${a}|0`, `+${a}|−${a}`, `−${c}|−${c}`, `0|−${a}`]), bal(['b', a], [c], `${BOX} + ${a} = ${c}`));
+    return moveQ(`${BOX} + ${a} = ${c}`, `−${a}|−${a}`, shuffle([`+${a}|+${a}`, `+${a}|−${a}`, `−${c}|−${c}`, `−${a}|+${a}`]), bal(['b', a], [c]));
   }
   if (kind === 'take') {
     const a = R(2, 9), v = R(1, lvl ? 15 : 9), c = a + v;
@@ -334,7 +337,7 @@ function genKeep(lvl) {
   }
   if (kind === 'minus') {
     const a = R(2, 9), c = R(2, 12);
-    return moveQ(null, `+${a}|+${a}`, shuffle([`−${a}|−${a}`, `+${a}|0`, `−${a}|+${a}`]), veq(`${BOX} − ${a} = ${c}`));
+    return moveQ(`${BOX} − ${a} = ${c}`, `+${a}|+${a}`, shuffle([`−${a}|−${a}`, `+${a}|−${a}`, `−${a}|+${a}`]), null);
   }
   if (kind === 'split') {
     const k = R(2, lvl > 1 ? 5 : 3), v = R(2, 9), c = k * v;
@@ -342,7 +345,7 @@ function genKeep(lvl) {
   }
   if (kind === 'splitmove') {
     const k = R(2, 5), c = k * R(2, 9);
-    return moveQ(null, `÷${k}|÷${k}`, shuffle([`−${k}|−${k}`, `÷${k}|−${k}`, `×${k}|×${k}`, `÷${k}|0`]), veq(`${kb(k)} = ${c}`));
+    return moveQ(`${kb(k)} = ${c}`, `÷${k}|÷${k}`, shuffle([`−${k}|−${k}`, `÷${k}|−${k}`, `×${k}|×${k}`, `−${k}|÷${k}`]), null);
   }
   // The robot moved weights. Is its answer right?
   const a = R(2, 9), v = R(2, 12), c = a + v, truth = chance(0.5), w = truth ? v : pick([c + a, c, v + 1]);

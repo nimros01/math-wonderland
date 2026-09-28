@@ -819,6 +819,8 @@ svg.die { display: block; margin: auto; }
 .answers.col .choice { min-height: 48px; padding-top: 2px; padding-bottom: 2px; }
 .choice .ex .mbox { font-size: 1em; }
 .choice .exs { font-size: 17px; letter-spacing: -.3px; }
+.choice .mvs { display: flex; gap: clamp(8px, 4vw, 22px); justify-content: center; }
+.choice .mv { display: inline-block; margin: 0; padding: 2px clamp(4px, 1.8vw, 10px); border-radius: 10px; background: #ffe2d6; font-size: clamp(19px, 6vw, 24px); white-space: nowrap; }
 .eq sup.psup { font-size: .9em; vertical-align: .5em; line-height: 0; }
 .eq sup.psup .slot { font-size: 1em; min-width: 1.1em; min-height: 1.1em; }
 /* Picture stories: the middle picture moves instead of showing an arrow */
