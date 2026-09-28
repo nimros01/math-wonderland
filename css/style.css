@@ -849,6 +849,7 @@ svg.die { display: block; margin: auto; }
 .ntrail i { font-style: normal; font-size: 18px; opacity: .6; }
 .sstory .panel { font-size: 21px; max-width: 136px; }
 .sstory .panel > span { white-space: nowrap; }
+.sstory .panel > .tight { font-size: .85em; letter-spacing: -1px; }
 .sstory .panel .num { font-size: 22px; }
 @media (max-width: 359px) { .sstory .panel { font-size: 17px; padding: 4px; } .sstory .panel .num { font-size: 19px; } .sstory { gap: 2px; } }
 .choice .rsz { font-size: 22px; white-space: nowrap; }

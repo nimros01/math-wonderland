@@ -282,7 +282,7 @@ function genStory(lvl) {
     // There are twice as many dogs as cats.
     const c = R(2, lvl ? 9 : 8);
     return numQ('', c, [2 * c, 3 * c, c + 1, c - 1].filter(v => v > 0 && v !== c),
-      { visual: story(`<span>🐱+🐶</span>${num(`= ${3 * c}`)}`, `<span>🐶 = 🐱🐱</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, double: true });
+      { visual: story(`<span>🐱+🐶</span>${num(`= ${3 * c}`)}`, `<span>🐶 = 🐱+🐱</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, double: true });
   }
   // More dogs than cats: together t, dogs d more.
   const c = R(2, lvl ? 12 : 9), d = R(1, lvl ? 6 : 5), m3 = kind === 'more3';
@@ -290,7 +290,7 @@ function genStory(lvl) {
   if (m3) {
     // Cats, dogs and birds: each kind has d more than the one before.
     return numQ('', c, [t / 3, c + d, c + 1, c - 1, t - c].filter(v => Number.isInteger(v) && v > 0 && v !== c),
-      { visual: story(`<span>🐱🐶🐦</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span><span>🐦 = 🐶+${d}</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, more3: true });
+      { visual: story(`<span class="tight">🐱+🐶+🐦</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span><span>🐦 = 🐶+${d}</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, more3: true });
   }
   const askDog = chance(0.5), ans = askDog ? c + d : c;
   return numQ('', ans, [t - d, (t / 2) | 0, c, c + d, ans + 1, ans - 1].filter(v => v > 0 && v !== ans),
