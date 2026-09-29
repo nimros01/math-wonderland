@@ -102,7 +102,7 @@ export function openSolution(entry, onClose = () => {}) {
   function play() {
     stop();
     show(0);
-    if (steps.length > 1) timer = setInterval(() => { if (i >= steps.length - 1) return stop(); show(i + 1); }, STEP_MS);
+    if (steps.length > 1) timer = setInterval(() => { if (!ov.isConnected || i >= steps.length - 1) return stop(); show(i + 1); }, STEP_MS);
   }
   function close() {
     if (closed) return;

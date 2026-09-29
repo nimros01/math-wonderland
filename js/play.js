@@ -365,11 +365,13 @@ export function startRound(app, opts) {
       if (el) el.classList.add('bad');
       st.streak = 0;
       if (mode === 'normal') st.lvl = Math.max(0, st.lvl - 1);
+      // Show the right answer in the slot a moment later, unless ⏭ already moved on to the next question.
+      const missed = q, showRight = () => { if (q === missed && !over) fillSlot(rightParts(), true); };
       if (q.input === 'pad') {
-        setTimeout(() => fillSlot(rightParts(), true), 450);
+        setTimeout(showRight, 450);
       } else if (q.input === 'choice') {
         ansEl.querySelector(`[data-v="${CSS.escape(String(q.answer))}"]`)?.classList.add('right');
-        setTimeout(() => fillSlot(rightParts(), true), 450);
+        setTimeout(showRight, 450);
       }
       if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); fitVis(); }
       // A missed question comes back later, with its picture if it needs one.
