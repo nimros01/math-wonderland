@@ -22,7 +22,11 @@ const isPow10 = v => /^10*$/.test(String(v));
 
 // ---------- place value ----------
 // Read a number from blocks or coin stacks: each kind of block, then all together.
+// Numbers get a comma from 1,000 up when the question itself writes them that way.
+const fmt = q => (/\d,\d{3}/.test(`${q.eq} ${(q.choices || []).map(c => c.html).join(' ')}`) ? v => (typeof v === 'number' ? v.toLocaleString('en-US').replace(/^-/, '−') : m(v)) : m);
+
 function placeval({ n }, q, given) {
+  const m = fmt(q);
   const s = String(n), L = s.length;
   const terms = [...s].map((d, k) => [+d, pow10(L - 1 - k)]).filter(([d]) => d);
   const steps = [
@@ -39,6 +43,7 @@ function placeval({ n }, q, given) {
 
 // What is the underlined digit worth?
 function digitval({ n, i }, q, given) {
+  const m = fmt(q);
   const s = String(n), L = s.length, p = L - 1 - i, d = +s[i], val = d * pow10(p);
   const parts = [...s].map((c, k) => [+c * pow10(L - 1 - k), k]).filter(([v]) => v);
   const steps = [
@@ -53,6 +58,7 @@ function digitval({ n, i }, q, given) {
 
 // 1 → 10 → 100 …: every step is × 10.
 function zoom({ from, len, hole }, q, given) {
+  const m = fmt(q);
   const items = Array.from({ length: len }, (_, i) => pow10(from + i)), ans = items[hole], prev = items[hole - 1];
   const steps = [
     S(tiles(items.map((v, k) => (k === hole ? null : m(v))), { arcs: items.slice(1).map(() => '×10') }), `${m(prev)} × 10 = ${m(ans)}`, 'times10Row'),
@@ -63,6 +69,7 @@ function zoom({ from, len, hole }, q, given) {
 
 // × or ÷ by 10, 100, 1000, or by 20, 30, 50 (× 2 and then × 10).
 function zeros({ a, m: k, div }, q, given) {
+  const m = fmt(q);
   const c = div ? a / k : a * k, steps = [];
   if (isPow10(k)) {
     const z = String(k).length - 1, zs = Array.from({ length: z }, (_, i) => i);
@@ -171,7 +178,7 @@ const partsOf = a => [...String(a)].map((d, k, s) => +d * pow10(s.length - 1 - k
 function mulSplit({ a, b }, q, given) {
   const ps = partsOf(a), prods = ps.map(p => p * b), c = a * b;
   const steps = [
-    S(q.visual, `${a} = ${ps.join(' + ')}`, 'mulSplit'),
+    S(q.visual, `${a} = ${ps.join(' + ')}`, ['mulSplit2', 'mulSplit', 'mulSplit4'][Math.min(2, String(a).length - 2)] || 'mulSplit'),
     S(q.visual, ps.map((p, i) => `${p} × ${b} = ${prods[i]}`).join('<br>'), 'mulEach', { a: b }),
     S('', `${prods.join(' + ')} = ${c}`, 'addParts'),
   ];
@@ -217,7 +224,7 @@ function div({ n, k, q: each, hole = 'q' }, q, given) {
     ans = k;
     steps = [S(pic, `${each} × ? = ${n}<br>${n} ÷ ${each} = ${k}`, 'divGroups', { a: each, b: n })];
   }
-  return { ans, steps, oops: given !== undefined && Math.abs(given - ans) === 1 ? OOPS(`${n} ÷ ${k} = ${each}`, 'oopsOne') : null };
+  return { ans, steps, oops: given !== undefined && Math.abs(given - ans) === 1 ? OOPS(hole === 'n' ? `${k} × ${each} = ${n}` : hole === 'q' ? `${n} ÷ ${k} = ${each}` : `${n} ÷ ${each} = ${k}`, 'oopsOne') : null };
 }
 // n ÷ k with fish left over.
 function rem({ n, k, hole = 'r' }, q, given) {
@@ -239,7 +246,7 @@ function longdiv({ n, k, digit: di = null }, q, given) {
     left = have - each * k;
     got += each * pow10(p);
     if (!started && !each) continue;
-    const math = `${m(have * pow10(p))} ÷ ${k} = ${m(each * pow10(p))}${left ? `<br>${m(left * pow10(p))} 🐟` : ''}`;
+    const P = pow10(p), math = `${k} × ${m(each * P)} = ${m(each * k * P)}${left ? `<br>${m(have * P)} − ${m(each * k * P)} = ${m(left * P)} 🐟` : ''}`;
     steps.push(S(chests(k, m(got)), math, !started ? 'dealFirst' : 'dealNext', { a: m(left * pow10(p)) }));
     if (left && p) steps[steps.length - 1].say += ' ' + S('', '', 'dealBreak').say;
     started = true;
@@ -314,7 +321,7 @@ function fracName({ s, k }, q, given) {
       : g[0] === k && g[1] === s ? OOPS(frac(k, s), 'oopsFlip')
       : g[1] !== k ? OOPS(`${k}`, 'oopsCountPieces') : null;
   }
-  return { ans: `${s}/${k}`, steps: [S(q.visual, frac(s, k), 'fracName', { a: k, b: s })], oops };
+  return { ans: `${s}/${k}`, steps: [S(q.visual, frac(s, k), s === 1 ? 'fracName1' : 'fracName', { a: k, b: s })], oops };
 }
 // Compare two fractions: same pieces, same count, or cut them the same.
 function fracCmp({ n1, d1, n2, d2 }, q, given) {
@@ -338,7 +345,7 @@ function fracOf({ n, d, whole }, q, given) {
   let oops = null;
   if (given !== undefined && given !== ans) {
     if (given === k && n > 1) oops = OOPS(`${n} × ${k} = ${ans}`, 'oopsOnePart', { a: n });
-    else if (given === whole - ans) oops = OOPS(`${whole} − ${given} = ${ans}`, 'oopsRest');
+    else if (given === whole - ans) oops = OOPS(`${whole} − ${ans} = ${given}`, 'oopsRest');
   }
   return { ans, steps, oops };
 }

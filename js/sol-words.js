@@ -145,6 +145,8 @@ const WORDS = {
     'undoSub': 'Taking the ? from {a} leaves {b}, so the ? is {a} − {b}.',
     // times and sharing
     'mulSplit': 'Cut the big number into hundreds, tens and ones.',
+    'mulSplit2': 'Cut the big number into tens and ones.',
+    'mulSplit4': 'Cut the big number into thousands, hundreds, tens and ones.',
     'mulEach': 'Multiply every part by {a}.',
     'addParts': 'Add the parts.',
     'undoTimes': 'Undo × {a} with ÷ {a}.',
@@ -176,6 +178,7 @@ const WORDS = {
     'thenPart': 'Then cut that into {a} equal parts.',
     // fractions
     'fracName': '{a} equal pieces. {b} are coloured.',
+    'fracName1': '{a} equal pieces. 1 is coloured.',
     'fracSameBottom': 'The pieces are the same size, so more pieces is more.',
     'fracSameTop': 'The same number of pieces: a smaller bottom number means bigger pieces.',
     'fracLook': 'Put the two bars one under the other.',
@@ -343,10 +346,12 @@ const WORDS = {
     // puzzles
     'takeKnown': 'Take away the part you know.',
     'sameCutSub': 'Cut both the same, then take away.',
+    'sameBottomSub': 'The pieces are already the same size. Take away.',
     'sameCutAll': 'Cut the whole into {a} equal pieces.',
     'fillOne': 'The whole is 1. What is left is the missing part.',
     'eatEach': 'Eat 1 part of {a} from what is left.',
     'shareCakes': 'Cut each cake into {a}. Every child gets 1 piece of each cake: {b} pieces.',
+    'shareCakes1': 'Cut the cake into {a}. Every child gets 1 piece.',
     // what went wrong (Candy)
     'oopsTurned': 'A box turned around is the same box. 2 × 6 and 6 × 2 count once.',
     'oopsTimesBoth': 'Whatever happens to the bottom must happen to the top.',
@@ -361,6 +366,7 @@ const WORDS = {
     'oopsDecLen': 'More digits does not mean bigger. Compare place by place.',
     'oopsDots': 'The digits were lined up at the end, not at the dot.',
     'oopsShift': 'Count the places the digits move.',
+    'oopsAddTen': '× {a} is not + {a}. The digits move, the dot stays.',
     'oopsPctBar': 'Each bar is 10%, not 1%.',
     'oopsSaleOff': 'That is what comes off. The new price is what is left.',
     'oopsRatioAdd': 'Adding the same amount changes the taste. Multiply both.',

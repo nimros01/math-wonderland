@@ -26,7 +26,7 @@ function factorPairs({ n }, q, given) {
   const rows = [];
   for (let r = 1; r * r <= n; r++) rows.push(n % r ? [`${n} ÷ ${r} = ${Math.floor(n / r)} 🐟 ${n % r}`, false] : [`${r} × ${n / r}`, true]);
   const ans = rows.filter(r => r[1]).length;
-  return { ans, steps: [S(checks(rows), `${ans}`, 'pairsUp')], oops: given !== undefined && given !== ans && given > ans ? OOPS(`${ans}`, 'oopsTurned') : null };
+  return { ans, steps: [S(checks(rows), `${ans}`, 'pairsUp')], oops: given !== undefined && given !== ans && (given === 2 * ans || (Number.isInteger(Math.sqrt(n)) && given === 2 * ans - 1)) ? OOPS(`${ans}`, 'oopsTurned') : null };
 }
 const smallest = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return f; return 0; };
 function primeAll(sol, q) {
@@ -186,7 +186,7 @@ function decCmp({ x, y }, q, given) {
     ans: sym,
     steps: [S(q.visual, `${plain(q.eq.split('◯')[0])} = ${p(x)}<br>${plain(q.eq.split('◯')[1])} = ${p(y)}`, 'decSameLen'),
       S(digitRows([{ s: p(x) }, { s: p(y) }]), `${p(x)} ${esc(sym)} ${p(y)}`, x === y ? 'cmpSame' : 'decCompare')],
-    oops: given && given !== sym ? OOPS(`${p(x)} ${esc(sym)} ${p(y)}`, 'oopsDecLen') : null,
+    oops: given && given !== sym ? OOPS(`${p(x)} ${esc(sym)} ${p(y)}`, (() => { const [lx, ly] = q.eq.split('◯').map(h => plain(h).replace(/\D/g, '').length); return lx !== ly && given === SYM(lx, ly) ? 'oopsDecLen' : 'oopsSym'; })()) : null,
   };
 }
 // Line the numbers up on their dots, like whole numbers.
@@ -214,7 +214,7 @@ function decShift({ v, f }, q, given) {
   return {
     ans: Z,
     steps: [S(digitRows([{ s: lay(ai, ad) }, { s: lay(zi, zd) }], { head }), `${A} ${op} = ${Z}`, f < 1 ? 'shiftRight' : f === 100 ? 'shiftLeft2' : 'shiftLeft')],
-    oops: given !== undefined && toH(given) !== ans ? OOPS(`${A} ${op} = ${Z}`, 'oopsShift') : null,
+    oops: (() => { if (given === undefined) return null; const g = toH(given); if (g === ans) return null; if (f >= 10 && g === v + f * 100) return OOPS(`${A} ${op} = ${Z}`, 'oopsAddTen', { a: f }); return [ans * 10, ans / 10, v / f, v * f * f].includes(g) ? OOPS(`${A} ${op} = ${Z}`, 'oopsShift') : null; })(),
   };
 }
 function decTimes({ n: t, m: k }, q, given) {
@@ -282,12 +282,12 @@ function unitRate({ n, unit, k }, q, given) {
 // ---------- fraction puzzles ----------
 const COLS = [PINK, BLUE, SUN, '#8a5cd6'];
 function unitFrac({ a, b, x }, q) {
-  const L = b * x, top = a * x - b, g = gcd(top, L), y = L / top;
-  const pic = L <= 48 ? segBar(L, [[b, PINK], [top, SUN]]) : '';
+  const L = lcm(b, x), top = (a * L) / b - L / x, y = L / top;
+  const pic = L <= 48 ? segBar(L, [[L / x, PINK], [top, SUN]]) : '';
   return {
     ans: y,
     steps: [S(pic, `${frac(1, '?')} = ${frac(a, b)} − ${frac(1, x)}`, 'takeKnown'),
-      S(pic, `${frac(a * x, L)} − ${frac(b, L)} = ${frac(top, L)}${g > 1 ? ` = ${frac(1, y)}` : ''}`, 'sameCutSub')],
+      S(pic, `${frac((a * L) / b, L)} − ${frac(L / x, L)} = ${frac(top, L)}${top > 1 ? ` = ${frac(1, y)}` : ''}`, b === x ? 'sameBottomSub' : 'sameCutSub')],
   };
 }
 function toOne({ set }, q) {
@@ -316,7 +316,7 @@ function shareCake({ c, k }, q, given) {
   const g = parseFrac(given);
   return {
     ans: `${c}/${k}`,
-    steps: [S(fbars(Array.from({ length: c }, () => [k, 1]), { cols: Array(c).fill(PINK) }), `${c} × ${frac(1, k)} = ${frac(c, k)}`, 'shareCakes', { a: k, b: c })],
+    steps: [S(fbars(Array.from({ length: c }, () => [k, 1]), { cols: Array(c).fill(PINK) }), `${c} × ${frac(1, k)} = ${frac(c, k)}`, c === 1 ? 'shareCakes1' : 'shareCakes', { a: k, b: c })],
     oops: g && g[0] === k && g[1] === c ? OOPS(frac(c, k), 'oopsFlip') : null,
   };
 }
