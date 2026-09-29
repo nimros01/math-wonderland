@@ -1,6 +1,10 @@
 // The small sentences under each solution step, for parents and kids who read.
 // All of them live here, keyed by name, so another language can be added as one more block.
 // {a} in a sentence is filled in with that value.
+import { DESERT_WORDS } from './sol-words-desert.js';
+import { VOLCANO_WORDS } from './sol-words-volcano.js';
+import { SPACE_WORDS } from './sol-words-space.js';
+
 const WORDS = {
   en: {
     // adding and taking away
@@ -366,6 +370,9 @@ const WORDS = {
     'oopsRatioAdd': 'Adding the same amount changes the taste. Multiply both.',
     'oopsRateAdd': 'Find the price of one first.',
     'oopsNaive': 'Each time it is a part of what is left, not of the start.',
+    ...DESERT_WORDS,
+    ...VOLCANO_WORDS,
+    ...SPACE_WORDS,
   },
 };
 

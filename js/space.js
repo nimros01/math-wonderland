@@ -64,21 +64,21 @@ function genGrid(lvl) {
   if (Math.abs(x) === Math.abs(y) || (x > 0 && y > 0)) return genGrid(lvl);
   const th = shuffle(THINGS.slice()).slice(0, 4);
   if (kind === 'read') {
-    return textQ(`${th[0]} = ?`, pair(x, y), [pair(y, x), pair(-x, y), pair(x, -y), pair(-x, -y)], { visual: plane(n, [[x, y, th[0]]]), show: true, read: true });
+    return textQ(`${th[0]} = ?`, pair(x, y), [pair(y, x), pair(-x, y), pair(x, -y), pair(-x, -y)], { visual: plane(n, [[x, y, th[0]]]), show: true, read: true, sol: { t: 'sGrid', ask: 'read', n, x, y, e: th[0] } });
   }
   if (kind === 'find') {
     // The decoys sit where a swapped or flipped pair would put them.
     const spots = [[x, y], ...shuffle([[-x, y], [x, -y], [y, x], [-y, -x]]).slice(0, 3)];
     const marks = spots.map(([a, b], i) => [a, b, th[i]]);
     return { eq: `${pair(x, y)} = ?`, answer: th[0], input: 'choice', layout: 'row', visual: plane(n, marks), show: true,
-      choices: shuffle(th.map(t => ({ value: t, html: t }))), find: true };
+      choices: shuffle(th.map(t => ({ value: t, html: t }))), find: true, sol: { t: 'sGrid', ask: 'find', n, x, y, marks } };
   }
   if (kind === 'move') {
     const dx = nz() % 4 || 1, dy = nz() % 4 || 1, ex = x + dx, ey = y + dy;
     if (Math.abs(ex) > lim || Math.abs(ey) > lim || (!ex && !ey)) return genGrid(lvl);
     const arrows = `${Math.abs(dx)} ${dx > 0 ? '➡️' : '⬅️'} ${Math.abs(dy)} ${dy > 0 ? '⬆️' : '⬇️'}`;
     return textQ(`👽 ➜ ${arrows} = ?`, pair(ex, ey), [pair(x - dx, y + dy), pair(x + dx, y - dy), pair(x + dy, y + dx), pair(dx, dy), pair(ex, -ey)],
-      { visual: plane(n, [[x, y, '👽']]), show: true, move: true });
+      { visual: plane(n, [[x, y, '👽']]), show: true, move: true, sol: { t: 'sGrid', ask: 'move', n, x, y, dx, dy } });
   }
   if (kind === 'dist') {
     // Two things on one line across the middle: how many steps apart?
@@ -86,12 +86,12 @@ function genGrid(lvl) {
     const [p1, p2] = across ? [[a, k], [b, k]] : [[k, a], [k, b]];
     const d = b - a;
     return numQ(`${th[0]} ↔ ${th[1]} = ?`, d, [b + a, Math.abs(b + a), d + 1, d - 1, -a].filter(v => v > 0 && v !== d),
-      { visual: plane(n, [[...p1, th[0]], [...p2, th[1]]]), show: true, dist: true });
+      { visual: plane(n, [[...p1, th[0]], [...p2, th[1]]]), show: true, dist: true, sol: { t: 'sGrid', ask: 'dist', n, p1, p2, e: th[0], e2: th[1] } });
   }
   // Mirror in the red axis.
   const ax = pick(['x', 'y']), mx = ax === 'y' ? -x : x, my = ax === 'x' ? -y : y;
   return textQ(`${th[0]} <span class="mirr"></span> = ?`, pair(mx, my), [pair(x, y), pair(-x, -y), pair(ax === 'y' ? x : -x, ax === 'x' ? y : -y), pair(y, x)],
-    { visual: plane(n, [[x, y, th[0]]], { mirror: ax }), show: true, mirror: true });
+    { visual: plane(n, [[x, y, th[0]]], { mirror: ax }), show: true, mirror: true, sol: { t: 'sGrid', ask: 'mirror', n, x, y, ax, e: th[0] } });
 }
 
 // ---------- 2. Picture pairs: each picture is a number ----------
@@ -102,24 +102,24 @@ function genPair(lvl) {
   if (new Set([a, b, c]).size < 3) return genPair(lvl);
   if (kind === 'dbl') {
     const k = R(2, 4);
-    return numQ(`${A} = ?`, a, [k * a, a + 1, a - 1, a + k], { visual: sys([`${rep(A, k)} = ${k * a}`]), show: true, pics: true });
+    return numQ(`${A} = ?`, a, [k * a, a + 1, a - 1, a + k], { visual: sys([`${rep(A, k)} = ${k * a}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'dbl', P: [A, B, C], a, b, c, k } });
   }
   if (kind === 'pair') {
-    return numQ(`${B} = ?`, b, [a + b, a, b + 1, 2 * a], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true });
+    return numQ(`${B} = ?`, b, [a + b, a, b + 1, 2 * a], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'pair', P: [A, B, C], a, b, c } });
   }
   if (kind === 'tri') {
-    return numQ(`${C} = ?`, c, [b + c, b, a, c + 1, c - 1], { visual: sys([`${rep(A, 3)} = ${3 * a}`, `${A} + ${B} = ${a + b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true });
+    return numQ(`${C} = ?`, c, [b + c, b, a, c + 1, c - 1], { visual: sys([`${rep(A, 3)} = ${3 * a}`, `${A} + ${B} = ${a + b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'tri', P: [A, B, C], a, b, c } });
   }
   if (kind === 'chain') {
     if (b <= c) return genPair(lvl);
-    return numQ(`${C} = ?`, c, [b - c, b + c, b, c + 1, a], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`, `${B} − ${C} = ${b - c}`]), show: true, pics: true });
+    return numQ(`${C} = ?`, c, [b - c, b + c, b, c + 1, a], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`, `${B} − ${C} = ${b - c}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'chain', P: [A, B, C], a, b, c } });
   }
   if (kind === 'chainx') {
     if (a > 9 || b > 9) return genPair(lvl);
-    return numQ(`${C} = ?`, c, [b + c, b, a * b, c + 1, c - 1], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} × ${B} = ${a * b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true });
+    return numQ(`${C} = ?`, c, [b + c, b, a * b, c + 1, c - 1], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} × ${B} = ${a * b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'chainx', P: [A, B, C], a, b, c } });
   }
   const s = a + b + c;
-  return numQ(`${A} + ${B} + ${C} = ?`, s, [a + b, b + c, s + 1, s - 1, a + 2 * b + c], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true });
+  return numQ(`${A} + ${B} + ${C} = ?`, s, [a + b, b + c, s + 1, s - 1, a + 2 * b + c], { visual: sys([`${A} + ${A} = ${2 * a}`, `${A} + ${B} = ${a + b}`, `${B} + ${C} = ${b + c}`]), show: true, pics: true, sol: { t: 'sPair', ask: 'sum3', P: [A, B, C], a, b, c } });
 }
 
 // ---------- 3. Picture systems: two pictures, two clues ----------
@@ -128,16 +128,16 @@ function genSys(lvl) {
   const [A, B] = pics(2), [a, b] = bigSmall(lvl ? 12 : 10);
   const askA = chance(0.5), ans = askA ? a : b, P = askA ? A : B;
   const near = [a, b, a + b, a - b, ans + 1, ans - 1].filter(v => v !== ans);
-  if (kind === 'sumdiff') return numQ(`${P} = ?`, ans, near, { visual: sys([`${A} + ${B} = ${a + b}`, `${A} − ${B} = ${a - b}`]), show: true, pics: true });
-  if (kind === 'twoA') return numQ(`${P} = ?`, ans, near.concat(2 * a + b - (a + b)), { visual: sys([`${A} + ${A} + ${B} = ${2 * a + b}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true });
+  if (kind === 'sumdiff') return numQ(`${P} = ?`, ans, near, { visual: sys([`${A} + ${B} = ${a + b}`, `${A} − ${B} = ${a - b}`]), show: true, pics: true, sol: { t: 'sSum', P: [A, B], s: a + b, d: a - b, ask: askA ? 'A' : 'B' } });
+  if (kind === 'twoA') return numQ(`${P} = ?`, ans, near.concat(2 * a + b - (a + b)), { visual: sys([`${A} + ${A} + ${B} = ${2 * a + b}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true, sol: { t: 'sTake', P: [A, B], c: [2, 1], u: [2 * a + b, a + b], ask: askA ? 'A' : 'B' } });
   if (kind === 'threeA') {
     // 3 of one and 1 or 2 of the other: never 3 and 3, which would only say the same clue again.
     const k = R(1, 2);
-    return numQ(`${P} = ?`, ans, near.concat(k * a), { visual: sys([`${times(3, A)} + ${times(k, B)} = ${3 * a + k * b}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true, times: true });
+    return numQ(`${P} = ?`, ans, near.concat(k * a), { visual: sys([`${times(3, A)} + ${times(k, B)} = ${3 * a + k * b}`, `${A} + ${B} = ${a + b}`]), show: true, pics: true, times: true, sol: { t: 'sTake', P: [A, B], c: [3, k], u: [3 * a + k * b, a + b], ask: askA ? 'A' : 'B' } });
   }
   // 🪐 is worth two 🚀.
   const d = R(1, lvl ? 9 : 6), k = lvl < 2 ? 2 : R(2, 3);
-  return numQ(`${B} = ?`, d, [k * d, (k + 1) * d, d + 1, d - 1].filter(v => v !== d), { visual: sys([`${A} = ${rep(B, k)}`, `${A} + ${B} = ${(k + 1) * d}`]), show: true, pics: true, double: true });
+  return numQ(`${B} = ?`, d, [k * d, (k + 1) * d, d + 1, d - 1].filter(v => v !== d), { visual: sys([`${A} = ${rep(B, k)}`, `${A} + ${B} = ${(k + 1) * d}`]), show: true, pics: true, double: true, sol: { t: 'sSwap', sm: B, bg: A, k, c: 0, u: (k + 1) * d, ask: 'sm' } });
 }
 
 // ---------- 4. Swap it in: substitution ----------
@@ -152,18 +152,18 @@ function genSwap(lvl) {
     const s = 2 * a + k;
     const opts = [`${A} + ${A} + ${k} = ${s}`, `${A} + ${k} = ${s}`, `${A} + ${A} = ${s} + ${k}`, `${A} + ${B} + ${k} = ${s}`];
     const choices = shuffle(opts.map((h, i) => ({ value: `e${i}`, html: `<span class="ex exs">${h}</span>`, fill: [`<span class="fillx">${h}</span>`] })));
-    return { eq: '🔁 ?', answer: 'e0', input: 'choice', layout: 'col', choices, visual: sys([`${swp(B)} = ${swp(`${A} + ${k}`)}`, `${A} + ${swp(B)} = ${s}`]), show: true, which: true };
+    return { eq: '🔁 ?', answer: 'e0', input: 'choice', layout: 'col', choices, visual: sys([`${swp(B)} = ${swp(`${A} + ${k}`)}`, `${A} + ${swp(B)} = ${s}`]), show: true, which: true, sol: { t: 'sWhich', P: [A, B], k, s } };
   }
   if (kind === 'dbl' || kind === 'mul') {
     // 🚀 = 🪐 + 🪐 (or three of them), and they add up to s.
     const m = kind === 'dbl' ? 2 : 3, s = a + m * a;
     const askB = chance(0.4), ans = askB ? m * a : a;
     return numQ(`${askB ? B : A} = ?`, ans, [s, s / 2 | 0, a + m, ans + 1, ans - 1, m * a, a].filter(v => v !== ans),
-      { visual: sys([`${swp(B)} = ${swp(m === 2 ? `${A} + ${A}` : times(3, A))}`, `${A} + ${swp(B)} = ${s}`]), show: true, dbl: true });
+      { visual: sys([`${swp(B)} = ${swp(m === 2 ? `${A} + ${A}` : times(3, A))}`, `${A} + ${swp(B)} = ${s}`]), show: true, dbl: true, sol: { t: 'sSwap', sm: A, bg: B, k: m, c: 0, u: s, ask: askB ? 'bg' : 'sm' } });
   }
   const s = 2 * a + k, ans = kind === 'solveB' ? a + k : a;
   return numQ(`${kind === 'solveB' ? B : A} = ?`, ans, [s - k, (s - k) / 2 + k === ans ? a : a + k, s, ans + 1, ans - 1, s / 2 | 0].filter(v => v !== ans),
-    { visual: sys([`${swp(B)} = ${swp(`${A} + ${k}`)}`, `${A} + ${swp(B)} = ${s}`]), show: true, solveB: kind === 'solveB' });
+    { visual: sys([`${swp(B)} = ${swp(`${A} + ${k}`)}`, `${A} + ${swp(B)} = ${s}`]), show: true, solveB: kind === 'solveB', sol: { t: 'sSwap', sm: A, bg: B, k: 1, c: k, u: s, ask: kind === 'solveB' ? 'bg' : 'sm' } });
 }
 
 // ---------- 5. Stack and cancel: add or take away the two clues ----------
@@ -176,17 +176,17 @@ function genStack(lvl) {
   const [A, B] = xy ? [X, Y] : pics(2), [a, b] = bigSmall(lvl ? 12 : 10);
   if (kind === 'add' || kind === 'solve' || kind === 'askB') {
     const vis = stack(`${A} + ${gone(B)} = ${a + b}`, `${A} − ${gone(B)} = ${a - b}`, '➕', kind === 'add' ? '' : `${A} + ${A} = ${2 * a}`);
-    if (kind === 'add') return numQ(`${A} + ${A} = ?`, 2 * a, [a, a + b, a - b, 2 * a + 2 * b, 2 * a - 1, 2 * a + 1], { visual: vis, show: true, add: true });
-    if (kind === 'solve') return numQ(`${A} = ?`, a, [2 * a, b, a + b, a + 1, a - 1], { visual: vis, show: true });
-    return numQ(`${B} = ?`, b, [a, 2 * b, a - b, a + b, b + 1], { visual: vis, show: true, askB: true });
+    if (kind === 'add') return numQ(`${A} + ${A} = ?`, 2 * a, [a, a + b, a - b, 2 * a + 2 * b, 2 * a - 1, 2 * a + 1], { visual: vis, show: true, add: true, sol: { t: 'sSum', P: [A, B], s: a + b, d: a - b, ask: 'AA' } });
+    if (kind === 'solve') return numQ(`${A} = ?`, a, [2 * a, b, a + b, a + 1, a - 1], { visual: vis, show: true, sol: { t: 'sSum', P: [A, B], s: a + b, d: a - b, ask: 'A' } });
+    return numQ(`${B} = ?`, b, [a, 2 * b, a - b, a + b, b + 1], { visual: vis, show: true, askB: true, sol: { t: 'sSum', P: [A, B], s: a + b, d: a - b, ask: 'B' } });
   }
   if (kind === 'sub') {
     const vis = stack(`${A} + ${gone(A)} + ${gone(B)} = ${2 * a + b}`, `${gone(A)} + ${gone(B)} = ${a + b}`, '➖', `${A} = …`);
-    return numQ(`${A} = ?`, a, [2 * a, b, a + b, 3 * a + 2 * b, a + 1].filter(v => v !== a), { visual: vis, show: true, sub: true });
+    return numQ(`${A} = ?`, a, [2 * a, b, a + b, 3 * a + 2 * b, a + 1].filter(v => v !== a), { visual: vis, show: true, sub: true, sol: { t: 'sTake', P: [A, B], c: [2, 1], u: [2 * a + b, a + b], ask: 'A' } });
   }
   // A + 2B and A + B: taking away leaves one B; then find A.
   const vis = stack(`${gone(A)} + ${gone(B)} + ${B} = ${a + 2 * b}`, `${gone(A)} + ${gone(B)} = ${a + b}`, '➖', `${B} = …`);
-  return numQ(`${A} = ?`, a, [b, a + b, 2 * b, a + 1, a - 1], { visual: vis, show: true, scale: true });
+  return numQ(`${A} = ?`, a, [b, a + b, 2 * b, a + 1, a - 1], { visual: vis, show: true, scale: true, sol: { t: 'sTake', P: [A, B], c: [1, 2], u: [a + 2 * b, a + b], ask: 'A' } });
 }
 
 // ---------- 6. The rule machine: x goes in, y comes out ----------
@@ -214,10 +214,10 @@ function genRule(lvl) {
   const [x1, x2, x3, xq] = [...xs], ex = [x1, x2, x3].sort((p, q) => p - q), ys = ex.map(r.f), yq = r.f(xq);
   const kind = pick([['next', 'next', 'rule'], ['next', 'rule', 'next'], ['next', 'rule', 'back']][lvl]);
   const vis = table(ex, ys);
-  if (kind === 'next') return numQ(`${X} = ${xq} ➜ ${Y} = ?`, yq, [yq + 1, yq - 1, xq + ys[0] - ex[0], ys[2] + (ys[2] - ys[1])].filter(v => v !== yq), { visual: vis, show: true, next: true });
+  if (kind === 'next') return numQ(`${X} = ${xq} ➜ ${Y} = ?`, yq, [yq + 1, yq - 1, xq + ys[0] - ex[0], ys[2] + (ys[2] - ys[1])].filter(v => v !== yq), { visual: vis, show: true, next: true, sol: { t: 'sRule', ask: 'next', rule: ruleHtml(r).replace(/<[^>]*>/g, ''), xs: ex, ys, xq } });
   if (kind === 'back') {
     if (r.html === `× ${X}` || r.lead) return genRule(lvl);
-    return numQ(`${Y} = ${yq} ➜ ${X} = ?`, xq, [yq, xq + 1, xq - 1, yq - xq].filter(v => v > 0 && v !== xq), { visual: vis, show: true, back: true });
+    return numQ(`${Y} = ${yq} ➜ ${X} = ?`, xq, [yq, xq + 1, xq - 1, yq - xq].filter(v => v > 0 && v !== xq), { visual: vis, show: true, back: true, sol: { t: 'sRule', ask: 'back', rule: ruleHtml(r).replace(/<[^>]*>/g, ''), xs: ex, ys, yq } });
   }
   // Which rule fits every pair? Wrong rules must miss at least one of them.
   const cands = shuffle(types.map(makeRule)).concat([makeRule('plus'), makeRule('times'), makeRule('tpl')]);
@@ -225,7 +225,7 @@ function genRule(lvl) {
   for (let t = 0; wrong.length < 3 && t < 50; t++) cands.push(makeRule(pick(['plus', 'times', 'tpl', 'minus'])));
   for (const w of cands) if (wrong.length < 3 && ex.some((x, i) => w.f(x) !== ys[i]) && ![ruleHtml(r), ...wrong.map(ruleHtml)].includes(ruleHtml(w))) wrong.push(w);
   const choices = shuffle([r, ...wrong].map((w, i) => ({ value: `r${i}`, html: `<span class="ex rsz">${ruleHtml(w)}</span>` })));
-  return { eq: `${X} ➜ ⚙️ ➜ ${Y}`, answer: 'r0', input: 'choice', layout: 'grid', choices, visual: vis, show: true, rule: true };
+  return { eq: `${X} ➜ ⚙️ ➜ ${Y}`, answer: 'r0', input: 'choice', layout: 'grid', choices, visual: vis, show: true, rule: true, sol: { t: 'sRule', ask: 'rule', xs: ex, ys } };
 }
 
 // ---------- 7. Hello x and y ----------
@@ -238,27 +238,27 @@ function genXY(lvl) {
     if (a === b || (ms[0] * ms[1] === 0 && chance(0.3))) return genXY(lvl);
     const lines = ms.map((m, i) => [m, b - m * a, i ? SKY : RED]);
     return textQ(`(${X}, ${Y}) = ?`, pair(a, b), [pair(b, a), pair(a + 1, b), pair(a, b + 1), pair(a - 1, b - ms[0]), pair(-a, b), pair(b + 1, a)],
-      { visual: plane(n, [], { lines }), show: true, cross: true });
+      { visual: plane(n, [], { lines }), show: true, cross: true, sol: { t: 'sCross', n, lines } });
   }
   const [x, y] = bigSmall(lvl ? 12 : 10);
   if (kind === 'check') {
     const good = chance(0.5), gx = good ? x : x + pick([1, -1]), gy = good ? y : y + pick([1, -1]);
     if (!good && gx + gy !== x + y && gx - gy !== x - y && chance(0.5)) return genXY(lvl);
-    return tfOwn(`${X} = ${gx} , ${Y} = ${gy}`, good, { visual: sys([`${X} + ${Y} = ${x + y}`, `${X} − ${Y} = ${x - y}`]), show: true, check: true });
+    return tfOwn(`${X} = ${gx} , ${Y} = ${gy}`, good, { visual: sys([`${X} + ${Y} = ${x + y}`, `${X} − ${Y} = ${x - y}`]), show: true, check: true, sol: { t: 'sCheck', gx, gy, s: x + y, d: x - y } });
   }
   if (kind === 'sub') {
     const k = R(2, 3), v = R(1, lvl > 1 ? 9 : 6), askY = chance(0.4);
     return numQ(`${askY ? Y : X} = ?`, askY ? k * v : v, [v, k * v, (k + 1) * v, v + 1, k * v + 1].filter(q => q !== (askY ? k * v : v)),
-      { visual: sys([`${Y} = ${k}${X}`, `${X} + ${Y} = ${(k + 1) * v}`]), show: true, sub: true });
+      { visual: sys([`${Y} = ${k}${X}`, `${X} + ${Y} = ${(k + 1) * v}`]), show: true, sub: true, sol: { t: 'sSwap', sm: X, bg: Y, k, c: 0, u: (k + 1) * v, ask: askY ? 'bg' : 'sm' } });
   }
   if (kind === 'neg') {
     // The same two clues, but now y is below zero.
     const yy = -R(1, 6), xx = R(1, 9);
     const askY = chance(0.5), ans = askY ? yy : xx;
-    return intQ(`${askY ? Y : X} = ?`, ans, [-ans, xx + yy, xx - yy, ans + 1, ans - 1], { visual: sys([`${X} + ${Y} = ${M(xx + yy)}`, `${X} − ${Y} = ${xx - yy}`]), show: true, neg: ans < 0, sneg: true });
+    return intQ(`${askY ? Y : X} = ?`, ans, [-ans, xx + yy, xx - yy, ans + 1, ans - 1], { visual: sys([`${X} + ${Y} = ${M(xx + yy)}`, `${X} − ${Y} = ${xx - yy}`]), show: true, neg: ans < 0, sneg: true, sol: { t: 'sSum', P: [X, Y], s: xx + yy, d: xx - yy, ask: askY ? 'B' : 'A' } });
   }
   const askY = chance(0.5), ans = askY ? y : x;
-  return numQ(`${askY ? Y : X} = ?`, ans, [x + y, x - y, askY ? x : y, ans + 1, ans - 1].filter(v => v !== ans), { visual: sys([`${X} + ${Y} = ${x + y}`, `${X} − ${Y} = ${x - y}`]), show: true });
+  return numQ(`${askY ? Y : X} = ?`, ans, [x + y, x - y, askY ? x : y, ans + 1, ans - 1].filter(v => v !== ans), { visual: sys([`${X} + ${Y} = ${x + y}`, `${X} − ${Y} = ${x - y}`]), show: true, sol: { t: 'sSum', P: [X, Y], s: x + y, d: x - y, ask: askY ? 'B' : 'A' } });
 }
 
 // ---------- 8. Picture stories: cats and dogs, legs and prices ----------
@@ -271,18 +271,18 @@ function genStory(lvl) {
     // Chickens and rabbits: how many animals, how many legs, how many rabbits?
     const n = R(3, lvl > 1 ? 12 : 8), r = R(1, n - 1), legs = 2 * n + 2 * r;
     return numQ('', r, [n - r, legs / 4 | 0, n, r + 1, r - 1].filter(v => v > 0 && v !== r),
-      { visual: story(`<span>🐔+🐰</span>${num(`= ${n}`)}`, `<span>🦵</span>${num(`= ${legs}`)}`, `<span>🐰</span>${num(SLOT)}`), show: true, legs: true });
+      { visual: story(`<span>🐔+🐰</span>${num(`= ${n}`)}`, `<span>🦵</span>${num(`= ${legs}`)}`, `<span>🐰</span>${num(SLOT)}`), show: true, legs: true, sol: { t: 'sLegs', n, legs } });
   }
   if (kind === 'price') {
     const i = R(2, 6), d = R(1, 6), k = R(2, 3);
     return numQ('', i, [d, i + d, k * i + d, i + 1, i - 1].filter(v => v > 0 && v !== i),
-      { visual: story(`<span>${'🍦'.repeat(k)}🍩</span>${num(`${k * i + d} 🪙`)}`, `<span>🍦🍩</span>${num(`${i + d} 🪙`)}`, `<span>🍦</span>${num(`${SLOT} 🪙`)}`), show: true, price: true });
+      { visual: story(`<span>${'🍦'.repeat(k)}🍩</span>${num(`${k * i + d} 🪙`)}`, `<span>🍦🍩</span>${num(`${i + d} 🪙`)}`, `<span>🍦</span>${num(`${SLOT} 🪙`)}`), show: true, price: true, sol: { t: 'sTake', P: ['🍦', '🍩'], c: [k, 1], u: [k * i + d, i + d], ask: 'A', unit: '🪙' } });
   }
   if (kind === 'double') {
     // There are twice as many dogs as cats.
     const c = R(2, lvl ? 9 : 8);
     return numQ('', c, [2 * c, 3 * c, c + 1, c - 1].filter(v => v > 0 && v !== c),
-      { visual: story(`<span>🐱+🐶</span>${num(`= ${3 * c}`)}`, `<span>🐶 = 🐱+🐱</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, double: true });
+      { visual: story(`<span>🐱+🐶</span>${num(`= ${3 * c}`)}`, `<span>🐶 = 🐱+🐱</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, double: true, sol: { t: 'sSwap', sm: '🐱', bg: '🐶', k: 2, c: 0, u: 3 * c, ask: 'sm' } });
   }
   // More dogs than cats: together t, dogs d more.
   const c = R(2, lvl ? 12 : 9), d = R(1, lvl ? 6 : 5), m3 = kind === 'more3';
@@ -290,11 +290,11 @@ function genStory(lvl) {
   if (m3) {
     // Cats, dogs and birds: each kind has d more than the one before.
     return numQ('', c, [t / 3, c + d, c + 1, c - 1, t - c].filter(v => Number.isInteger(v) && v > 0 && v !== c),
-      { visual: story(`<span class="tight">🐱+🐶+🐦</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span><span>🐦 = 🐶+${d}</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, more3: true });
+      { visual: story(`<span class="tight">🐱+🐶+🐦</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span><span>🐦 = 🐶+${d}</span>`, `<span>🐱</span>${num(SLOT)}`), show: true, more3: true, sol: { t: 'sMore3', d, u: t } });
   }
   const askDog = chance(0.5), ans = askDog ? c + d : c;
   return numQ('', ans, [t - d, (t / 2) | 0, c, c + d, ans + 1, ans - 1].filter(v => v > 0 && v !== ans),
-    { visual: story(`<span>🐱+🐶</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span>`, `<span>${askDog ? '🐶' : '🐱'}</span>${num(SLOT)}`), show: true, more: true });
+    { visual: story(`<span>🐱+🐶</span>${num(`= ${t}`)}`, `<span>🐶 = 🐱+${d}</span>`, `<span>${askDog ? '🐶' : '🐱'}</span>${num(SLOT)}`), show: true, more: true, sol: { t: 'sSwap', sm: '🐱', bg: '🐶', k: 1, c: d, u: t, ask: askDog ? 'bg' : 'sm' } });
 }
 
 // ---------- 9. Challenge mix (puzzle stop): logic grids, picture grids, number trails ----------
@@ -377,7 +377,7 @@ function kenken(lvl) {
     body += `<circle cx="${P + qc * u + u / 2}" cy="${P + qr * u + u / 2 + 5}" r="16" fill="#fff4cc" stroke="#d99a00" stroke-width="3" stroke-dasharray="5 4"/>${txt(P + qc * u + u / 2, P + qr * u + u / 2 + 6, '?', 18, 'fill="#d99a00"')}`;
     body += `<rect x="${P}" y="${P}" width="${S}" height="${S}" fill="none" stroke="${INK}" stroke-width="5" rx="3"/>`;
     const ans = sol[qr][qc];
-    return { eq: '🧩 = ?', answer: ans, input: 'choice', layout: 'row', visual: svg(S + 2 * P, S + 2 * P, body), show: true, kenken: true, n,
+    return { eq: '🧩 = ?', answer: ans, input: 'choice', layout: 'row', visual: svg(S + 2 * P, S + 2 * P, body), show: true, kenken: true, n, sol: { t: 'sKen', n, cages: list, rules: rules.map(rl => [rl.op, rl.t]), q: [qr, qc] },
       choices: Array.from({ length: n }, (_, i) => ({ value: i + 1, html: String(i + 1) })) };
   }
   return trail(lvl);
@@ -393,9 +393,9 @@ function picGrid(lvl) {
   const html = `<table class="pgrid">${rows.map(r => `<tr>${r.map(p => `<td>${p}</td>`).join('')}<th>${sum(r)}</th></tr>`).join('')}</table>`;
   if (ask === 'all') {
     const s = v[A] + v[B] + v[C];
-    return numQ(`${A} + ${B} + ${C} = ?`, s, [s + 1, s - 1, v[A] + v[B], 3 * v[A]], { visual: html, show: true, pgrid: true, all: true });
+    return numQ(`${A} + ${B} + ${C} = ?`, s, [s + 1, s - 1, v[A] + v[B], 3 * v[A]], { visual: html, show: true, pgrid: true, all: true, sol: { t: 'sPGrid', rows, sums: rows.map(sum), ask: 'all' } });
   }
-  return numQ(`${C} = ?`, v[C], [v[A], v[B], v[C] + 1, v[C] - 1, sum([A, B, C])].filter(x => x !== v[C]), { visual: html, show: true, pgrid: true });
+  return numQ(`${C} = ?`, v[C], [v[A], v[B], v[C] + 1, v[C] - 1, sum([A, B, C])].filter(x => x !== v[C]), { visual: html, show: true, pgrid: true, sol: { t: 'sPGrid', rows, sums: rows.map(sum), ask: 'one', pic: C } });
 }
 // A number trail: start, do each step in turn.
 function trail(lvl) {
@@ -414,7 +414,7 @@ function trail(lvl) {
     if (v > 999) continue;
     // The trail wraps onto a second line on small phones; the flag at its end is the answer.
     const vis = `<div class="ntrail"><b>${start}</b>${parts.map(p => `<i>➜</i><span>${p}</span>`).join('')}<i>➜</i><b>🏁</b></div>`;
-    return numQ('🏁 = ?', v, [v + 1, v - 1, v + 2, v * 2].filter(x => x !== v), { visual: vis, show: true, trail: true });
+    return numQ('🏁 = ?', v, [v + 1, v - 1, v + 2, v * 2].filter(x => x !== v), { visual: vis, show: true, trail: true, sol: { t: 'sTrail', start, ops: parts } });
   }
 }
 function genMix(lvl) {
@@ -426,15 +426,15 @@ function genMix(lvl) {
 function genSpeed(lvl) {
   const kind = pick([['times', 'add', 'sub', 'half', 'div', 'sq'], ['times', 'add', 'sub', 'sq', 'x', 'neg', 'div', 'half'], ['times', 'sub', 'sq', 'x', 'neg', 'pct', 'div', 'add']][lvl]);
   const top = [9, 12, 15][lvl];
-  if (kind === 'times') { const a = R(lvl ? 4 : 2, top), b = R(lvl ? 4 : 2, 9); return numQ(`${a} × ${b} = ?`, a * b, [a * b + a, a * b - b, a * (b + 1), a + b], { speed: true, times: true }); }
-  if (kind === 'add') { const m = [40, 150, 450][lvl], a = R(12, m), b = R(12, m); return numQ(`${a} + ${b} = ?`, a + b, [a + b + 10, a + b - 10, a + b + 1], { speed: true, add: true }); }
-  if (kind === 'sub') { const a = R(30, [60, 200, 900][lvl]), b = R(11, a - 5); return numQ(`${a} − ${b} = ?`, a - b, [a - b + 10, a - b - 10, a - b + 1].filter(v => v >= 0), { speed: true, sub: true }); }
-  if (kind === 'sq') { const a = R(lvl ? 4 : 2, top + (lvl > 1 ? 5 : 0)); return numQ(`${a}² = ?`, a * a, [2 * a, a * a + a, (a - 1) * (a - 1), a * a + 1], { speed: true, sq: true }); }
-  if (kind === 'half') { const a = 2 * R(6, [30, 60, 200][lvl]); return numQ(`½ × ${a} = ?`, a / 2, [a / 2 + 1, a / 4 | 0, a, a / 2 - 2], { speed: true, half: true }); }
-  if (kind === 'x') { const k = R(2, lvl > 1 ? 9 : 6), v = R(1, top), c = R(1, 20); return numQ(`${X} = ?`, v, [v + 1, v - 1, k * v, (k * v + c) / k | 0], { visual: sys([`${k}${X} + ${c} = ${k * v + c}`]), show: true, speed: true, x: true }); }
-  if (kind === 'neg') { const a = R(1, top), b = R(a + 1, top + 10); return intQ(`${M(-b)} + ${a} = ?`, a - b, [b - a, -(a + b), a - b + 1, a - b - 1], { speed: true, neg: true }); }
-  if (kind === 'pct') { const p = pick([10, 20, 25, 50, 75]), t = pick([20, 40, 60, 80, 100, 120, 200, 400]); return numQ(`${p}% × ${t} = ?`, p * t / 100, [p, t / 2, p * t / 100 + 10, t - p].filter(v => v > 0), { speed: true, pct: true }); }
-  const b = R(lvl ? 3 : 2, 9), q = R(2, top); return numQ(`${b * q} ÷ ${b} = ?`, q, [q + 1, q - 1, b, b * q - b], { speed: true, div: true });
+  if (kind === 'times') { const a = R(lvl ? 4 : 2, top), b = R(lvl ? 4 : 2, 9); return numQ(`${a} × ${b} = ?`, a * b, [a * b + a, a * b - b, a * (b + 1), a + b], { speed: true, times: true, sol: { t: 'mul', a, b } }); }
+  if (kind === 'add') { const m = [40, 150, 450][lvl], a = R(12, m), b = R(12, m); return numQ(`${a} + ${b} = ?`, a + b, [a + b + 10, a + b - 10, a + b + 1], { speed: true, add: true, sol: a < 100 && b < 100 ? { t: 'add', a, b } : { t: 'col', a, b, op: '+' } }); }
+  if (kind === 'sub') { const a = R(30, [60, 200, 900][lvl]), b = R(11, a - 5); return numQ(`${a} − ${b} = ?`, a - b, [a - b + 10, a - b - 10, a - b + 1].filter(v => v >= 0), { speed: true, sub: true, sol: a < 100 ? { t: 'sub', a, b } : { t: 'col', a, b, op: '−' } }); }
+  if (kind === 'sq') { const a = R(lvl ? 4 : 2, top + (lvl > 1 ? 5 : 0)); return numQ(`${a}² = ?`, a * a, [2 * a, a * a + a, (a - 1) * (a - 1), a * a + 1], { speed: true, sq: true, sol: { t: 'sSq', a } }); }
+  if (kind === 'half') { const a = 2 * R(6, [30, 60, 200][lvl]); return numQ(`½ × ${a} = ?`, a / 2, [a / 2 + 1, a / 4 | 0, a, a / 2 - 2], { speed: true, half: true, sol: { t: 'sHalf', a } }); }
+  if (kind === 'x') { const k = R(2, lvl > 1 ? 9 : 6), v = R(1, top), c = R(1, 20); return numQ(`${X} = ?`, v, [v + 1, v - 1, k * v, (k * v + c) / k | 0], { visual: sys([`${k}${X} + ${c} = ${k * v + c}`]), show: true, speed: true, x: true, sol: { t: 'sLin', k, c, u: k * v + c } }); }
+  if (kind === 'neg') { const a = R(1, top), b = R(a + 1, top + 10); return intQ(`${M(-b)} + ${a} = ?`, a - b, [b - a, -(a + b), a - b + 1, a - b - 1], { speed: true, neg: true, sol: { t: 'sNeg', a, b } }); }
+  if (kind === 'pct') { const p = pick([10, 20, 25, 50, 75]), t = pick([20, 40, 60, 80, 100, 120, 200, 400]); return numQ(`${p}% × ${t} = ?`, p * t / 100, [p, t / 2, p * t / 100 + 10, t - p].filter(v => v > 0), { speed: true, pct: true, sol: { t: 'pctOf', p, n: t } }); }
+  const b = R(lvl ? 3 : 2, 9), q = R(2, top); return numQ(`${b * q} ÷ ${b} = ?`, q, [q + 1, q - 1, b, b * q - b], { speed: true, div: true, sol: { t: 'div', n: b * q, k: b, q } });
 }
 
 export const SPACE = [

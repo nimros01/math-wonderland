@@ -25,30 +25,30 @@ function genUnits(lvl) {
   const [big, small, k, icon] = pick(lvl ? UNITS : UNITS.slice(0, 2).concat([UNITS[3]]));
   if (kind === 'down') {
     const n = R(2, lvl ? 9 : 5), ans = n * k;
-    return numQ(`${icon} ${n} ${big} = ? ${small}`, ans, [n * 10, n * 100, n * 1000, n + k, ans * 10].filter(v => v !== ans), { layout: ans > 999 ? 'grid' : undefined, units: true });
+    return numQ(`${icon} ${n} ${big} = ? ${small}`, ans, [n * 10, n * 100, n * 1000, n + k, ans * 10].filter(v => v !== ans), { layout: ans > 999 ? 'grid' : undefined, units: true, sol: { t: 'dUnit', ask: 'down', n, k, big, small } });
   }
   if (kind === 'up') {
     const n = R(2, 9), v = n * k;
-    return numQ(`${icon} ${v} ${small} = ? ${big}`, n, [n * 10, v / 10, n + 1, v / 100].filter(x => Number.isInteger(x) && x > 0 && x !== n), { units: true });
+    return numQ(`${icon} ${v} ${small} = ? ${big}`, n, [n * 10, v / 10, n + 1, v / 100].filter(x => Number.isInteger(x) && x > 0 && x !== n), { units: true, sol: { t: 'dUnit', ask: 'up', v, k, big, small } });
   }
   if (kind === 'mixed') {
     // 2 m 35 cm = 235 cm, 1 kg 250 g = 1250 g
     const n = R(1, 4), part = k === 10 ? R(1, 9) : k === 100 ? R(5, 95) : 50 * R(1, 19), ans = n * k + part;
-    return numQ(`${n} ${big} ${part} ${small} = ? ${small}`, ans, [n + part, n * 10 + part, n * 100 + part, n * 1000 + part, ans + k].filter(v => v !== ans && v > 0), { layout: 'grid', units: true });
+    return numQ(`${n} ${big} ${part} ${small} = ? ${small}`, ans, [n + part, n * 10 + part, n * 100 + part, n * 1000 + part, ans + k].filter(v => v !== ans && v > 0), { layout: 'grid', units: true, sol: { t: 'dUnit', ask: 'mixed', n, k, big, small, part } });
   }
   if (kind === 'half') {
     // Half, a quarter or three quarters of a big unit
     const [nm, dn, sym] = pick([[1, 2, '½'], [1, 4, '¼'], [3, 4, '¾']]);
     if ((k * nm) % dn) return genUnits(lvl);
     const ans = (k * nm) / dn;
-    return numQ(`${icon} ${sym} ${big} = ? ${small}`, ans, [k / 2, k / 4, k * 3 / 4, 12, 25, 50, 75, 5].filter(v => Number.isInteger(v) && v !== ans), { layout: ans > 999 ? 'grid' : 'grid', units: true });
+    return numQ(`${icon} ${sym} ${big} = ? ${small}`, ans, [k / 2, k / 4, k * 3 / 4, 12, 25, 50, 75, 5].filter(v => Number.isInteger(v) && v !== ans), { layout: ans > 999 ? 'grid' : 'grid', units: true, sol: { t: 'dUnit', ask: 'half', k, big, small, nm, dn } });
   }
   // Compare amounts written in two units: 1 m 5 cm ◯ 150 cm
   const a = R(1, 3), p = k === 10 ? R(1, 9) : k === 100 ? R(1, 9) * pick([1, 10]) : R(1, 9) * pick([10, 100]);
   const left = a * k + p;
   const right = chance(0.25) ? left : left + pick([-1, 1]) * pick([k === 10 ? 1 : 5, k === 10 ? 3 : 40, k === 10 ? 5 : 90]);
   if (right <= 0) return genUnits(lvl);
-  return cmpQ(`${a} ${big} ${p} ${small}`, `${right} ${small}`, left, right);
+  return { ...cmpQ(`${a} ${big} ${p} ${small}`, `${right} ${small}`, left, right), sol: { t: 'dUnitCmp', a, p, k, big, small, r: right } };
 }
 
 // ---------- 2. Protractor ----------
@@ -82,13 +82,13 @@ function genProtractor(lvl) {
     const opts = shuffle([30, 60, 90, 120, 150, 180].filter(x => Math.abs(x - d) >= 25)).slice(0, 3);
     const ans = [30, 60, 90, 120, 150].reduce((b, x) => (Math.abs(x - d) < Math.abs(b - d) ? x : b), 30);
     if (opts.includes(ans) || Math.abs(ans - d) > 12) return genProtractor(lvl);
-    return textQ(`≈ ?°`, `${ans}°`, opts.map(x => `${x}°`), { visual: bareAngle(d, R(0, 60)), show: true, guess: true });
+    return textQ(`≈ ?°`, `${ans}°`, opts.map(x => `${x}°`), { visual: bareAngle(d, R(0, 60)), show: true, guess: true, sol: { t: 'dGuess', d } });
   }
   const step = lvl === 0 ? 10 : 5;
   const deg = step * R(Math.ceil(15 / step), Math.floor(170 / step));
   if (deg === 90 && chance(0.6)) return genProtractor(lvl);
   const near = [180 - deg, deg + 10, deg - 10, deg + 5, deg - 5].filter(v => v > 0 && v < 180 && v !== deg);
-  return numQ('?°', deg, near, { visual: protractor(deg), show: true, layout: 'grid' });
+  return numQ('?°', deg, near, { visual: protractor(deg), show: true, layout: 'grid', sol: { t: 'dProtr', d: deg } });
 }
 
 // ---------- 3. Corners of a triangle ----------
@@ -136,13 +136,13 @@ function genTriangle(lvl) {
     const labels = angs.map((a, i) => (i === hide ? '?' : lab(a)));
     const shown = angs.filter((_, i) => i !== hide);
     return numQ('?°', angs[hide], [180 - shown[0], 180 - shown[1], 360 - shown[0] - shown[1], angs[hide] + 10, 90].filter(v => v > 0 && v !== angs[hide]),
-      { visual: triangle(A, B, labels), show: true, tri: true });
+      { visual: triangle(A, B, labels), show: true, tri: true, sol: { t: 'dTri', x: shown[0], y: shown[1] } });
   }
   if (kind === 'iso' || kind === 'isoTop') {
     // Two equal corners at the bottom.
     const base = 5 * R(5, 16), top = 180 - 2 * base;
-    if (kind === 'iso') return numQ('?°', base, [top, 180 - top, base + 10, 90 - base / 2 | 0].filter(v => v > 0 && v !== base), { visual: triangle(base, base, ['?', '=', `${top}°`], 220, true), show: true, iso: true });
-    return numQ('?°', top, [base, 180 - base, 90 - base, top + 10].filter(v => v > 0 && v !== top), { visual: triangle(base, base, [`${base}°`, '=', '?'], 220, true), show: true, iso: true });
+    if (kind === 'iso') return numQ('?°', base, [top, 180 - top, base + 10, 90 - base / 2 | 0].filter(v => v > 0 && v !== base), { visual: triangle(base, base, ['?', '=', `${top}°`], 220, true), show: true, iso: true, sol: { t: 'dIso', ask: 'base', top } });
+    return numQ('?°', top, [base, 180 - base, 90 - base, top + 10].filter(v => v > 0 && v !== top), { visual: triangle(base, base, [`${base}°`, '=', '?'], 220, true), show: true, iso: true, sol: { t: 'dIso', ask: 'top', base } });
   }
   // Angles on a straight line add up to 180°.
   const a = 5 * R(4, 32);
@@ -151,7 +151,7 @@ function genTriangle(lvl) {
     + txt((120 + 44 * Math.cos(rad / 2)).toFixed(1), (80 - 44 * Math.sin(rad / 2)).toFixed(1), `${a}°`, 15)
     + `<circle cx="${(120 + qr * Math.cos((rad + Math.PI) / 2)).toFixed(1)}" cy="${(80 - qr * Math.sin((rad + Math.PI) / 2)).toFixed(1)}" r="13" fill="#fff4cc" stroke="#d99a00" stroke-width="2.5" stroke-dasharray="4 3"/>`
     + txt((120 + qr * Math.cos((rad + Math.PI) / 2)).toFixed(1), (80 - qr * Math.sin((rad + Math.PI) / 2)).toFixed(1), '?', 15, 'fill="#d99a00"');
-  return numQ('?°', 180 - a, [a, 360 - a, 90 - a, 190 - a].filter(v => v > 0 && v !== 180 - a), { visual: svg(240, 96, body), show: true, line: true });
+  return numQ('?°', 180 - a, [a, 360 - a, 90 - a, 190 - a].filter(v => v > 0 && v !== 180 - a), { visual: svg(240, 96, body), show: true, line: true, sol: { t: 'straight', a } });
 }
 
 // ---------- 4 and 5. Areas: parallelogram, triangle, trapezoid ----------
@@ -174,19 +174,19 @@ function genArea(lvl) {
     const pts = [[0, 0], [b, 0], [b + s, h], [s, h]];
     const slant = Math.round(Math.hypot(s, h) * 10) / 10;
     return numQ('▱ = ?', b * h, [2 * (b + h), b * h / 2 | 0, (b + s) * h, b * h + h, b + h].filter(v => v > 0 && v !== b * h),
-      { visual: shapeOnGrid(pts, { h: [s, h], labels: [[b / 2, -0.45, b], [s + 0.45, h / 2, h, RED]] }), show: true, shape: 'para', slant });
+      { visual: shapeOnGrid(pts, { h: [s, h], labels: [[b / 2, -0.45, b], [s + 0.45, h / 2, h, RED]] }), show: true, shape: 'para', slant, sol: { t: 'dPara', b, h, s } });
   }
   if (kind === 'rtri' || kind === 'tri') {
     if ((b * h) % 2) return genArea(lvl);
     const top = kind === 'rtri' ? 0 : R(1, b - 1);
     const pts = [[0, 0], [b, 0], [top, h]];
     return numQ('◺ = ?', (b * h) / 2, [b * h, b + h, (b * h) / 2 + b, 2 * (b + h)].filter(v => v !== (b * h) / 2),
-      { visual: shapeOnGrid(pts, { h: [top, h], labels: [[b / 2, -0.45, b], [top + (top < b / 2 ? 0.45 : -0.45), h / 2, h, RED]] }), show: true, shape: 'tri' });
+      { visual: shapeOnGrid(pts, { h: [top, h], labels: [[b / 2, -0.45, b], [top + (top < b / 2 ? 0.45 : -0.45), h / 2, h, RED]] }), show: true, shape: 'tri', sol: { t: 'dTriArea', b, h, top } });
   }
   // Area known, find the base: a parallelogram of area 24 and height 4.
   const area = b * h;
   return numQ(`▱ = ${area}`, b, [area - h, h, b + 1, area / 2 | 0].filter(v => v > 0 && v !== b),
-    { visual: shapeOnGrid([[0, 0], [b, 0], [b + s, h], [s, h]], { h: [s, h], labels: [[b / 2, -0.45, '?', '#d99a00'], [s + 0.45, h / 2, h, RED]] }), show: true, shape: 'side' });
+    { visual: shapeOnGrid([[0, 0], [b, 0], [b + s, h], [s, h]], { h: [s, h], labels: [[b / 2, -0.45, '?', '#d99a00'], [s + 0.45, h / 2, h, RED]] }), show: true, shape: 'side', sol: { t: 'dParaBase', area, h, s } });
 }
 function genTrap(lvl) {
   for (;;) {
@@ -195,7 +195,7 @@ function genTrap(lvl) {
     const area = ((a + b) * h) / 2;
     const pts = [[0, 0], [b, 0], [s + a, h], [s, h]];
     return numQ('⏢ = ?', area, [(a + b) * h, a * h, b * h, a + b + h, area + h].filter(v => v !== area),
-      { visual: shapeOnGrid(pts, { h: [s, h], labels: [[s + a / 2, h + 0.45, a], [b / 2, -0.45, b], [s + 0.45, h / 2, h, RED]] }), show: true });
+      { visual: shapeOnGrid(pts, { h: [s, h], labels: [[s + a / 2, h + 0.45, a], [b / 2, -0.45, b], [s + 0.45, h / 2, h, RED]] }), show: true, sol: { t: 'dTrap', a, b, h, s } });
   }
 }
 
@@ -238,21 +238,21 @@ function genCircle(lvl) {
   const kind = pick([['times', 'around', 'around'], ['around', 'around', 'area', 'back'], ['around', 'area', 'area', 'back']][lvl]);
   if (kind === 'times') {
     // One turn of the wheel goes a bit more than 3 of its widths.
-    return textQ('🛞 ➜ ? ×', '≈ 3', ['≈ 2', '≈ 4', '≈ 6', '≈ 1'], { visual: rollWidths(), show: false, pi3: true });
+    return textQ('🛞 ➜ ? ×', '≈ 3', ['≈ 2', '≈ 4', '≈ 6', '≈ 1'], { visual: rollWidths(), show: false, pi3: true, sol: { t: 'dPi3' } });
   }
   if (kind === 'around') {
     const d = lvl === 0 ? R(1, 10) : lvl === 1 ? R(2, 20) : pick([R(6, 30), 40, 50, 100]);
     const c = f1(3.14 * d);
-    return textQ('🛞 ➜ ≈ ?', String(c), [String(d), String(2 * d), String(f1(3.14 * d * d)), String(f1(3.14 * d / 2)), String(4 * d)], { visual: roll(d, '?'), show: true, around: true });
+    return textQ('🛞 ➜ ≈ ?', String(c), [String(d), String(2 * d), String(f1(3.14 * d * d)), String(f1(3.14 * d / 2)), String(4 * d)], { visual: roll(d, '?'), show: true, around: true, sol: { t: 'dCirc', d } });
   }
   if (kind === 'area') {
     const r = lvl < 2 ? R(1, 10) : R(2, 12);
     const a = f1(3.14 * r * r);
-    return textQ('● ≈ ?', String(a), [String(f1(3.14 * 2 * r)), String(f1(3.14 * r)), String(r * r), String(f1(3.14 * 4 * r * r))], { visual: wheel(r, { area: true }), show: true, carea: true });
+    return textQ('● ≈ ?', String(a), [String(f1(3.14 * 2 * r)), String(f1(3.14 * r)), String(r * r), String(f1(3.14 * 4 * r * r))], { visual: wheel(r, { area: true }), show: true, carea: true, sol: { t: 'dCircArea', r } });
   }
   // The wheel went about 31.4 in one turn: how wide is it?
   const d = pick([2, 3, 4, 5, 6, 8, 10, 20, 50]);
-  return textQ(`🛞 ➜ ≈ ${f1(3.14 * d)}`, String(d), [String(f1(d / 2)), String(2 * d), String(3 * d), String(d * d)], { visual: roll('?', f1(3.14 * d)), show: true, back: true });
+  return textQ(`🛞 ➜ ≈ ${f1(3.14 * d)}`, String(d), [String(f1(d / 2)), String(2 * d), String(3 * d), String(d * d)], { visual: roll('?', f1(3.14 * d)), show: true, back: true, sol: { t: 'dCircBack', d } });
 }
 
 // ---------- 7. Pyramid builder: volume and surface ----------
@@ -275,16 +275,16 @@ export function cuboid(l, w, h, size = 190) {
 function genVolume(lvl) {
   const kind = pick([['count', 'count', 'layer'], ['count', 'layer', 'formula', 'missing'], ['formula', 'missing', 'surface', 'surface']][lvl]);
   const l = R(2, lvl ? 5 : 4), w = R(1, lvl ? 4 : 3), h = R(1, lvl ? 4 : 3), v = l * w * h;
-  if (kind === 'count') return numQ('🧊 = ?', v, [l * h, l * w + h, v + l, l + w + h, 2 * v].filter(x => x !== v), { visual: cuboid(l, w, h), show: true, vol: true });
+  if (kind === 'count') return numQ('🧊 = ?', v, [l * h, l * w + h, v + l, l + w + h, 2 * v].filter(x => x !== v), { visual: cuboid(l, w, h), show: true, vol: true, sol: { t: 'dVol', ask: 'count', l, w, h } });
   if (kind === 'layer') {
     // One layer is shown with its cube count; how many in the whole stack?
-    return numQ(`${l * w}🧊 × ${h} = ?`, v, [l * w + h, v + h, l * w * (h + 1), v - l].filter(x => x > 0 && x !== v), { visual: cuboid(l, w, h), show: true, vol: true });
+    return numQ(`${l * w}🧊 × ${h} = ?`, v, [l * w + h, v + h, l * w * (h + 1), v - l].filter(x => x > 0 && x !== v), { visual: cuboid(l, w, h), show: true, vol: true, sol: { t: 'dVol', ask: 'layer', l, w, h } });
   }
-  if (kind === 'formula') return numQ(`${l} × ${w} × ${h} = ?`, v, [l + w + h, l * w + h, v + l * w, 2 * (l * w + w * h + l * h)].filter(x => x !== v), { visual: cuboid(l, w, h), show: false, vol: true });
-  if (kind === 'missing') return numQ(`🧊 ${v} = ${l} × ${w} × ?`, h, [h + 1, v - l * w, l * w, h + 2].filter(x => x > 0 && x !== h), { visual: cuboid(l, w, h), show: false, vol: true });
+  if (kind === 'formula') return numQ(`${l} × ${w} × ${h} = ?`, v, [l + w + h, l * w + h, v + l * w, 2 * (l * w + w * h + l * h)].filter(x => x !== v), { visual: cuboid(l, w, h), show: false, vol: true, sol: { t: 'dVol', ask: 'formula', l, w, h } });
+  if (kind === 'missing') return numQ(`🧊 ${v} = ${l} × ${w} × ?`, h, [h + 1, v - l * w, l * w, h + 2].filter(x => x > 0 && x !== h), { visual: cuboid(l, w, h), show: false, vol: true, sol: { t: 'dVol', ask: 'missing', l, w, h } });
   const sa = 2 * (l * w + w * h + l * h);
   if (sa > 150) return genVolume(lvl);
-  return numQ('🎨 = ?', sa, [v, l * w + w * h + l * h, sa + 2, 6 * l * w].filter(x => x !== sa), { visual: cuboid(l, w, h), show: true, surface: true });
+  return numQ('🎨 = ?', sa, [v, l * w + w * h + l * h, sa + 2, 6 * l * w].filter(x => x !== sa), { visual: cuboid(l, w, h), show: true, surface: true, sol: { t: 'dSurf', l, w, h } });
 }
 
 // ---------- 8. Treasure map: coordinates ----------
@@ -313,7 +313,7 @@ function genCoords(lvl) {
     const [x, y] = pts[0];
     if (x === y) return genCoords(lvl);
     const wrong = [`(${y}, ${x})`, `(${x}, ${Math.max(0, y - 1)})`, `(${x + 1}, ${y})`, `(${x}, ${y + 1})`];
-    return textQ(`${things[0]} = ?`, `(${x}, ${y})`, wrong, { visual: mapGrid(n, [[x, y, things[0]]]), show: true, read: true });
+    return textQ(`${things[0]} = ?`, `(${x}, ${y})`, wrong, { visual: mapGrid(n, [[x, y, things[0]]]), show: true, read: true, sol: { t: 'dMapRead', n, x, y, e: things[0] } });
   }
   if (kind === 'find') {
     // Which thing is at (x, y)? The swapped point holds a decoy.
@@ -322,13 +322,13 @@ function genCoords(lvl) {
     const marks = pts.map((p, i) => [p[0], p[1], things[i]]);
     if (!pts.some(p => p[0] === y && p[1] === x)) marks[1] = [y, x, things[1]];
     const choices = shuffle(things.map(t => ({ value: t, html: t })));
-    return { eq: `(${x}, ${y}) = ?`, answer: things[0], input: 'choice', layout: 'row', visual: mapGrid(n, marks), show: true, choices, find: true };
+    return { eq: `(${x}, ${y}) = ?`, answer: things[0], input: 'choice', layout: 'row', visual: mapGrid(n, marks), show: true, choices, find: true, sol: { t: 'dMapFind', n, x, y, marks } };
   }
   if (kind === 'move') {
     // Walk from the camel: 3 right and 2 up. Where do you end?
     const [x, y] = [R(0, n - 3), R(0, n - 3)], dx = R(1, 3), dy = R(1, 3);
     return textQ(`🐫 ➜ ${dx} ➡️ ${dy} ⬆️ = ?`, `(${x + dx}, ${y + dy})`, [`(${x + dy}, ${y + dx})`, `(${x + dx}, ${y - dy < 0 ? y + dy + 1 : y - dy})`, `(${dx}, ${dy})`, `(${x + dx + 1}, ${y + dy})`],
-      { visual: mapGrid(n, [[x, y, '🐫']]), show: true, move: true });
+      { visual: mapGrid(n, [[x, y, '🐫']]), show: true, move: true, sol: { t: 'dMapMove', n, x, y, dx, dy } });
   }
   // Three corners of a rectangle; where is the fourth?
   const x1 = R(1, n - 3), y1 = R(1, n - 3), x2 = x1 + R(2, n - x1), y2 = y1 + R(2, n - y1);
@@ -336,7 +336,7 @@ function genCoords(lvl) {
   const [mx, my] = ring[m];
   const corners = [ring[(m + 1) % 4], ring[(m + 2) % 4], ring[(m + 3) % 4]];
   return textQ('🌴🌴🌴 ▭ ➜ ?', `(${mx}, ${my})`, [`(${my}, ${mx})`, `(${mx + 1}, ${my})`, `(${mx}, ${my + 1})`, `(${x2 - x1}, ${y2 - y1})`],
-    { visual: mapGrid(n, corners.map(([x, y]) => [x, y, '🌴']), { route: corners }), show: true, rect: true });
+    { visual: mapGrid(n, corners.map(([x, y]) => [x, y, '🌴']), { route: corners }), show: true, rect: true, sol: { t: 'dMapRect', n, corners } });
 }
 
 // Uneven towers made level: the mean. The middle of a row: the median.
@@ -362,10 +362,10 @@ function genMean(lvl) {
   for (let t = 0; t < k * 2; t++) { const i = R(0, k - 1), j = R(0, k - 1), d = R(1, 2); if (i !== j && hs[j] - d >= 1 && hs[i] + d <= (lvl ? 12 : 8)) { hs[i] += d; hs[j] -= d; } }
   if (hs.every(h => h === m)) return genMean(lvl);
   const sum = k * m;
-  if (kind === 'level') return numQ(`${LEVEL} ?`, m, [m + 1, m - 1, Math.max(...hs), sum].filter(v => v > 0 && v !== m), { visual: towers(hs), show: true, mean: true });
-  if (kind === 'nums') return numQ(`${LEVEL} ?`, m, [sum, m + 1, m - 1, [...hs].sort((a, b) => a - b)[k >> 1] === m ? m + 2 : [...hs].sort((a, b) => a - b)[k >> 1]].filter(v => v > 0 && v !== m), { visual: cards(hs), show: true, mean: true, nums: true });
+  if (kind === 'level') return numQ(`${LEVEL} ?`, m, [m + 1, m - 1, Math.max(...hs), sum].filter(v => v > 0 && v !== m), { visual: towers(hs), show: true, mean: true, sol: { t: 'dMean', ask: 'level', hs } });
+  if (kind === 'nums') return numQ(`${LEVEL} ?`, m, [sum, m + 1, m - 1, [...hs].sort((a, b) => a - b)[k >> 1] === m ? m + 2 : [...hs].sort((a, b) => a - b)[k >> 1]].filter(v => v > 0 && v !== m), { visual: cards(hs), show: true, mean: true, nums: true, sol: { t: 'dMean', ask: 'nums', hs } });
   const miss = R(0, k - 1), shown = hs.map((h, i) => (i === miss ? '?' : h));
-  return numQ(`${LEVEL} ${m}`, hs[miss], [m, sum - m, hs[miss] + 1, hs[miss] - 1].filter(v => v > 0 && v !== hs[miss]), { visual: cards(shown), show: true, mean: true, missing: true });
+  return numQ(`${LEVEL} ${m}`, hs[miss], [m, sum - m, hs[miss] + 1, hs[miss] - 1].filter(v => v > 0 && v !== hs[miss]), { visual: cards(shown), show: true, mean: true, missing: true, sol: { t: 'dMeanMiss', shown: shown.map(v => (v === '?' ? null : v)), mean: m } });
 }
 
 // ---------- 10. The middle camel: median and the most common ----------
@@ -394,7 +394,7 @@ function genMedian(lvl) {
     while (hs.size < k) hs.add(R(2, 9));
     const arr = [...hs], sorted = [...arr].sort((a, b) => a - b), med = sorted[k >> 1];
     const pics = `<div class="camels">${arr.map(h => `<span class="camel" style="font-size:${14 + h * 4}px">🐪<b>${h}</b></span>`).join('')}</div>`;
-    return numQ(MIDDLE, med, [arr[k >> 1], sorted[0], sorted[k - 1], Math.round(arr.reduce((s, v) => s + v, 0) / k)].filter(v => v !== med), { visual: pics, show: true, median: true });
+    return numQ(MIDDLE, med, [arr[k >> 1], sorted[0], sorted[k - 1], Math.round(arr.reduce((s, v) => s + v, 0) / k)].filter(v => v !== med), { visual: pics, show: true, median: true, sol: { t: 'dMedian', ask: 'camels', vals: arr } });
   }
   if (kind === 'nums' || kind === 'even') {
     const k = kind === 'even' ? pick([4, 6]) : pick([5, 7]);
@@ -404,7 +404,7 @@ function genMedian(lvl) {
       const med = k % 2 ? s[k >> 1] : (s[k / 2 - 1] + s[k / 2]) / 2;
       if (!Number.isInteger(med) || new Set(arr).size < k - 1) continue;
       if (arr[k >> 1] === med) continue;
-      return numQ(MIDDLE, med, [arr[k >> 1], s[k >> 1] === med ? s[(k >> 1) - 1] : s[k >> 1], Math.round(arr.reduce((a, b) => a + b, 0) / k), s[k - 1] - s[0]].filter(v => v > 0 && v !== med), { visual: cards(arr), show: true, median: true, even: kind === 'even' });
+      return numQ(MIDDLE, med, [arr[k >> 1], s[k >> 1] === med ? s[(k >> 1) - 1] : s[k >> 1], Math.round(arr.reduce((a, b) => a + b, 0) / k), s[k - 1] - s[0]].filter(v => v > 0 && v !== med), { visual: cards(arr), show: true, median: true, even: kind === 'even', sol: { t: 'dMedian', ask: kind === 'even' ? 'even' : 'odd', vals: arr } });
     }
   }
   // The most common value on a dot plot.
@@ -415,7 +415,7 @@ function genMedian(lvl) {
   const best = Math.max(...Object.values(count)), modes = Object.keys(count).filter(v => count[v] === best);
   if (modes.length !== 1) return genMedian(lvl);
   const mode = +modes[0];
-  return numQ(`${TALLEST} ➜ ?`, mode, [mode + 1, mode - 1, mode + 2, mode - 2, lo, hi].filter(v => v > 0 && v !== mode && v !== best), { visual: dotPlot(vals, lo, hi), show: true, mode: true });
+  return numQ(`${TALLEST} ➜ ?`, mode, [mode + 1, mode - 1, mode + 2, mode - 2, lo, hi].filter(v => v > 0 && v !== mode && v !== best), { visual: dotPlot(vals, lo, hi), show: true, mode: true, sol: { t: 'dMode', vals, lo, hi } });
 }
 
 // ---------- 11. Same fence, new shape (puzzle stop) ----------
@@ -453,19 +453,19 @@ function genFence(lvl) {
     const best = pickR.reduce((b, r) => (r[0] * r[1] > b[0] * b[1] ? r : b));
     const u = Math.floor(100 / Math.max(...pickR.map(r => r[0])));
     const choices = shuffle(pickR.map(([w, h]) => ({ value: `${w}x${h}`, html: tilesSvg(rectCells(w, h), 96, SAND, u) })));
-    return { eq: `🧱 ${P} ➜ 🐫🐫🐫 ?`, answer: `${best[0]}x${best[1]}`, input: 'choice', layout: 'grid', choices, visual: null, show: false, most: true };
+    return { eq: `🧱 ${P} ➜ 🐫🐫🐫 ?`, answer: `${best[0]}x${best[1]}`, input: 'choice', layout: 'grid', choices, visual: null, show: false, most: true, sol: { t: 'dFenceMost', P } };
   }
   if (kind === 'lshape') {
     const w = R(3, 5), h = R(3, 5), cw = R(1, w - 1), ch = R(1, h - 1);
     const cells = rectCells(w, h).filter(([x, y]) => !(x >= w - cw && y < ch));
     const p = perimeterOf(cells);
-    return numQ('🧱 = ?', p, [cells.length, p - 2, p + 2, 2 * (w + h) + 2].filter(v => v !== p), { visual: tilesSvg(cells, 140), show: true, lshape: true });
+    return numQ('🧱 = ?', p, [cells.length, p - 2, p + 2, 2 * (w + h) + 2].filter(v => v !== p), { visual: tilesSvg(cells, 140), show: true, lshape: true, sol: { t: 'perim', w, h, cut: [cw, ch] } });
   }
   if (kind === 'square') {
     // A square pen with this much fence: how much room inside?
     const s = R(2, 9), P = 4 * s;
     const pen = svg(150, 150, `<rect x="25" y="25" width="100" height="100" fill="${SAND}" stroke="${SANDD}" stroke-width="8" stroke-dasharray="10 5"/>${txt(75, 12, `🧱 ${P}`, 16)}<circle cx="75" cy="75" r="18" fill="#fff4cc" stroke="#d99a00" stroke-width="3" stroke-dasharray="5 4"/>${txt(75, 75, '?', 20, 'fill="#d99a00"')}`);
-    return numQ('🟨 = ?', s * s, [P, s, P / 2, s * s + s].filter(v => v !== s * s), { visual: pen, show: true, square: true });
+    return numQ('🟨 = ?', s * s, [P, s, P / 2, s * s + s].filter(v => v !== s * s), { visual: pen, show: true, square: true, sol: { t: 'dFenceSq', P } });
   }
   // Two different rectangles with the same room: which fence is longer?
   const A = pick([12, 16, 18, 24, 36]);
@@ -475,7 +475,7 @@ function genFence(lvl) {
   const u = Math.floor(110 / Math.max(a[0], b[0]));
   const pa = 2 * (a[0] + a[1]), pb = 2 * (b[0] + b[1]);
   const q = cmpQ('🧱', '🧱', pa, pb, `<div class="pairvis">${tilesSvg(rectCells(...a), 100, SAND, u)}<b class="op"></b>${tilesSvg(rectCells(...b), 100, SAND, u)}</div>`);
-  return { ...q, fenceCmp: true };
+  return { ...q, fenceCmp: true, sol: { t: 'dFenceCmp', a, b } };
 }
 
 // ---------- 12. Picture stories 3: speed, time and prices ----------
@@ -484,21 +484,21 @@ function genStory3(lvl) {
   const kind = pick([['far', 'far', 'price'], ['far', 'time', 'price', 'far'], ['time', 'price', 'meet', 'far']][lvl]);
   if (kind === 'far') {
     const v = pick(lvl ? [4, 5, 6, 8, 12, 15] : [2, 3, 4, 5]), t = R(2, lvl ? 6 : 4), ans = v * t;
-    return { ...numQ('', ans, [v + t, ans + v, ans - v, v * (t + 1)].filter(x => x > 0 && x !== ans)), visual: `<div class="story">${panel(`🐫<span class="num">🕐 1</span><span class="num">${v} km</span>`)}<b class="arrow">▶</b>${panel(`🐫<span class="num">🕐 ${t}</span><span class="num"><span class="slot">?</span> km</span>`)}</div>`, show: true, far: true };
+    return { ...numQ('', ans, [v + t, ans + v, ans - v, v * (t + 1)].filter(x => x > 0 && x !== ans)), visual: `<div class="story">${panel(`🐫<span class="num">🕐 1</span><span class="num">${v} km</span>`)}<b class="arrow">▶</b>${panel(`🐫<span class="num">🕐 ${t}</span><span class="num"><span class="slot">?</span> km</span>`)}</div>`, show: true, far: true, sol: { t: 'dFar', v, hrs: t } };
   }
   if (kind === 'time') {
     const v = pick([3, 4, 5, 6, 8, 10]), t = R(2, 6), d = v * t;
-    return { ...numQ('', t, [d - v, t + 1, v, d / 2 | 0].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`🐫<span class="num">🕐 1</span><span class="num">${v} km</span>`)}<b class="arrow">▶</b>${panel(`🐫<span class="num">🕐 <span class="slot">?</span></span><span class="num">${d} km</span>`)}</div>`, show: true, time: true };
+    return { ...numQ('', t, [d - v, t + 1, v, d / 2 | 0].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`🐫<span class="num">🕐 1</span><span class="num">${v} km</span>`)}<b class="arrow">▶</b>${panel(`🐫<span class="num">🕐 <span class="slot">?</span></span><span class="num">${d} km</span>`)}</div>`, show: true, time: true, sol: { t: 'dTime', v, dist: d } };
   }
   if (kind === 'price') {
     const n = R(2, 5), p = R(2, lvl ? 9 : 5), m = R(2, 8);
     if (m === n) return genStory3(lvl);
     const ans = m * p;
-    return { ...numQ('', ans, [n * p + (m - n), ans + p, p, n * p].filter(x => x > 0 && x !== ans)), visual: `<div class="story">${panel(`<span>${'🥥'.repeat(n)}</span><span class="num">${n * p}🪙</span>`)}<b class="arrow">▶</b>${panel(`<span>${'🥥'.repeat(m)}</span><span class="num"><span class="slot">?</span>🪙</span>`)}</div>`, show: true, price: true };
+    return { ...numQ('', ans, [n * p + (m - n), ans + p, p, n * p].filter(x => x > 0 && x !== ans)), visual: `<div class="story">${panel(`<span>${'🥥'.repeat(n)}</span><span class="num">${n * p}🪙</span>`)}<b class="arrow">▶</b>${panel(`<span>${'🥥'.repeat(m)}</span><span class="num"><span class="slot">?</span>🪙</span>`)}</div>`, show: true, price: true, sol: { t: 'dPrice', n, p, k: m } };
   }
   // Two camels walk toward each other: when do they meet?
   const a = R(2, 5), b = R(2, 5), t = R(2, 5), d = (a + b) * t;
-  return { ...numQ('', t, [d / a | 0, t + 1, d / (a + b) + 1, a + b].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`<span class="num">🕐 1</span><span>🐫➡️ ${a} km</span><span>${b} km ⬅️🐪</span><span class="num">↔ ${d} km</span>`)}<b class="arrow">▶</b>${panel(`<span>🐫🐪</span><span class="num">🕐 <span class="slot">?</span></span>`)}</div>`, show: true, meet: true };
+  return { ...numQ('', t, [d / a | 0, t + 1, d / (a + b) + 1, a + b].filter(x => x > 0 && x !== t)), visual: `<div class="story">${panel(`<span class="num">🕐 1</span><span>🐫➡️ ${a} km</span><span>${b} km ⬅️🐪</span><span class="num">↔ ${d} km</span>`)}<b class="arrow">▶</b>${panel(`<span>🐫🐪</span><span class="num">🕐 <span class="slot">?</span></span>`)}</div>`, show: true, meet: true, sol: { t: 'dMeet', a, b, dist: d } };
 }
 
 export const DESERT = [
