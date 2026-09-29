@@ -418,7 +418,7 @@ function sLegs({ n, legs }, q, given) {
   const steps = [
     S(hens, `${n} × 2 = ${2 * n}`, 'spLegsAll2', { a: n }),
     S(turned, `${legs} − ${2 * n} = ${e}<br>${e} ÷ 2 = ${r}`, 'spLegsExtra', { a: e }),
-    S(critters(Array.from({ length: n }, (_, i) => (i < r ? ['🐰', '4', true] : ['🐔', '2']))), `${r} × 4 + ${n - r} × 2 = ${legs}`, 'spLegsCheck', { a: r }),
+    S(critters(Array.from({ length: n }, (_, i) => (i < r ? ['🐰', '4', true] : ['🐔', '2']))), `${r} × 4 + ${n - r} × 2 = ${legs}`, r === 1 ? 'spLegsCheck1' : 'spLegsCheck', { a: r }),
   ];
   return { ans: r, steps, oops: given === n - r && n - r !== r ? OOPS(`🐰 = ${r}`, 'spOopsChickens') : null };
 }

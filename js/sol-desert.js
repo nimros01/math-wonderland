@@ -14,7 +14,7 @@ const esc = s => s.replace('<', '&lt;').replace('>', '&gt;');
 const f1 = v => +v.toFixed(1);
 const f2 = v => +v.toFixed(2);
 // A sum written out; long ones lose their spaces so the line does not wrap on a phone.
-const sumLine = (parts, total) => { const sp = parts.join(' + '); return `${sp.length + String(total).length > 15 ? parts.join('+') : sp} = ${total}`; };
+const sumLine = (parts, total) => { const sp = parts.join(' + '); return `${sp}${sp.length + String(total).length > 15 ? '<br>' : ' '}= ${total}`; };
 const num = v => (v === undefined || v === null || v === '' || isNaN(v) ? NaN : Number(v));
 
 // ---------- pictures ----------
@@ -326,9 +326,8 @@ function dTriArea({ b, h, top }, q, given) {
   const whole = b * h, ans = whole / 2, W = b + top, tri = [[0, 0], [b, 0], [top, h]];
   const two = gridShapes(W, h, [{ pts: tri }, { pts: [[b, 0], [b + top, h], [top, h]], fill: '#bfe3f7', op: 0.7, dash: true }], { hl: [top, h], labels: [[b / 2, -0.5, b], [top + (top < W / 2 ? 0.5 : -0.5), h / 2, h, RED]] });
   const one = gridShapes(W, h, [{ pts: tri }, { pts: [[b, 0], [b + top, h], [top, h]], fill: 'none', op: 0, dash: true, stroke: '#b9c1d6' }], { labels: [[b / 3 + top / 3, h / 3, ans]] });
-  let oops = fenceOops(given, 2 * (b + h), ans);
-  if (!oops && given === whole) oops = OOPS(`${whole} ÷ 2 = ${ans}`, 'dOopsNoHalve');
-  else if (!oops && given === b + h && given !== ans) oops = OOPS(`${b} × ${h} ÷ 2`, 'dOopsAddSides');
+  let oops = given === whole ? OOPS(`${whole} ÷ 2 = ${ans}`, 'dOopsNoHalve') : fenceOops(given, 2 * (b + h), ans);
+  if (!oops && given === b + h && given !== ans) oops = OOPS(`${b} × ${h} ÷ 2`, 'dOopsAddSides');
   return { ans, steps: [S(two, `${b} × ${h} = ${whole}`, 'dTriTwo'), S(one, `${whole} ÷ 2 = ${ans}`, 'dTriHalf')], oops };
 }
 function dParaBase({ area, h, s }, q, given) {
@@ -591,7 +590,7 @@ function dPrice({ n, p, k }, q, given) {
   const tot = n * p, one = tot / n, ans = k * one;
   let oops = null;
   if (given === tot + (k - n)) oops = OOPS(`🥥 1 = ${one}🪙`, 'dOopsPriceAdd', { a: one });
-  else if (given === tot && tot !== ans) oops = OOPS(`${k} × ${one}`, 'dOopsSamePrice');
+  else if (given === tot && tot !== ans) oops = OOPS(`${k} × ${one}`, k > n ? 'dOopsSamePrice' : 'dOopsSamePriceLess');
   return {
     ans,
     steps: [S(nuts(n, one), `${tot} ÷ ${n} = ${one}`, 'dPriceOne'), S(nuts(k, one), `${k} × ${one} = ${ans}`, 'dPriceMany', { a: k })],

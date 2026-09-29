@@ -49,6 +49,7 @@ export const SPACE_WORDS = {
   'spLegsAll2': 'Pretend all {a} are chickens: 2 legs each.',
   'spLegsExtra': '{a} legs are missing. Each rabbit has 2 more legs than a chicken.',
   'spLegsCheck': 'Check: {a} rabbits with 4 legs and the rest with 2.',
+  'spLegsCheck1': 'Check: 1 rabbit with 4 legs and the rest with 2.',
   // logic grid and trail
   'spKenCage': 'The numbers in the thick box must make {a}.',
   'spKenRows': 'Every row and every column has 1 to {a} once.',

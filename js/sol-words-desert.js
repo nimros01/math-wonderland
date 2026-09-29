@@ -134,5 +134,6 @@ export const DESERT_WORDS = {
   'dOopsSpeedHrs': 'That is the km in one hour. Count the hours.',
   'dOopsPriceAdd': 'Each coconut costs {a}, not 1.',
   'dOopsSamePrice': 'More coconuts cost more.',
+  'dOopsSamePriceLess': 'Fewer coconuts cost less.',
   'dOopsOneCamel': 'Both camels walk. Add their speeds.',
 };

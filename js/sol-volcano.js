@@ -284,7 +284,7 @@ function reduceAll(s) {
   return { val: T[0], red };
 }
 const RED_KEY = { br: 'vBrFirst', sq: 'vSqFirst', mul: 'vTimesFirst', add: 'vPlusLast' };
-const redSteps = red => red.map(({ T, o, T2 }) => S(col(showT(T, [o.from, o.to]), DOWN, showT(T2, [o.from, o.from], NEWV)), o.math, RED_KEY[o.kind]));
+const redSteps = red => red.map(({ T, o, T2 }, i) => S(col(showT(T, [o.from, o.to]), DOWN, showT(T2, [o.from, o.from], NEWV)), o.math, T2.length === 1 && i ? 'vLastOne' : i && red[i - 1].o.kind === o.kind ? 'vAgain' : RED_KEY[o.kind]));
 // Left to right, ignoring brackets and the × first rule: the classic mistake.
 function ltr(s) {
   const t = tok(s).filter(x => x !== '(' && x !== ')');
@@ -397,7 +397,7 @@ function eqText({ v, k, a = 0, c = 0, d, op = '+', rev }) {
   else L = a ? (rev ? `${a} + ${kv(k, v)}` : `${kv(k, v)} + ${a}`) : kv(k, v);
   return [L, c ? `${kv(c, v)} + ${m(d)}` : m(d)];
 }
-const XK = new Set(['vTakeBoxes', 'vOopsAddNotTake', 'vOopsTakeNotAdd', 'vOopsNoSplit', 'vOopsMinusNotDiv', 'vOopsNoTimes', 'vOopsBoxesRight']);
+const XK = new Set(['vOopsWholeSide', 'vTakeBoxes', 'vOopsAddNotTake', 'vOopsTakeNotAdd', 'vOopsNoSplit', 'vOopsMinusNotDiv', 'vOopsNoTimes', 'vOopsBoxesRight']);
 const key = (k, v) => (v === 'x' && XK.has(k) ? k + 'X' : k);
 function solveSteps(sol, val) {
   const { v = 'b', k, a = 0, c = 0, d, op = '+', rev, ask = 'v' } = sol, it = v === 'x' ? 'x' : 'b';
@@ -458,13 +458,13 @@ function solveOops(sol, val, given) {
     if (c && given === (d - a) / k) return OOPS(no, key('vOopsBoxesRight', v));
     if (a && given === d / kk) {
       const pic = !c && d > 0 && val > 0 ? scale(many(k, it), [d], { tilt: -12, take: [`−${a}`, ''] }) : '';
-      return OOPS(no, 'vOopsOneSide', {}, pic);
+      return kk === 1 ? OOPS(no, key('vOopsWholeSide', v)) : OOPS(no, 'vOopsOneSide', {}, pic);
     }
     if (kk > 1 && a && given === d - a) return OOPS(no, key('vOopsNoSplit', v), { a: kk });
     if (kk > 1 && !a && !c && given === d - kk) return OOPS(`${kv(kk, v)} = ${kk} × ${V(v)}`, key('vOopsMinusNotDiv', v), { a: kk });
   } else if (op === '−') {
     if (given === (d - a) / k) return OOPS(no, key('vOopsTakeNotAdd', v), { a });
-    if (k === 1 && given === d) return OOPS(no, 'vOopsOneSide');
+    if (k === 1 && given === d) return OOPS(no, key('vOopsWholeSide', v));
     if (k > 1 && given === d + a) return OOPS(no, key('vOopsNoSplit', v), { a: k });
   } else {
     if (given === d - a) return OOPS(no, key('vOopsNoTimes', v), { a: k });
@@ -497,7 +497,7 @@ function vsolve(sol, q, given) {
     let oops = null;
     if (given !== undefined && given !== kvv) {
       if (given === d + a) oops = OOPS(`${kv(k, v)} ≠ ${given}`, 'vOopsAddNotTake', { a });
-      else if (given === d) oops = OOPS(`${kv(k, v)} ≠ ${given}`, 'vOopsOneSide', {}, scale(many(k, it), [d], { tilt: -12, take: [`−${a}`, ''] }));
+      else if (given === d) oops = OOPS(`${kv(k, v)} ≠ ${given}`, key('vOopsWholeSide', v));
       else if (given === val) oops = OOPS(`${kv(k, v)} = ${k} × ${val}`, 'vOopsKv', { a: k });
     }
     return { ans: kvv, steps, oops };
@@ -723,7 +723,7 @@ function vdiceWays({ sum, op = '+' }, q, given) {
   const n = pairs.length, unordered = pairs.filter(([r, k]) => r <= k).length;
   return {
     ans: n,
-    steps: [S(diceGrid(op, { [sum]: SUN }), `🎲 ${op} 🎲 = ${sum}`, 'vDiceFind', { a: sum }), S(gallery(pairs.map(([r, k]) => pairPic(r, k))), `${n}`, 'vDiceCount', { a: n })],
+    steps: [S(diceGrid(op, { [sum]: SUN }), `🎲 ${op} 🎲 = ${sum}`, 'vDiceFind', { a: sum }), S(gallery(pairs.map(([r, k]) => pairPic(r, k))), `${n}`, n === 1 ? 'vDiceCount1' : 'vDiceCount', { a: n })],
     oops: given !== undefined && given !== n && given === unordered ? OOPS(`${pairs.length > 1 ? `${pairs[0].join(op)} ≠ ${pairs[0].slice().reverse().join(op)}` : n}`, 'vOopsDiceOrder') : null,
   };
 }
@@ -744,7 +744,7 @@ function vdiceMost({ ts, most }, q, given) {
   return {
     ans,
     steps: [S(diceGrid(), '🎲 + 🎲', 'vDiceGrid'), S(checks(ts.map((t, i) => [`${t} ➜ ${w[i]}`, t === ans])), `${ans} ➜ ${best}`, most ? 'vDiceMost' : 'vDiceLeast'),
-      S(diceGrid('+', { [ans]: SUN }), `${ans} ➜ ${best}`, 'vDiceCount', { a: best })],
+      S(diceGrid('+', { [ans]: SUN }), `🎲 + 🎲 = ${ans}`, best === 1 ? 'vDiceCount1' : 'vDiceCount', { a: best })],
     oops: most && given !== undefined && given !== ans && given === Math.max(...ts) ? OOPS(`${given} ➜ ${waysOf(given)}`, 'vOopsBigNotLikely') : null,
   };
 }
