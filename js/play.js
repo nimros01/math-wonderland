@@ -8,7 +8,7 @@ import { openSolution } from './solve.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const ROUND = 10, GATE = 8, WAIT_RIGHT = 800, WAIT_WRONG = 4000, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
+const ROUND = 10, GATE = 8, WAIT_RIGHT = 800, WAIT_WRONG = 5000, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
 
 // Stars for a 10-question round: 7 right opens the next stage.
 export const starsFor = correct => (correct >= 10 ? 3 : correct >= 9 ? 2 : correct >= 7 ? 1 : 0);
@@ -396,17 +396,18 @@ export function startRound(app, opts) {
     wait4next(ok);
   }
 
-  // The pause after an answer: 🔍 lights up; after a miss the ⏭ skip button counts down the wait.
+  // The pause after an answer. After a miss 🔍 lights up and the ⏭ skip button counts down the wait;
+  // a right answer moves on too fast for 🔍, so its solution waits in the look-back on the results screen.
   function wait4next(ok) {
     const entry = { q, given: st.given, ok, sid: q.sid };
     st.log.push(entry);
     st.given = undefined;
     const ms = ok ? WAIT_RIGHT : WAIT_WRONG;
     st.after = { entry, done: false, held: false, timer: setTimeout(moveOn, ms) };
-    const sb = $('sol');
-    sb.disabled = false;
-    sb.classList.toggle('nudge', !ok);
     if (!ok) {
+      const sb = $('sol');
+      sb.disabled = false;
+      sb.classList.add('nudge');
       $('showme').hidden = true;
       $('hint').classList.add('away');
       const sk = $('skip');
