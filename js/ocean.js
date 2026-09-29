@@ -249,20 +249,21 @@ function genN1000(lvl) {
   const n = lvl === 0 ? R(101, 499) : R(101, 999);
   if (kind === 'blocks') {
     const h = Math.floor(n / 100), t = Math.floor(n / 10) % 10, o = n % 10;
-    return numQ('?', n, [h * 100 + o * 10 + t, t * 100 + h * 10 + o, n + 10, n - 10, n + 100].filter(v => v > 0 && v < 1000), { visual: place(n), show: true });
+    return numQ('?', n, [h * 100 + o * 10 + t, t * 100 + h * 10 + o, n + 10, n - 10, n + 100].filter(v => v > 0 && v < 1000), { visual: place(n), show: true, sol: { t: 'placeval', n } });
   }
   if (kind === 'cmp') {
     const m = pick([n + pick([1, -1, 10, -10, 9, -9]), Number(String(n).split('').reverse().join('')), n + 100 * pick([1, -1])].filter(v => v >= 100 && v <= 999)) ?? n - 1;
     const y = chance(0.1) ? n : m;
-    return cmpQ(String(n), String(y), n, y);
+    return { ...cmpQ(String(n), String(y), n, y), sol: { t: 'cmp', x: n, y } };
   }
   if (kind === 'track') {
     const step = lvl === 0 ? pick([10, 100]) : lvl === 1 ? pick([10, 100, 5, 50]) : pick([25, 50, 20, 100, -10, -100, -50]);
     const len = 5, start = step > 0 ? R(100, 999 - step * (len - 1)) : R(100 - step * (len - 1), 999);
     const items = Array.from({ length: len }, (_, i) => start + i * step);
     const hole = R(1, len - 1), ans = items[hole];
+    const sol = { t: 'track', seq: items.slice(), miss: hole, step };
     items[hole] = '❓';
-    return { eq: '', ...numQ('', ans, [ans + 1, ans - 1, ans + Math.abs(step), ans - Math.abs(step), ans + 10, ans - 10]), visual: row(items), show: true };
+    return { eq: '', ...numQ('', ans, [ans + 1, ans - 1, ans + Math.abs(step), ans - Math.abs(step), ans + 10, ans - 10]), visual: row(items), show: true, sol };
   }
   // round to the nearer ten (or hundred)
   const unit = lvl === 2 && chance(0.6) ? 100 : 10;
@@ -275,7 +276,7 @@ function genN1000(lvl) {
     if (opts.length < 4 && !opts.includes(x) && !(unit === 10 && x % 100 === 0)) opts.push(x);
   }
   return {
-    eq: `${v} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(lo, hi, v), show: unit === 10 || lvl < 2,
+    eq: `${v} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(lo, hi, v), show: unit === 10 || lvl < 2, sol: { t: 'round', v, unit },
     choices: shuffle(opts).map(x => ({ value: x, html: String(x) })),
   };
 }
@@ -287,7 +288,7 @@ function genN10k(lvl) {
   if (kind === 'coins') {
     const lim = lvl === 0 ? 4 : 9;
     const v = R(1, lim) * 1000 + R(0, lim) * 100 + R(0, lim) * 10 + R(0, lim);
-    return numQ('?', v, [v + 1000, v - 100, v + 10, v + 100, v - 1000].filter(x => x > 0), { visual: coins(v), show: true });
+    return numQ('?', v, [v + 1000, v - 100, v + 10, v + 100, v - 1000].filter(x => x > 0), { visual: coins(v), show: true, sol: { t: 'placeval', n: v } });
   }
   if (kind === 'digit') {
     const s = String(n);
@@ -295,21 +296,22 @@ function genN10k(lvl) {
     while (s[i] === '0') i = R(0, 3);
     const d = +s[i], val = d * 10 ** (3 - i);
     const html = s.split('').map((c, j) => (j === i ? `<u class="hl">${c}</u>` : c)).join('');
-    return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, choices: shuffle([d, d * 10, d * 100, d * 1000]).map(v => ({ value: v, html: String(v) })) };
+    return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, sol: { t: 'digitval', n, i }, choices: shuffle([d, d * 10, d * 100, d * 1000]).map(v => ({ value: v, html: String(v) })) };
   }
   if (kind === 'cmp') {
     const s = String(n);
     const swapped = +(s[0] + s[2] + s[1] + s[3]);
     const m = pick([n + pick([1, -1, 10, -10, 100, -100]), swapped, n + pick([990, -990, 1000, -1000])].filter(v => v >= 1000 && v <= 9999));
     const y = chance(0.1) ? n : m;
-    return cmpQ(String(n), String(y), n, y);
+    return { ...cmpQ(String(n), String(y), n, y), sol: { t: 'cmp', x: n, y } };
   }
   const step = lvl === 0 ? pick([1000, 100]) : lvl === 1 ? pick([1000, 100, 500, -100]) : pick([250, 500, -1000, -250, 1100]);
   const len = 4, start = step > 0 ? R(1000, 9999 - step * (len - 1)) : R(1000 - step * (len - 1), 9999);
   const items = Array.from({ length: len }, (_, i) => start + i * step);
   const hole = R(1, len - 1), ans = items[hole];
+  const sol = { t: 'track', seq: items.slice(), miss: hole, step };
   items[hole] = '❓';
-  return { ...numQ('', ans, [ans + 10, ans - 10, ans + 100, ans - 100, ans + Math.abs(step)]), eq: '', visual: row(items), show: true };
+  return { ...numQ('', ans, [ans + 10, ans - 10, ans + 100, ans - 100, ans + Math.abs(step)]), eq: '', visual: row(items), show: true, sol };
 }
 
 // ---------- 3. Big + and − ----------
@@ -341,15 +343,15 @@ function genBigAdd(lvl) {
   const c = plus ? a + b : a - b;
   if (lvl === 2 && chance(0.35)) {
     // missing number
-    return numQ(plus ? `? + ${b} = ${c}` : `${a} − ? = ${c}`, plus ? a : b, near(plus ? a : b, [10, -10, 100, -100, 1]), { visual: column(plus ? c : a, '−', plus ? b : c), show: false });
+    return numQ(plus ? `? + ${b} = ${c}` : `${a} − ? = ${c}`, plus ? a : b, near(plus ? a : b, [10, -10, 100, -100, 1]), { visual: column(plus ? c : a, '−', plus ? b : c), show: false, sol: { t: 'colMissing', a, b, c, plus } });
   }
   if (chance(0.15)) {
     const wrong = plus ? addNoCarryWrong(a, b) : c + 10;
     const truth = chance(0.5) || wrong === c;
-    return tfQ(`${a} ${plus ? '+' : '−'} ${b}`, truth ? c : wrong, truth);
+    return tfQ(`${a} ${plus ? '+' : '−'} ${b}`, truth ? c : wrong, truth, { t: 'tfCol', a, b, op: plus ? '+' : '−', shown: truth ? c : wrong });
   }
   const mistakes = plus ? [addNoCarryWrong(a, b), c + 10, c - 10, c + 100] : [c + 10, c - 10, c + 100, c - 100];
-  return numQ(`${a} ${plus ? '+' : '−'} ${b} = ?`, c, mistakes.filter(v => v !== c && v > 0), { visual: column(a, plus ? '+' : '−', b), show: false });
+  return numQ(`${a} ${plus ? '+' : '−'} ${b} = ?`, c, mistakes.filter(v => v !== c && v > 0), { visual: column(a, plus ? '+' : '−', b), show: false, sol: { t: 'col', a, b, op: plus ? '+' : '−' } });
 }
 
 // ---------- 4. Bigger × ----------
@@ -359,26 +361,26 @@ function genBigMul(lvl) {
   if (kind === 'tens') {
     const a = R(2, lvl ? 99 : 20), m = pick(lvl ? [10, 100, 20, 30, 50] : [10, 100]);
     const c = a * m;
-    return numQ(`${a} × ${m} = ?`, c, [c * 10, c / 10, a * (m + 10), a + m].filter(Number.isInteger));
+    return numQ(`${a} × ${m} = ?`, c, [c * 10, c / 10, a * (m + 10), a + m].filter(Number.isInteger), { sol: { t: 'zeros', a, m } });
   }
   const a = kind === 'three' ? R(101, 399) : R(lvl ? 12 : 11, lvl ? 99 : 25), b = R(2, kind === 'three' ? 5 : 9);
   const c = a * b;
   const t = Math.floor(a / 10) * 10, o = a % 10;
   const wrong = [t * b + o, Math.floor(a / 10) * b * 10 + o * b + 10, c + b, c - b, c + 10].filter(v => v !== c);
-  if (kind === 'missing') return numQ(`? × ${b} = ${c}`, a, [a + 1, a - 1, a + 10, a - 10], { visual: areaModel(a, b), show: false });
-  return numQ(`${a} × ${b} = ?`, c, wrong, { visual: areaModel(a, b), show: false });
+  if (kind === 'missing') return numQ(`? × ${b} = ${c}`, a, [a + 1, a - 1, a + 10, a - 10], { visual: areaModel(a, b), show: false, sol: { t: 'mulBack', a, b } });
+  return numQ(`${a} × ${b} = ?`, c, wrong, { visual: areaModel(a, b), show: false, sol: { t: 'mulSplit', a, b } });
 }
 
 // ---------- 5. Division as sharing ----------
 function genShare(lvl) {
   const k = lvl === 0 ? R(2, 4) : R(2, 9), q = lvl === 0 ? R(2, 5) : R(2, 10), n = k * q;
-  if (lvl === 0) return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, k, n - k], { visual: shareVis(n, k, false), show: true });
+  if (lvl === 0) return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, k, n - k], { visual: shareVis(n, k, false), show: true, sol: { t: 'div', n, k, q } });
   if (lvl === 2 && chance(0.5)) {
     return chance(0.5)
-      ? numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, k + q, n + 1])
-      : numQ(`${n} ÷ ? = ${q}`, k, [k + 1, k - 1, q, n - q]);
+      ? numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, k + q, n + 1], { sol: { t: 'div', n, k, q, hole: 'n' } })
+      : numQ(`${n} ÷ ? = ${q}`, k, [k + 1, k - 1, q, n - q], { sol: { t: 'div', n, k, q, hole: 'k' } });
   }
-  return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, k, q + 2], { visual: shareVis(n, k, true), show: false });
+  return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, k, q + 2], { visual: shareVis(n, k, true), show: false, sol: { t: 'div', n, k, q } });
 }
 
 // ---------- 6. ÷ and × are partners ----------
@@ -390,15 +392,16 @@ function genDivX(lvl) {
     const ans = hole === 'top' ? c : hole === 'a' ? a : b;
     return numQ('?', ans, hole === 'top' ? [a + b, c + a, c - b] : [ans + 1, ans - 1, c - ans], {
       visual: factTri(hole === 'top' ? '?' : c, hole === 'a' ? '?' : a, hole === 'b' ? '?' : b), show: true,
+      sol: { t: 'div', n: c, k: a, q: b, hole: hole === 'top' ? 'n' : hole === 'a' ? 'k' : 'q' },
     });
   }
   if (kind === 'family') {
-    return numQ(`${a} × ${b} = ${c}<br>${c} ÷ ${a} = ?`, b, [a, b + 1, b - 1, c - a], { small: true });
+    return numQ(`${a} × ${b} = ${c}<br>${c} ÷ ${a} = ?`, b, [a, b + 1, b - 1, c - a], { small: true, sol: { t: 'div', n: c, k: a, q: b } });
   }
   const r = R(1, a - 1 || 1), n = c + (a > 1 ? r : 0);
   const rr = n - Math.floor(n / a) * a;
-  if (lvl === 2 && chance(0.4)) return numQ(`? ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ${rr}`, n, [n + 1, n - 1, c, n + a]);
-  return numQ(`${n} ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ?`, rr, [rr + 1, rr - 1, a - rr, rr + a].filter(v => v >= 0), { visual: shareVis(n, a, true), show: false });
+  if (lvl === 2 && chance(0.4)) return numQ(`? ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ${rr}`, n, [n + 1, n - 1, c, n + a], { sol: { t: 'rem', n, k: a, hole: 'n' } });
+  return numQ(`${n} ÷ ${a} = ${Math.floor(n / a)} <small class="rem">🐟</small> ?`, rr, [rr + 1, rr - 1, a - rr, rr + a].filter(v => v >= 0), { visual: shareVis(n, a, true), show: false, sol: { t: 'rem', n, k: a } });
 }
 
 // ---------- 7. Parts of a whole ----------
@@ -411,22 +414,22 @@ function genFrac(lvl) {
     const wrong = [[k - s, k], [s, k + 1], [s + 1, k], [s, k - 1], [s - 1, k], [k, s], [s, k + 2]]
       .filter(([n, d]) => n > 0 && d > 1 && n * k !== s * d);
     const uniq = [[s, k], ...[...new Map(wrong.map(o => [o.join('/'), o])).values()].slice(0, 3)];
-    return { eq: '?', answer: `${s}/${k}`, input: 'choice', visual: vis, show: true, choices: shuffle(uniq.map(([n, d]) => ({ value: `${n}/${d}`, html: frac(n, d) }))) };
+    return { eq: '?', answer: `${s}/${k}`, input: 'choice', visual: vis, show: true, sol: { t: 'fracName', s, k }, choices: shuffle(uniq.map(([n, d]) => ({ value: `${n}/${d}`, html: frac(n, d) }))) };
   }
   if (kind === 'cmp') {
     let n1, d1, n2, d2;
     if (lvl === 0) { d1 = d2 = pick([3, 4, 5, 6, 8]); n1 = R(1, d1 - 1); n2 = R(1, d2 - 1); }
     else if (lvl === 1) { n1 = n2 = R(1, 3); d1 = R(n1 + 1, 9); d2 = R(n2 + 1, 9); }
     else { d1 = pick([2, 3, 4, 6]); d2 = pick([4, 6, 8, 12].filter(d => d !== d1)); n1 = R(1, d1 - 1); n2 = R(1, d2 - 1); }
-    return { ...cmpQ(frac(n1, d1), frac(n2, d2), n1 / d1, n2 / d2, pair(pizza(d1, n1, 90), '', pizza(d2, n2, 90))), show: lvl === 0 };
+    return { ...cmpQ(frac(n1, d1), frac(n2, d2), n1 / d1, n2 / d2, pair(pizza(d1, n1, 90), '', pizza(d2, n2, 90))), show: lvl === 0, sol: { t: 'fracCmp', n1, d1, n2, d2 } };
   }
   if (kind === 'of') {
     const d = pick([2, 3, 4, 5]), k = R(2, lvl === 2 ? 10 : 6), n = lvl === 2 ? R(1, d - 1) : 1, whole = d * k;
-    return numQ(`${frac(n, d)} × ${whole} = ?`, n * k, [k, whole - n * k, n * k + 1, whole / n].filter(v => Number.isInteger(v)));
+    return numQ(`${frac(n, d)} × ${whole} = ?`, n * k, [k, whole - n * k, n * k + 1, whole / n].filter(v => Number.isInteger(v)), { sol: { t: 'fracOf', n, d, whole } });
   }
   const good = shuffle([[1, 2], [2, 4], [3, 6], [4, 8], [5, 10]]).slice(0, R(2, 3));
   const bad = shuffle([[1, 3], [2, 3], [3, 4], [2, 5], [3, 5], [1, 4], [4, 6]]).slice(0, 6 - good.length);
-  return findAllQ(frac(1, 2), good.map(([n, d]) => frac(n, d)), bad.map(([n, d]) => frac(n, d)));
+  return { ...findAllQ(frac(1, 2), good.map(([n, d]) => frac(n, d)), bad.map(([n, d]) => frac(n, d))), sol: { t: 'fracAll', a: 1, b: 2 } };
 }
 
 // ---------- 8. Clock ----------
@@ -439,15 +442,15 @@ function genClock(lvl) {
     const t = h * 60 + m + add, h2 = ((Math.floor(t / 60) - 1) % 12) + 1, m2 = t % 60;
     const ans = hm(h2, m2);
     const opts = [...new Set([ans, hm(h, (m + add) % 60), hm((h2 % 12) + 1, m2), hm(h2, (m2 + 10) % 60), hm(h2, Math.abs(m2 - 10))])].slice(0, 4);
-    return { eq: `+${add} = ?`, answer: ans, input: 'choice', visual: clock(h, m), show: true, choices: shuffle(opts.map(v => ({ value: v, html: v }))) };
+    return { eq: `+${add} = ?`, answer: ans, input: 'choice', visual: clock(h, m), show: true, sol: { t: 'clockAdd', h, m, add }, choices: shuffle(opts.map(v => ({ value: v, html: v }))) };
   }
   const ans = hm(h, m);
   const opts = [...new Set([ans, ...shuffle(wrongs)])].slice(0, 4);
   if (lvl === 2 && chance(0.5)) {
     // digital to analog
-    return { eq: `${ans} = ?`, answer: ans, input: 'choice', visual: null, show: false, choices: shuffle(opts.map(v => { const [hh, mm] = v.split(':').map(Number); return { value: v, html: clock(hh, mm, 78) }; })) };
+    return { eq: `${ans} = ?`, answer: ans, input: 'choice', visual: null, show: false, sol: { t: 'clock', h, m }, choices: shuffle(opts.map(v => { const [hh, mm] = v.split(':').map(Number); return { value: v, html: clock(hh, mm, 78) }; })) };
   }
-  return { eq: '?', answer: ans, input: 'choice', visual: clock(h, m), show: true, choices: shuffle(opts.map(v => ({ value: v, html: v }))) };
+  return { eq: '?', answer: ans, input: 'choice', visual: clock(h, m), show: true, sol: { t: 'clock', h, m }, choices: shuffle(opts.map(v => ({ value: v, html: v }))) };
 }
 
 // ---------- 9. Angles ----------
@@ -458,7 +461,7 @@ function genAngle(lvl) {
     for (let i = 0; i < nGood; i++) items.push(angleVis(90, { rot: R(0, 11) * 30, size: 70, mark: lvl === 0 }));
     const bad = [];
     while (bad.length < 6 - nGood) bad.push(angleVis(pick(lvl === 0 ? [40, 60, 130, 150] : [40, 60, 120, 140, 70, 110]), { rot: R(0, 11) * 30, size: 70, mark: lvl === 0 }));
-    return { eq: '', input: 'multi', target: angleVis(90, { size: 60 }), items: shuffle([...items.map(html => ({ html, ok: true })), ...bad.map(html => ({ html, ok: false }))]), visual: null, show: false, grid3: true };
+    return { eq: '', input: 'multi', target: angleVis(90, { size: 60 }), sol: { t: 'marked', key: 'rightCheck', lead: 'rightIs' }, items: shuffle([...items.map(html => ({ html, ok: true })), ...bad.map(html => ({ html, ok: false }))]), visual: null, show: false, grid3: true };
   }
   if (kind === 'bigger') {
     const d1 = R(3, 15) * 10;
@@ -467,16 +470,16 @@ function genAngle(lvl) {
     // the smaller angle gets the longer arms, so kids look at the opening, not the lines
     const la = d1 > d2 ? 38 : 66, lb = d1 > d2 ? 66 : 38;
     const vis = pair(angleVis(d1, { rot: R(0, 3) * 20, l1: la, l2: la, size: 120, mark: false, color: COL.red }), '', angleVis(d2, { rot: R(0, 3) * 20, l1: lb, l2: lb, size: 120, mark: false, color: COL.blue }));
-    return { ...cmpQ(dot('red'), dot('blue'), d1, d2, vis), show: true };
+    return { ...cmpQ(dot('red'), dot('blue'), d1, d2, vis), show: true, sol: { t: 'angleCmp', d1, d2 } };
   }
   if (kind === 'deg') {
     const d = pick([30, 45, 60, 90, 120, 135, 150, 180]);
     const opts = shuffle([...new Set([d, 180 - d || 90, d + 30, Math.abs(d - 30) || 15, d * 2 > 360 ? 60 : d * 2])].filter(v => v > 0).slice(0, 4));
     if (!opts.includes(d)) opts[0] = d;
-    return { eq: '?°', answer: d, input: 'choice', visual: angleVis(d, { rot: R(0, 5) * 15 }), show: true, choices: shuffle(opts).map(v => ({ value: v, html: v + '°' })) };
+    return { eq: '?°', answer: d, input: 'choice', visual: angleVis(d, { rot: R(0, 5) * 15 }), show: true, sol: { t: 'angleDeg', d }, choices: shuffle(opts).map(v => ({ value: v, html: v + '°' })) };
   }
   const a = R(3, 15) * 10;
-  return numQ(`${a}° + ?° = 180°`, 180 - a, [360 - a, 90 - a, a, 190 - a].filter(v => v > 0), { visual: splitLine(a), show: true });
+  return numQ(`${a}° + ?° = 180°`, 180 - a, [360 - a, 90 - a, a, 190 - a].filter(v => v > 0), { visual: splitLine(a), show: true, sol: { t: 'straight', a } });
 }
 
 // A straight line with a ray that splits it into a° (red, on the right) and the rest.
@@ -505,7 +508,7 @@ function genArea(lvl) {
     }
     const opts = shuffle([[gw, gh], ...bads]);
     return {
-      eq: `${target} = ?`, answer: `${gw}x${gh}`, input: 'choice', visual: null, show: false,
+      eq: `${target} = ?`, answer: `${gw}x${gh}`, input: 'choice', visual: null, show: false, sol: { t: 'build', target },
       choices: opts.map(([x, y]) => ({ value: `${x}x${y}`, html: tiles(rect(x, y), { grid: false, labels: [x, y], size: 90, fill: COL.yellow }) })),
     };
   }
@@ -514,10 +517,10 @@ function genArea(lvl) {
   const cells = L ? lShape(w, h, cw, ch) : rect(w, h);
   const labelled = lvl === 2 && !L;
   if (kind === 'area') {
-    return numQ('🟦 = ?', cells.length, [cells.length + 1, cells.length - 1, 2 * (w + h), w + h], { visual: tiles(cells, { grid: !labelled, labels: labelled ? [w, h] : null }), show: true });
+    return numQ('🟦 = ?', cells.length, [cells.length + 1, cells.length - 1, 2 * (w + h), w + h], { visual: tiles(cells, { grid: !labelled, labels: labelled ? [w, h] : null }), show: true, sol: { t: 'area', w, h, cut: L ? [cw, ch] : null } });
   }
   const per = 2 * (w + h); // an L-shape has the same fence as its full rectangle
-  return numQ('🦀 = ?', per, [cells.length, per - 2, w + h, per + 2], { visual: tiles(cells, { grid: !labelled && lvl < 2, labels: lvl === 2 ? [w, h] : null, crab: true, fill: '#bfe3f7' }), show: true });
+  return numQ('🦀 = ?', per, [cells.length, per - 2, w + h, per + 2], { visual: tiles(cells, { grid: !labelled && lvl < 2, labels: lvl === 2 ? [w, h] : null, crab: true, fill: '#bfe3f7' }), show: true, sol: { t: 'perim', w, h, cut: L ? [cw, ch] : null } });
 }
 function productsOf12(t) { const out = []; for (let a = 2; a <= 7; a++) if (t % a === 0 && t / a >= 2 && t / a <= 6) out.push([a, t / a]); return out.length ? out : [[2, t / 2]]; }
 
@@ -534,7 +537,7 @@ function genTurn(lvl) {
     const pool = shuffle([...new Map(mirrors.filter(m => !rk.has(keyOf(m))).map(m => [keyOf(m), m])).values()]);
     const opts = [ans, ...pool.slice(0, lvl === 0 ? 2 : 3)];
     return {
-      eq: '?', answer: keyOf(ans), input: 'choice', layout: opts.length < 4 ? 'row' : 'grid', visual: cellsSvg(rots[0], 110, COL.blue), show: true,
+      eq: '?', answer: keyOf(ans), input: 'choice', layout: opts.length < 4 ? 'row' : 'grid', visual: cellsSvg(rots[0], 110, COL.blue), show: true, sol: { t: 'turn', base: rots[0] },
       choices: shuffle(opts.map(cs => ({ value: keyOf(cs), html: cellsSvg(cs, 66, COL.blue) }))),
     };
   }
@@ -546,7 +549,7 @@ function genTurn(lvl) {
     if (!foldsToCube(cs) && !keys.has(keyOf(cs))) { keys.add(keyOf(cs)); bad.push(cs); }
   }
   return {
-    eq: '? = 🧊', answer: keyOf(good), input: 'choice', visual: null, show: false,
+    eq: '? = 🧊', answer: keyOf(good), input: 'choice', visual: null, show: false, sol: { t: 'net' },
     choices: shuffle([good, ...bad].map(cs => ({ value: keyOf(cs), html: cellsSvg(cs, 78, COL.yellow) }))),
   };
 }
@@ -561,13 +564,13 @@ function genLikely(lvl) {
     colors.forEach((c, i) => { counts[c] = nums[i]; });
     const best = colors.reduce((a, b) => (counts[a] > counts[b] ? a : b));
     const choices = colorChoices(lvl === 0 ? [...colors, pick(['green', 'purple'].filter(c => !colors.includes(c)))] : colors);
-    return { eq: '✋ = ?', answer: best, input: 'choice', layout: 'row', visual: bag(counts), show: true, choices };
+    return { eq: '✋ = ?', answer: best, input: 'choice', layout: 'row', visual: bag(counts), show: true, choices, sol: { t: 'most', counts } };
   }
   if (kind === 'count') {
     const counts = {};
     colors.forEach(c => { counts[c] = R(1, 5); });
     const c = pick(colors), total = colors.reduce((s, x) => s + counts[x], 0);
-    return { ...numQ(`${dot(c)} = ${frac('?', total)}`, counts[c], [total - counts[c], counts[c] + 1, total]), visual: bag(counts), show: true, small: true };
+    return { ...numQ(`${dot(c)} = ${frac('?', total)}`, counts[c], [total - counts[c], counts[c] + 1, total]), visual: bag(counts), show: true, small: true, sol: { t: 'bagCount', counts, c } };
   }
   // which bag makes red more likely? The bag with more reds is not always the better one.
   for (;;) {
@@ -576,7 +579,7 @@ function genLikely(lvl) {
     if (Math.abs(p1 - p2) < 0.12) continue;
     if (lvl === 2 && (r1 > r2) === (p1 > p2) && chance(0.7)) continue; // prefer the tricky ones
     return {
-      eq: `${dot('red')} ✋ ?`, answer: p1 > p2 ? 'a' : 'b', input: 'choice', layout: 'pair', visual: null, show: false,
+      eq: `${dot('red')} ✋ ?`, answer: p1 > p2 ? 'a' : 'b', input: 'choice', layout: 'pair', visual: null, show: false, sol: { t: 'bags', r1, o1, r2, o2 },
       choices: [{ value: 'a', html: bag({ red: r1, blue: o1 }, 110) }, { value: 'b', html: bag({ red: r2, blue: o2 }, 110) }],
     };
   }
@@ -594,28 +597,28 @@ function genSpin(lvl) {
     // on harder levels the biggest colour is split into two pieces, so it doesn't look biggest at a glance
     const others = sectors.filter(([c]) => c !== best), bk = sectors.find(([c]) => c === best)[1];
     const drawn = lvl ? [[best, Math.ceil(bk / 2)], others[0], [best, Math.floor(bk / 2)], others[1]] : sectors;
-    return { eq: '? ', answer: best, input: 'choice', layout: 'row', visual: spinner(drawn), show: true, choices: colorChoices(cs) };
+    return { eq: '? ', answer: best, input: 'choice', layout: 'row', visual: spinner(drawn), show: true, choices: colorChoices(cs), sol: { t: 'most', sectors: drawn } };
   }
   const labels = shuffle(SEA.slice()).slice(0, 4);
   let vals;
   do vals = labels.map(() => R(1, lvl === 0 ? 8 : 12)); while (new Set(vals).size < 4);
   if (kind === 'chartTop') {
     const best = labels[vals.indexOf(Math.max(...vals))];
-    return { eq: '? ⬆', answer: best, input: 'choice', layout: 'row', visual: barChart(labels, vals), show: true, choices: shuffle(labels.map(l => ({ value: l, html: l }))) };
+    return { eq: '? ⬆', answer: best, input: 'choice', layout: 'row', visual: barChart(labels, vals), show: true, sol: { t: 'chart', ask: 'top', labels, vals }, choices: shuffle(labels.map(l => ({ value: l, html: l }))) };
   }
   if (kind === 'chartRead') {
     const i = R(0, 3);
-    return numQ(`${labels[i]} = ?`, vals[i], [vals[i] + 1, vals[i] - 1, vals[(i + 1) % 4]].filter(v => v >= 0), { visual: barChart(labels, vals), show: true });
+    return numQ(`${labels[i]} = ?`, vals[i], [vals[i] + 1, vals[i] - 1, vals[(i + 1) % 4]].filter(v => v >= 0), { visual: barChart(labels, vals), show: true, sol: { t: 'chart', ask: 'read', labels, vals, i } });
   }
   if (kind === 'chartMore') {
     const [i, j] = shuffle([0, 1, 2, 3]);
     const a = Math.max(vals[i], vals[j]) === vals[i] ? i : j, b = a === i ? j : i;
-    return numQ(`${labels[a]} − ${labels[b]} = ?`, vals[a] - vals[b], [vals[a] + vals[b], vals[a], vals[b], vals[a] - vals[b] + 1], { visual: barChart(labels, vals), show: true });
+    return numQ(`${labels[a]} − ${labels[b]} = ?`, vals[a] - vals[b], [vals[a] + vals[b], vals[a], vals[b], vals[a] - vals[b] + 1], { visual: barChart(labels, vals), show: true, sol: { t: 'chart', ask: 'diff', labels, vals, i: a, j: b } });
   }
   // an unfair die: one face comes up much more often in 60 rolls
   const loaded = R(1, 6), faces = [1, 2, 3, 4, 5, 6];
   const counts = faces.map(f => (f === loaded ? R(20, 26) : R(5, 10)));
-  return { eq: '🎲 ?', answer: loaded, input: 'choice', visual: barChart(faces, counts, null, 300), show: true, choices: shuffle(shuffle(faces.filter(f => f !== loaded)).slice(0, 3).concat(loaded)).map(f => ({ value: f, html: dieSvg(f) })) };
+  return { eq: '🎲 ?', answer: loaded, input: 'choice', visual: barChart(faces, counts, null, 300), show: true, sol: { t: 'die', counts }, choices: shuffle(shuffle(faces.filter(f => f !== loaded)).slice(0, 3).concat(loaded)).map(f => ({ value: f, html: dieSvg(f) })) };
 }
 
 // ---------- Numbers to a million: every zoom is ×10 ----------
@@ -630,17 +633,17 @@ function genMillion(lvl) {
     const items = Array.from({ length: len }, (_, i) => 10 ** (from + i));
     const hole = R(1, len - 1), ans = items[hole];
     const cells = items.map((v, i) => `<span class="zc"><i style="font-size:${22 + i * 6}px">${ZOOM[from + i]}</i>${i === hole ? '<span class="slot">?</span>' : `<b>${big(v)}</b>`}${i < len - 1 ? '<em>×10 ▶</em>' : ''}</span>`);
-    return { eq: '', answer: ans, input: 'choice', small: true, choices: bigChoices(ans, [ans * 10, ans / 10, ans * 100, ans / 100, ans / 1000].filter(v => Number.isInteger(v) && v >= 1)), visual: `<div class="zoom">${cells.join('')}</div>`, show: true };
+    return { eq: '', answer: ans, input: 'choice', small: true, choices: bigChoices(ans, [ans * 10, ans / 10, ans * 100, ans / 100, ans / 1000].filter(v => Number.isInteger(v) && v >= 1)), visual: `<div class="zoom">${cells.join('')}</div>`, show: true, sol: { t: 'zoom', from, len, hole } };
   }
   if (kind === 'times') {
     const div = lvl > 0 && chance(0.4);
     const a = pick([R(2, 99) * 100, R(11, 999) * 10, R(2, 9) * 1000, R(12, 99) * 1000]);
     const m = lvl === 2 ? pick([10, 100, 1000]) : 10;
     if (div && a % m) return genMillion(lvl);
-    if (div) return { ...numQ(`${big(a)} ÷ ${m} = ?`, a / m), small: true, choices: bigChoices(a / m, [a / m * 10, a / m / 10, a / m * 100].filter(Number.isInteger)) };
+    if (div) return { ...numQ(`${big(a)} ÷ ${m} = ?`, a / m), small: true, choices: bigChoices(a / m, [a / m * 10, a / m / 10, a / m * 100].filter(Number.isInteger)), sol: { t: 'zeros', a, m, div: true } };
     const c = a * m;
     if (c > 1000000) return genMillion(lvl);
-    return { ...numQ(`${big(a)} × ${m} = ?`, c), small: true, choices: bigChoices(c, [c * 10, c / 10, a * (m + 1)].filter(Number.isInteger)) };
+    return { ...numQ(`${big(a)} × ${m} = ?`, c), small: true, choices: bigChoices(c, [c * 10, c / 10, a * (m + 1)].filter(Number.isInteger)), sol: { t: 'zeros', a, m } };
   }
   const n = R(lvl === 0 ? 10000 : 100000, 999999);
   const s = String(n);
@@ -655,12 +658,12 @@ function genMillion(lvl) {
       const v = d * 10 ** q;
       if (opts.length < 4 && q >= 0 && v <= 1000000 && !opts.includes(v)) opts.push(v);
     }
-    return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, small: true, choices: shuffle(opts).map(v => ({ value: v, html: `<span class="bign">${big(v)}</span>` })) };
+    return { eq: `${html} → ?`, answer: val, input: 'choice', visual: null, show: false, small: true, sol: { t: 'digitval', n, i }, choices: shuffle(opts).map(v => ({ value: v, html: `<span class="bign">${big(v)}</span>` })) };
   }
   const swapped = +(s.slice(0, 1) + s[2] + s[1] + s.slice(3));
   const m = pick([n + pick([1, -1, 1000, -1000, 100000, -100000]), swapped].filter(v => v >= 10000 && v <= 999999 && String(v).length === s.length));
   const y = chance(0.1) || m === undefined ? n : m;
-  return { ...cmpQ(big(n), big(y), n, y), small: true };
+  return { ...cmpQ(big(n), big(y), n, y), small: true, sol: { t: 'cmp', x: n, y } };
 }
 
 // ---------- Long division: deal the hundreds, then the tens, then the ones ----------
@@ -681,16 +684,16 @@ function genLongDiv(lvl) {
     const s = String(q);
     if (s.length < 3) return genLongDiv(lvl);
     const i = R(0, s.length - 1), d = +s[i];
-    return numQ(`${n} ÷ ${k} = ${s.slice(0, i)}?${s.slice(i + 1)}`, d, [d + 1, d - 1, (d + k) % 10, k].filter(v => v >= 0 && v <= 9), { visual: vis, show: false });
+    return numQ(`${n} ÷ ${k} = ${s.slice(0, i)}?${s.slice(i + 1)}`, d, [d + 1, d - 1, (d + k) % 10, k].filter(v => v >= 0 && v <= 9), { visual: vis, show: false, sol: { t: 'longdiv', n, k, digit: i } });
   }
   if (kind === 'rem') {
     const r = R(1, k - 1), m = n + r;
     if (m > 999) return genLongDiv(lvl);
-    return numQ(`${m} ÷ ${k} = ${q} <small class="rem">🐟</small> ?`, r, [r + 1, r - 1, k - r, k].filter(v => v >= 0 && v !== r), { visual: `<div class="deal">${place(m)}${chests(k)}</div>`, show: false });
+    return numQ(`${m} ÷ ${k} = ${q} <small class="rem">🐟</small> ?`, r, [r + 1, r - 1, k - r, k].filter(v => v >= 0 && v !== r), { visual: `<div class="deal">${place(m)}${chests(k)}</div>`, show: false, sol: { t: 'rem', n: m, k } });
   }
-  if (kind === 'back') return numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, q + k, n + 10]);
+  if (kind === 'back') return numQ(`? ÷ ${k} = ${q}`, n, [n + k, n - k, q + k, n + 10], { sol: { t: 'div', n, k, q, hole: 'n' } });
   const wrongSplit = Number(String(Math.floor(n / 100 / k) || '') + String(Math.floor((n % 100) / 10 / k)) + String(Math.floor((n % 10) / k)));
-  return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, q + 10, q - 10, wrongSplit].filter(v => v > 0), { visual: vis, show: lvl === 0 });
+  return numQ(`${n} ÷ ${k} = ?`, q, [q + 1, q - 1, q + 10, q - 10, wrongSplit].filter(v => v > 0), { visual: vis, show: lvl === 0, sol: { t: 'longdiv', n, k } });
 }
 
 // ---------- Shape sorter: right corners, equal sides, parallel sides ----------
@@ -760,11 +763,11 @@ function genSort(lvl) {
   const all = [...QUADS, ...TRIS];
   if (kind === 'sides') {
     const sh = chance(0.25) ? pick(PENTAS) : pick(all);
-    return { eq: '?', answer: sh.p.length, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, choices: [3, 4, 5].map(v => ({ value: v, html: String(v) })) };
+    return { eq: '?', answer: sh.p.length, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, sol: { t: 'corners', n: sh.p.length }, choices: [3, 4, 5].map(v => ({ value: v, html: String(v) })) };
   }
   if (kind === 'par') {
     const sh = pick(QUADS);
-    return { eq: `<span class="rails">🛤️</span> = ?`, answer: sh.par, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, choices: [0, 1, 2].map(v => ({ value: v, html: String(v) })) };
+    return { eq: `<span class="rails">🛤️</span> = ?`, answer: sh.par, input: 'choice', layout: 'row', visual: shapeSvg(sh, { size: 160, rot: rot() }), show: true, sol: { t: 'parallel' }, choices: [0, 1, 2].map(v => ({ value: v, html: String(v) })) };
   }
   if (kind === 'odd') {
     // three quads with two pairs of parallel sides and one without, or the reverse
@@ -778,14 +781,14 @@ function genSort(lvl) {
       if (!lonely) break;
       if (t > 200) return genSort(lvl);
     }
-    return { eq: '?', answer: i, input: 'choice', layout: 'grid', visual: null, show: false, choices: set.map((sh, j) => ({ value: j, html: shapeSvg(sh, { size: 70, rot: rot() }) })) };
+    return { eq: '?', answer: i, input: 'choice', layout: 'grid', visual: null, show: false, sol: { t: 'oddPar' }, choices: set.map((sh, j) => ({ value: j, html: shapeSvg(sh, { size: 70, rot: rot() }) })) };
   }
   const prop = pick(lvl === 0 ? ['right', 'eq'] : ['right', 'par', 'eq']);
   const test = sh => (prop === 'par' ? sh.par > 0 : sh[prop]);
   const pool = prop === 'par' ? QUADS.concat(pick(TRIS)) : all;
   const good = shuffle(pool.filter(test)).slice(0, R(2, 3)), bad = shuffle(pool.filter(sh => !test(sh))).slice(0, 6 - good.length);
   const items = [...good.map(sh => ({ sh, ok: true })), ...bad.map(sh => ({ sh, ok: false }))];
-  return { eq: '', input: 'multi', target: PROP_ICON[prop], grid3: true, visual: null, show: false,
+  return { eq: '', input: 'multi', target: PROP_ICON[prop], grid3: true, visual: null, show: false, sol: { t: 'shapeProp', prop },
     items: shuffle(items).map(({ sh, ok }) => ({ html: shapeSvg(sh, { size: 70, rot: rot(), marks: lvl === 0 && prop === 'right' }), ok })) };
 }
 
@@ -830,9 +833,9 @@ function genStory(lvl) {
     }
     if (opts.length < 4) return genStory(lvl);
     shuffle(opts);
-    return { eq: '', answer: s.expr, input: 'choice', layout: 'grid', visual: vis, show: true, choices: opts.map(x => ({ value: x, html: `<span class="ex">${x}</span>` })) };
+    return { eq: '', answer: s.expr, input: 'choice', layout: 'grid', visual: vis, show: true, sol: { t: 'story2', expr: s.expr }, choices: opts.map(x => ({ value: x, html: `<span class="ex">${x}</span>` })) };
   }
-  return { ...numQ('', s.ans, s.wrongs.filter(v => v >= 0 && v !== s.ans)), visual: vis, show: true };
+  return { ...numQ('', s.ans, s.wrongs.filter(v => v >= 0 && v !== s.ans)), visual: vis, show: true, sol: { t: 'story2', expr: s.expr } };
 }
 
 // ---------- 2-digit × 2-digit: the rectangle cut into four parts ----------
@@ -850,7 +853,7 @@ function twoByTwo() {
   if (a % 10 === 0 || b % 10 === 0) return twoByTwo();
   const c = a * b;
   const forgot = Math.floor(a / 10) * 10 * Math.floor(b / 10) * 10 + (a % 10) * (b % 10); // only the two corner parts
-  return numQ(`${a} × ${b} = ?`, c, [forgot, c + 10, c - 10, c + 100].filter(v => v !== c), { visual: areaModel2(a, b), show: false });
+  return numQ(`${a} × ${b} = ?`, c, [forgot, c + 10, c - 10, c + 100].filter(v => v !== c), { visual: areaModel2(a, b), show: false, sol: { t: 'mul2x2', a, b } });
 }
 
 // ---------- Guess first: nearest hundred ----------
@@ -864,7 +867,7 @@ function estimateSum(lvl) {
     if (Math.abs(m - 50) < 18 || c < 150) continue; // stay clear of the halfway mark, so only one hundred is nearest
     const ans = Math.round(c / 100) * 100;
     const opts = shuffle([ans, ans + 100, ans - 100, ans + 200 > 1100 ? ans - 200 : ans + 200].filter(v => v > 0));
-    return { eq: `${a} ${plus ? '+' : '−'} ${b} ≈ ?`, answer: ans, input: 'choice', visual: numberLine(Math.floor(c / 100) * 100, Math.floor(c / 100) * 100 + 100, c), show: false, choices: opts.map(v => ({ value: v, html: String(v) })) };
+    return { eq: `${a} ${plus ? '+' : '−'} ${b} ≈ ?`, answer: ans, input: 'choice', sol: { t: 'estimate', a, b, plus }, visual: numberLine(Math.floor(c / 100) * 100, Math.floor(c / 100) * 100 + 100, c), show: false, choices: opts.map(v => ({ value: v, html: String(v) })) };
   }
 }
 
@@ -888,7 +891,7 @@ function missingDigitSum(lvl) {
     }
     if (count !== 1) continue;
     const eq = which ? `${x} ${plus ? '+' : '−'} ${shown} = ${z}` : `${shown} ${plus ? '+' : '−'} ${y} = ${z}`;
-    return numQ(eq, d, [d + 1, d - 1, 9 - d, (d + 5) % 10].filter(v => v >= 0 && v <= 9), { small: lvl < 2 });
+    return numQ(eq, d, [d + 1, d - 1, 9 - d, (d + 5) % 10].filter(v => v >= 0 && v <= 9), { small: lvl < 2, sol: { t: 'mdigit', x, y, z, plus, which, pos } });
   }
 }
 const DIVOPS = { '+': (a, b) => a + b, '−': (a, b) => a - b, '×': (a, b) => a * b, '÷': (a, b) => (b && a % b === 0 ? a / b : NaN) };
@@ -899,31 +902,31 @@ function signDiv() {
     const c = DIVOPS[op](a, b);
     if (!Number.isInteger(c) || c < 0) continue;
     if (Object.keys(DIVOPS).filter(o => DIVOPS[o](a, b) === c).length !== 1) continue;
-    return { eq: `${a} ◯ ${b} = ${c}`, answer: op, input: 'choice', layout: 'grid', visual: null, show: false, choices: Object.keys(DIVOPS).map(o => ({ value: o, html: o })) };
+    return { eq: `${a} ◯ ${b} = ${c}`, answer: op, input: 'choice', layout: 'grid', visual: null, show: false, sol: { t: 'sign', a, b, c, ops: Object.keys(DIVOPS) }, choices: Object.keys(DIVOPS).map(o => ({ value: o, html: o })) };
   }
 }
 function machine(lvl) {
   const x = R(2, 12), m = R(2, lvl ? 9 : 5), a = R(1, 20);
   const plus = chance(0.6), out = plus ? x * m + a : x * m - a;
   if (out < 0) return machine(lvl);
-  return numQ(`? <span class="mach">×${m}</span> <span class="mach">${plus ? '+' : '−'}${a}</span> ${out}`, x, [x + 1, x - 1, Math.round(out / m), out - a].filter(v => v > 0), { small: true });
+  return numQ(`? <span class="mach">×${m}</span> <span class="mach">${plus ? '+' : '−'}${a}</span> ${out}`, x, [x + 1, x - 1, Math.round(out / m), out - a].filter(v => v > 0), { small: true, sol: { t: 'machine', m, a, plus, out } });
 }
 function countSquares() {
   const n = pick([2, 3]);
   const ans = n === 2 ? 5 : 14;
-  return numQ('? □', ans, n === 2 ? [4, 6, 8] : [9, 10, 13, 16], { visual: tiles(rect(n, n), { grid: true, fill: '#ffe8a3' }), show: true });
+  return numQ('? □', ans, n === 2 ? [4, 6, 8] : [9, 10, 13, 16], { visual: tiles(rect(n, n), { grid: true, fill: '#ffe8a3' }), show: true, sol: { t: 'squares', n } });
 }
 function stairsPerimeter() {
   // a staircase: its fence is as long as the fence of the full rectangle
   const w = R(3, 5), h = R(3, 4);
   const cells = rect(w, h).filter(([x, y]) => x < Math.max(1, Math.round((w * (y + 1)) / h)));
   const per = 2 * (w + h);
-  return numQ('🦀 = ?', per, [per - 2, per + 2, cells.length], { visual: tiles(cells, { crab: true, grid: true, fill: '#bfe3f7' }), show: true });
+  return numQ('🦀 = ?', per, [per - 2, per + 2, cells.length], { visual: tiles(cells, { crab: true, grid: true, fill: '#bfe3f7' }), show: true, sol: { t: 'stairs', w, h } });
 }
 function fracChain() {
   const k = pick([2, 4]), whole = pick([16, 24, 32, 40, 48]);
   const v = whole / 2 / (k === 2 ? 2 : 4);
-  return numQ(`${frac(1, 2)} × ${frac(1, k)} × ${whole} = ?`, v, [whole / 2, whole / k, v * 2, v + 1], { small: true });
+  return numQ(`${frac(1, 2)} × ${frac(1, k)} × ${whole} = ?`, v, [whole / 2, whole / k, v * 2, v + 1], { small: true, sol: { t: 'fracChain', k, whole } });
 }
 function genOPuzzle(mixed) {
   return lvl => {

@@ -1,7 +1,7 @@
 // The 🔍 solution sheet: after a question is answered, show how to solve it in a few picture steps.
 // Free to open, and it never changes scores, gems or saves. Questions whose generator gives no
 // q.sol yet get a simple sheet: the question solved, its 💡 picture and the ⓘ sentence.
-import { SOLVERS } from './sol-basic.js';
+import { SOLVERS } from './sol-all.js';
 import { helpFor } from './help.js';
 import { sfx } from './audio.js';
 

@@ -7,13 +7,15 @@
 import { say } from './sol-words.js';
 import { frames, fill, blocks, pair, solid } from './visuals.js';
 import { nline, tiles, b10, dots, checks, pyr, balance, corners, polyPoints, fan, sqx, gallery, mirror, unitSnake, crowd, row, big } from './sol-pics.js';
+import { digitRows } from './sol-pics2.js';
 import { money, country } from './country.js';
 
 const RED = '#ef5b52', BLUE_ = '#3e9be0';
-const S = (pic, math, key, vars) => ({ pic, math, say: key ? say(key, vars) : '' });
-const OOPS = (math, key, vars, pic = '') => ({ pic, math, say: say(key, vars), oops: true });
-const m = v => String(v).replace(/^-/, '−');
-const plain = s => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+export const S = (pic, math, key, vars) => ({ pic, math, say: key ? say(key, vars) : '' });
+export const OOPS = (math, key, vars, pic = '') => ({ pic, math, say: say(key, vars), oops: true });
+// Numbers as they are written in the game: a real minus sign, and commas from 10,000 up.
+export const m = v => (typeof v === 'number' && Math.abs(v) >= 10000 ? v.toLocaleString('en-US') : String(v)).replace(/^-/, '−');
+export const plain = s => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 
 // Work out a small expression like "3 + 9", "4 × 6" or "12 − 5", left to right.
 export function evalExpr(s) {
@@ -159,12 +161,21 @@ function cmp({ x, y, lx, ly }, q, given) {
   const side = (lab, v) => (String(lab) === String(v) ? `${v}` : String(lab).includes('<') ? `${lab} ${v}` : `${lab} = ${v}`);
   if (String(L) !== String(x) || String(Rt) !== String(y)) {
     steps.push(S(`<div class="solchecks"><div><span>${side(L, x)}</span></div><div><span>${side(Rt, y)}</span></div></div>`, '', 'cmpWork'));
+  } else if (x >= 100 && y >= 100) {
+    const sx = String(x), sy = String(y);
+    if (sx.length !== sy.length) {
+      steps.push(S(digitRows([{ s: sx }, { s: sy }]), `${sx.length} ${esc(SYM(sx.length, sy.length))} ${sy.length}`, 'cmpLonger'));
+    } else {
+      const k = [...sx].findIndex((d, i) => d !== sy[i]), col = sx.length - 1 - k;
+      steps.push(S(digitRows([{ s: sx, hi: k < 0 ? [] : [col] }, { s: sy, hi: k < 0 ? [] : [col] }], { band: k < 0 ? null : col }),
+        k < 0 ? `${m(x)} = ${m(y)}` : `${sx[k]} ${esc(SYM(+sx[k], +sy[k]))} ${sy[k]}`, k < 0 ? 'cmpSame' : 'cmpPlace'));
+    }
   } else if (x >= 10 && y >= 10 && x < 100 && y < 100 && x !== y) {
     const tx = Math.floor(x / 10), ty = Math.floor(y / 10);
     steps.push(S(pair(blocks(x), '', blocks(y, 'b')), tx !== ty ? `${tx} ${esc(SYM(tx, ty))} ${ty}` : `${x % 10} ${esc(SYM(x % 10, y % 10))} ${y % 10}`, tx !== ty ? 'cmpTens' : 'cmpOnes'));
   }
   const lo = Math.min(x, y), hi = Math.max(x, y), pad = Math.max(2, Math.round((hi - lo) * 0.3));
-  steps.push(S(nline(lo >= 0 ? Math.max(0, lo - pad) : lo - pad, hi + pad, { marks: x === y ? [[x, '#2fb383', '=']] : [[x, '#ef5b52', ''], [y, '#3e9be0', '']] }),
+  if (hi < 1000 || !steps.length) steps.push(S(nline(lo >= 0 ? Math.max(0, lo - pad) : lo - pad, hi + pad, { marks: x === y ? [[x, '#2fb383', '=']] : [[x, '#ef5b52', ''], [y, '#3e9be0', '']] }),
     `${String(L).includes('span') ? L : m(x)} ${esc(sym)} ${String(Rt).includes('span') ? Rt : m(y)}`, x === y ? 'cmpSame' : 'cmpLine'));
   return { ans: sym, steps, oops: given && given !== sym ? OOPS(`${m(x)} ${esc(sym)} ${m(y)}`, 'oopsSym') : null };
 }
@@ -256,10 +267,11 @@ function mulmiss({ a, b }, q) {
 }
 
 // ---------- puzzles ----------
-const OPS = { '+': (x, y) => x + y, '−': (x, y) => x - y, '×': (x, y) => x * y };
+const OPS = { '+': (x, y) => x + y, '−': (x, y) => x - y, '×': (x, y) => x * y, '÷': (x, y) => x / y };
 function sign({ a, b, c, ops }, q) {
   const ok = ops.find(o => OPS[o](a, b) === c);
-  return { ans: ok, steps: [S(checks(ops.map(o => [`${a} ${o} ${b} = ${m(OPS[o](a, b))}`, OPS[o](a, b) === c])), `${a} ${ok} ${b} = ${c}`, 'trySigns')] };
+  const line = o => { const v = OPS[o](a, b); return Number.isInteger(v) ? `${a} ${o} ${b} = ${m(v)}` : `${a} ${o} ${b} ≠ ${c}`; };
+  return { ans: ok, steps: [S(checks(ops.map(o => [line(o), OPS[o](a, b) === c])), `${a} ${ok} ${b} = ${c}`, 'trySigns')] };
 }
 function sign2({ a, b, c, d }, q) {
   const combos = [['+', '+'], ['+', '−'], ['−', '+'], ['−', '−']];

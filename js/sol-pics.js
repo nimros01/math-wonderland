@@ -11,7 +11,7 @@ const fmt = v => String(v).replace('-', '−');
 export function nline(from, to, { jumps = [], marks = [], labels = [] } = {}) {
   const W = 300, L = 20, Rr = W - 20, y = 78;
   const X = v => L + ((v - from) / Math.max(1, to - from)) * (Rr - L);
-  const r = to - from, tick = r <= 20 ? 1 : r <= 60 ? 5 : r <= 200 ? 10 : 50;
+  const r = to - from, tick = r <= 20 ? 1 : r <= 60 ? 5 : r <= 200 ? 10 : [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000].find(t => r / t <= 20) || 10 ** Math.ceil(Math.log10(r / 10));
   let b = `<line x1="${L - 8}" y1="${y}" x2="${Rr + 8}" y2="${y}" stroke="${INK}" stroke-width="3"/>`;
   for (let v = Math.ceil(from / tick) * tick; v <= to; v += tick) {
     const big = v % (tick * 5) === 0 || tick >= 10;
@@ -19,10 +19,10 @@ export function nline(from, to, { jumps = [], marks = [], labels = [] } = {}) {
   }
   // endpoints first, then jump ends and marks, skipping any label that would touch one already placed
   const want = [from, to, ...labels, ...jumps.flatMap(([a, c]) => [a, c]), ...marks.map(([v]) => v)];
-  const placed = [];
+  const placed = [], apart = Math.max(24, 9 * Math.max(...want.map(v => fmt(v).length)) + 4);
   want.forEach(v => {
     const x = X(v);
-    if (placed.some(p => Math.abs(p - x) < 24)) return;
+    if (placed.some(p => Math.abs(p - x) < apart)) return;
     placed.push(x);
     b += txt(x, y + 24, fmt(v), { size: 14 });
   });
@@ -42,16 +42,17 @@ export function nline(from, to, { jumps = [], marks = [], labels = [] } = {}) {
 // A row of tiles. items: numbers or emoji; null is the yellow ? tile, { v, hi } marks a tile.
 // arcs[i] labels the jump from tile i to tile i+1.
 export function tiles(items, { arcs = [], boxes = [] } = {}) {
-  const S = 40, G = 6, n = items.length, W = n * (S + G) - G + 8, y = 44;
+  const longest = Math.max(...items.map(it => String(it && typeof it === 'object' ? it.v ?? '' : it ?? '').length));
+  const S = Math.max(40, longest * 10 + 8), T = 40, G = 6, n = items.length, W = n * (S + G) - G + 8, y = 44;
   let b = '';
-  boxes.forEach(([i, k]) => { b += `<rect x="${4 + i * (S + G) - 3}" y="${y - 4}" width="${k * (S + G) - G + 6}" height="${S + 8}" rx="9" fill="none" stroke="${MINT}" stroke-width="3" stroke-dasharray="6 4"/>`; });
+  boxes.forEach(([i, k]) => { b += `<rect x="${4 + i * (S + G) - 3}" y="${y - 4}" width="${k * (S + G) - G + 6}" height="${T + 8}" rx="9" fill="none" stroke="${MINT}" stroke-width="3" stroke-dasharray="6 4"/>`; });
   items.forEach((it, i) => {
     const x = 4 + i * (S + G);
     const o = it && typeof it === 'object' ? it : { v: it };
     const empty = o.v === null || o.v === undefined;
-    b += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="8" fill="${empty ? '#fff8e0' : o.hi ? PALE : '#fff'}" stroke="${empty ? SUN : o.hi ? MINT : INK}" stroke-width="${empty ? 3 : 2.5}"${empty ? ' stroke-dasharray="5 3"' : ''}/>`;
+    b += `<rect x="${x}" y="${y}" width="${S}" height="${T}" rx="8" fill="${empty ? '#fff8e0' : o.hi ? PALE : '#fff'}" stroke="${empty ? SUN : o.hi ? MINT : INK}" stroke-width="${empty ? 3 : 2.5}"${empty ? ' stroke-dasharray="5 3"' : ''}/>`;
     const s = empty ? '?' : fmt(o.v);
-    b += txt(x + S / 2, y + S / 2 + 7, s, { size: s.length > 3 ? 13 : s.length > 2 ? 16 : 20 });
+    b += txt(x + S / 2, y + T / 2 + 7, s, { size: S > 40 ? 15 : s.length > 3 ? 13 : s.length > 2 ? 16 : 20 });
   });
   arcs.forEach((label, i) => {
     if (!label) return;

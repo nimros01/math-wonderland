@@ -141,14 +141,14 @@ function genRect(lvl) {
   const kind = pick([['side', 'side', 'whichbox', 'whichbox'], ['side', 'shapes', 'shapes', 'prime'], ['shapes', 'prime', 'allboxes', 'allboxes']][lvl]);
   if (kind === 'side') {
     const r = R(2, lvl ? 6 : 4), c = R(2, lvl ? 9 : 6), n = r * c;
-    return numQ(`${r} × ? = ${n}`, c, [c + 1, c - 1, n - r, r], { visual: candyBox(r, c), show: lvl === 0 });
+    return numQ(`${r} × ? = ${n}`, c, [c + 1, c - 1, n - r, r], { visual: candyBox(r, c), show: lvl === 0, sol: { t: 'mulmiss', a: r, b: c } });
   }
   if (kind === 'whichbox') {
     const n = R(6, 12);
     const boxOf = m => { const ps = pairsOf(m).filter(p => p[0] > 1); const [r, c] = ps.length ? pick(ps) : [1, m]; return candyBox(r, c, 110); };
     const counts = shuffle([n - 2, n - 1, n + 1, n + 2, n + 3].filter(m => m > 2)).slice(0, 3);
     const choices = shuffle([n, ...counts].map((m, i) => ({ value: m === n ? 'yes' : 'no' + i, html: boxOf(m) })));
-    return { eq: `🍬 ${n}`, answer: 'yes', input: 'choice', layout: 'grid', choices, visual: null, show: false, boxes: true };
+    return { eq: `🍬 ${n}`, answer: 'yes', input: 'choice', layout: 'grid', choices, visual: null, show: false, boxes: true, sol: { t: 'boxCount', n } };
   }
   if (kind === 'shapes') {
     const n = pick(lvl < 2 ? [6, 8, 10, 12, 14, 15, 16, 18, 20, 21] : [12, 16, 18, 20, 24, 28, 30, 32, 36]);
@@ -156,7 +156,7 @@ function genRect(lvl) {
     const [r0, c0] = pick(ps.filter(x => x[0] > 1));
     const hint = `<div class="boxset">${candyBox(r0, c0, 110)}<b class="okmark">✓</b></div>`;
     const divisors = ps.reduce((s, [r, c]) => s + (r === c ? 1 : 2), 0);
-    return numQ(`🍬 ${n} ➜ ? 📦`, ps.length, [ps.length + 1, ps.length - 1, divisors, ps.length - 1 || 4], { visual: hint, show: false, shapes: true, layout: 'grid' });
+    return numQ(`🍬 ${n} ➜ ? 📦`, ps.length, [ps.length + 1, ps.length - 1, divisors, ps.length - 1 || 4], { visual: hint, show: false, shapes: true, layout: 'grid', sol: { t: 'factorPairs', n } });
   }
   if (kind === 'prime') {
     const hi = lvl < 2 ? 30 : 60;
@@ -168,7 +168,7 @@ function genRect(lvl) {
       // Hint: a prime that is not on the cards fits one row only; a number that is not on the cards fits a real box.
       const p = pick([2, 3, 5, 7, 11].filter(x => !nums.has(x))), c = pick([4, 6, 8, 9, 10, 12].filter(x => !nums.has(x)));
       const hint = p && c ? `<div class="boxset">${candyBox(1, p, 100)}<b class="okmark">✓</b>${candyBox(...pick(pairsOf(c).filter(x => x[0] > 1)), 70)}<b class="nomark">✗</b></div>` : null;
-      return { eq: '', input: 'multi', target: ONE_ROW, visual: hint, show: false, prime: true,
+      return { eq: '', input: 'multi', target: ONE_ROW, visual: hint, show: false, prime: true, sol: { t: 'primeAll' },
         items: shuffle([...good.map(n => ({ html: String(n), ok: true })), ...bad.map(n => ({ html: String(n), ok: false }))]) };
     }
   }
@@ -195,7 +195,7 @@ function genDivis(lvl) {
       while (nums.size < 6) { const n = R(lo, hi); if (n % k) nums.add(n); }
       const all = [...nums];
       if (all.filter(n => n % k === 0).length !== want) continue;
-      return { eq: '', input: 'multi', target: `<span class="mach">÷${k}</span> ✓`, divisor: k, visual: null, show: false,
+      return { eq: '', input: 'multi', target: `<span class="mach">÷${k}</span> ✓`, divisor: k, visual: null, show: false, sol: { t: 'divisAll', k },
         items: shuffle(all.map(n => ({ html: String(n), ok: n % k === 0 }))) };
     }
   }
@@ -205,7 +205,7 @@ function genDivis(lvl) {
       const n = R(lvl ? 100 : 10, lvl ? 999 : 99);
       const ok = set.filter(k => n % k === 0);
       if (ok.length !== 1) continue;
-      return { eq: `${n} ➜ <span class="mach">÷ ?</span> ✓`, answer: ok[0], input: 'choice', layout: set.length > 3 ? 'grid' : 'row', visual: null, show: false,
+      return { eq: `${n} ➜ <span class="mach">÷ ?</span> ✓`, answer: ok[0], input: 'choice', layout: set.length > 3 ? 'grid' : 'row', visual: null, show: false, sol: { t: 'divisWhich', n },
         choices: set.map(k => ({ value: k, html: `÷${k}`, fill: [String(k)] })) };
     }
   }
@@ -213,11 +213,11 @@ function genDivis(lvl) {
   for (;;) {
     if (lvl === 1) {
       const c = R(0, 9), t = (9 - (c % 9)) % 9 || 9;
-      return numQ(`?${c} ➜ <span class="mach">÷9</span> ✓`, t, [t + 1, t - 1, 9 - c, (t + 3) % 10].filter(v => v >= 1 && v <= 9), { small: true, digit9: true });
+      return numQ(`?${c} ➜ <span class="mach">÷9</span> ✓`, t, [t + 1, t - 1, 9 - c, (t + 3) % 10].filter(v => v >= 1 && v <= 9), { small: true, digit9: true, sol: { t: 'digit9', c } });
     }
     const a = R(1, 9), c = R(0, 9), d = (9 - ((a + c) % 9)) % 9;
     if (d === 0) continue;
-    return numQ(`${a}?${c} ➜ <span class="mach">÷9</span> ✓`, d, [d + 1, d - 1, 9 - d, (d + 3) % 10].filter(v => v >= 0 && v <= 9), { small: true, digit9: true });
+    return numQ(`${a}?${c} ➜ <span class="mach">÷9</span> ✓`, d, [d + 1, d - 1, 9 - d, (d + 3) % 10].filter(v => v >= 0 && v <= 9), { small: true, digit9: true, sol: { t: 'digit9', a, c } });
   }
 }
 
@@ -230,13 +230,13 @@ function genEquiv(lvl) {
   if (b * k > 16) return genEquiv(lvl);
   if (kind === 'scale') {
     return numQ(`${frac(a, b)} = ${frac('?', b * k)}`, a * k, [a, a + k, a * k + 1, b * k - a * k, a * k - 1],
-      { visual: bars([[b, a], [b * k, a * k]]), show: lvl === 0 });
+      { visual: bars([[b, a], [b * k, a * k]]), show: lvl === 0, sol: { t: 'fracScale', a, b, k } });
   }
   if (kind === 'simplify') {
     const topHidden = chance(0.5);
     const eq = topHidden ? `${frac(a * k, b * k)} = ${frac('?', b)}` : `${frac(a * k, b * k)} = ${frac(a, '?')}`;
     const ans = topHidden ? a : b;
-    return numQ(eq, ans, topHidden ? [a * k, a + 1, b - a, k] : [b * k, b + 1, b - 1, b + k], { visual: bars([[b * k, a * k], [b, a]]), show: false });
+    return numQ(eq, ans, topHidden ? [a * k, a + 1, b - a, k] : [b * k, b + 1, b - 1, b + k], { visual: bars([[b * k, a * k], [b, a]]), show: false, sol: { t: 'fracScale', a, b, k, down: true, hide: topHidden ? 'top' : 'bot' } });
   }
   if (kind === 'all') {
     const good = new Set(), bad = new Set();
@@ -244,13 +244,14 @@ function genEquiv(lvl) {
     const tries = [[a + 1, b + 1], [a * 2, b * 2 + 1], [a, b * 2], [a * 2, b], [b - a, b], [a + 2, b + 2], [a * 3, b * 3 - 1]];
     for (const [x, y] of shuffle(tries)) if (bad.size < 6 - good.size && x > 0 && x * b !== y * a) bad.add(frac(x, y));
     const q = findAllQ(frac(a, b), [...good], [...bad]);
-    return { ...q, visual: bars([[b, a]]), show: false, equiv: true, grid3: true };
+    return { ...q, visual: bars([[b, a]]), show: false, equiv: true, grid3: true, sol: { t: 'fracAll', a, b } };
   }
   // Compare two fractions with different cuts; sometimes they are equal.
   let c, d;
   if (chance(0.25)) { d = b * k; c = a * k; } else { d = pick([3, 4, 5, 6, 8].filter(x => x !== b)); c = R(1, d - 1); if (c * b === a * d) return genEquiv(lvl); }
   const q = cmpQ(frac(a, b), frac(c, d), a * d, c * b, bars([[b, a], [d, c]]));
   q.show = false;
+  q.sol = { t: 'fracCmp', n1: a, d1: b, n2: c, d2: d };
   return q;
 }
 
@@ -259,21 +260,22 @@ function genMixed(lvl) {
   const kind = pick([['count', 'count', 'whole'], ['count', 'toMixed', 'toImproper'], ['toMixed', 'toImproper', 'cmp']][lvl]);
   const k = pick(lvl ? [3, 4, 5, 6, 8] : [2, 3, 4]);
   const w = R(1, lvl === 2 ? 4 : 2), r = R(1, k - 1), t = w * k + r;
-  if (kind === 'count') return numQ(frac('?', k), t, [t - 1, t + 1, r, w + r, t - k], { visual: cakes(k, t), show: true });
+  if (kind === 'count') return numQ(frac('?', k), t, [t - 1, t + 1, r, w + r, t - k], { visual: cakes(k, t), show: true, sol: { t: 'mixed', w, r, k, hole: 't' } });
   if (kind === 'whole') {
     const tt = w * k;
-    return numQ(`${frac(tt, k)} = ?`, w, [w + 1, tt, k, w - 1], { visual: cakes(k, tt), show: true });
+    return numQ(`${frac(tt, k)} = ?`, w, [w + 1, tt, k, w - 1], { visual: cakes(k, tt), show: true, sol: { t: 'mixed', w, r: 0, k, hole: 'whole' } });
   }
   if (kind === 'toMixed') {
     return chance(0.5)
-      ? numQ(`${frac(t, k)} = ${mixed('?', r, k)}`, w, [w + 1, w - 1, t, r, k].filter(v => v > 0), { visual: cakes(k, t), show: false })
-      : numQ(`${frac(t, k)} = ${mixed(w, '?', k)}`, r, [r + 1, r - 1, t - k, k - r, t].filter(v => v > 0), { visual: cakes(k, t), show: false });
+      ? numQ(`${frac(t, k)} = ${mixed('?', r, k)}`, w, [w + 1, w - 1, t, r, k].filter(v => v > 0), { visual: cakes(k, t), show: false, sol: { t: 'mixed', w, r, k, hole: 'w' } })
+      : numQ(`${frac(t, k)} = ${mixed(w, '?', k)}`, r, [r + 1, r - 1, t - k, k - r, t].filter(v => v > 0), { visual: cakes(k, t), show: false, sol: { t: 'mixed', w, r, k, hole: 'r' } });
   }
-  if (kind === 'toImproper') return numQ(`${mixed(w, r, k)} = ${frac('?', k)}`, t, [w + r, w * r + k, t - 1, t + k, w * k], { visual: cakes(k, t), show: false });
+  if (kind === 'toImproper') return numQ(`${mixed(w, r, k)} = ${frac('?', k)}`, t, [w + r, w * r + k, t - 1, t + k, w * k], { visual: cakes(k, t), show: false, sol: { t: 'mixed', w, r, k, hole: 't' } });
   const n = R(1, 4), top = n * k + pick([-2, -1, 0, 1, 2]);
   if (top <= 0) return genMixed(lvl);
   const q = cmpQ(frac(top, k), n, top, n * k, cakes(k, top, Math.max(n, Math.ceil(top / k)), 64));
   q.show = false;
+  q.sol = { t: 'mixCmp', top, k, n };
   return q;
 }
 
@@ -283,7 +285,7 @@ function genAddF(lvl) {
     // The silly robot adds the tops and the bottoms. Is it right?
     const d = pick([3, 4, 5, 6, 8]), a = R(1, d - 2), b = R(1, d - 1 - a);
     const wrong = chance(0.6);
-    return tfQ(`🤖 ${frac(a, d)} + ${frac(b, d)}`, wrong ? frac(a + b, d + d) : frac(a + b, d), !wrong);
+    return tfQ(`🤖 ${frac(a, d)} + ${frac(b, d)}`, wrong ? frac(a + b, d + d) : frac(a + b, d), !wrong, { t: 'robot', a, b, d, sn: a + b, sd: wrong ? d + d : d });
   }
   const minus = chance(lvl ? 0.45 : 0.35);
   if (lvl === 0) {
@@ -292,7 +294,7 @@ function genAddF(lvl) {
     if (minus && a === b) return genAddF(lvl);
     const ans = minus ? a - b : a + b;
     return numQ(`${frac(a, d)} ${minus ? '−' : '+'} ${frac(b, d)} = ${frac('?', d)}`, ans, [minus ? a + b : Math.abs(a - b), ans + 1, ans - 1, d],
-      { visual: bars([[d, a], [d, b]]), show: false });
+      { visual: bars([[d, a], [d, b]]), show: false, sol: { t: 'addSame', a, b, d, minus } });
   }
   const pairs = lvl === 1 ? [[2, 4], [2, 6], [3, 6], [2, 8], [4, 8], [3, 9], [5, 10], [2, 10]] : [[2, 3], [3, 4], [2, 5], [4, 6], [3, 5], [6, 8], [4, 10], [3, 8]];
   let [d1, d2] = pick(pairs);
@@ -303,7 +305,7 @@ function genAddF(lvl) {
   if (minus && x <= y) return genAddF(lvl);
   const ans = minus ? x - y : x + y;
   return numQ(`${frac(a, d1)} ${minus ? '−' : '+'} ${frac(b, d2)} = ${frac('?', L)}`, ans, [minus ? a - b : a + b, ans + 1, ans - 1, minus ? x + y : Math.abs(x - y)].filter(v => v >= 0),
-    { visual: bars([[d1, a], [d2, b], [L, 0]]), show: false });
+    { visual: bars([[d1, a], [d2, b], [L, 0]]), show: false, sol: { t: 'addDiff', a, d1, b, d2, minus } });
 }
 
 // ---------- 6. Fraction of a tray ----------
@@ -312,26 +314,26 @@ function genOf(lvl) {
   if (kind === 'ofN') {
     const b = pick(lvl ? [2, 3, 4, 5, 6, 8] : [2, 3, 4]), a = R(1, b - 1), m = R(2, lvl ? 9 : 5), n = b * m;
     return numQ(`${frac(a, b)} × ${n} = ?`, a * m, [m, n - a * m, a * m + m, n * a, a * m - 1].filter(v => v > 0),
-      { visual: groups(n, b), show: lvl === 0 });
+      { visual: groups(n, b), show: lvl === 0, sol: { t: 'fracOf', n: a, d: b, whole: n } });
   }
   const b = pick([2, 3, 4, 5]), d = pick([2, 3, 4]);
-  if (kind === 'unit') return numQ(`${frac(1, b)} × ${frac(1, d)} = ${frac(1, '?')}`, b * d, [b + d, b * d + 1, Math.max(b, d), b * d - 1], { visual: tray(b, 1, d, 1), show: false });
+  if (kind === 'unit') return numQ(`${frac(1, b)} × ${frac(1, d)} = ${frac(1, '?')}`, b * d, [b + d, b * d + 1, Math.max(b, d), b * d - 1], { visual: tray(b, 1, d, 1), show: false, sol: { t: 'fracTimes', a: 1, b, c: 1, d, hole: 'bot' } });
   const a = R(1, b - 1), c = R(1, d - 1);
   if (a === 1 && c === 1 && chance(0.5)) return genOf(lvl);
-  return numQ(`${frac(a, b)} × ${frac(c, d)} = ${frac('?', b * d)}`, a * c, [a + c, a * c + 1, a * d + b * c, a * c - 1].filter(v => v > 0), { visual: tray(b, a, d, c), show: false });
+  return numQ(`${frac(a, b)} × ${frac(c, d)} = ${frac('?', b * d)}`, a * c, [a + c, a * c + 1, a * d + b * c, a * c - 1].filter(v => v > 0), { visual: tray(b, a, d, c), show: false, sol: { t: 'fracTimes', a, b, c, d, hole: 'top' } });
 }
 
 // ---------- 7. How many scoops? Dividing by a fraction ----------
 function genScoop(lvl) {
   if (lvl === 0 || (lvl === 1 && chance(0.4))) {
     const n = R(1, lvl ? 5 : 4), k = pick([2, 3, 4, 5]);
-    return numQ(`${n} ÷ ${frac(1, k)} = ?`, n * k, [n + k, n * k + 1, k, n * k - 1].filter(v => v > 0), { visual: cups(n, k), show: lvl === 0 });
+    return numQ(`${n} ÷ ${frac(1, k)} = ?`, n * k, [n + k, n * k + 1, k, n * k - 1].filter(v => v > 0), { visual: cups(n, k), show: lvl === 0, sol: { t: 'fdiv', a: n, b: 1, c: 1, d: k } });
   }
   if (lvl === 1) {
     const k = pick([3, 4, 5, 6]), a = R(2, k - 1), n = pick([1, 2, 3, 4, 5, 6].filter(x => (x * k) % a === 0));
     if (!n) return genScoop(lvl);
     const ans = (n * k) / a;
-    return numQ(`${n} ÷ ${frac(a, k)} = ?`, ans, [n * k, ans + 1, ans - 1, n * a].filter(v => v > 0), { visual: cups(n, k), show: false });
+    return numQ(`${n} ÷ ${frac(a, k)} = ?`, ans, [n * k, ans + 1, ans - 1, n * a].filter(v => v > 0), { visual: cups(n, k), show: false, sol: { t: 'fdiv', a: n, b: 1, c: a, d: k } });
   }
   if (chance(0.6)) {
     // a/b ÷ c/d with a whole-number answer, e.g. 3/4 ÷ 3/8 = 2.
@@ -340,14 +342,14 @@ function genScoop(lvl) {
       const top = a * d, bot = b * c;
       if (top % bot || top / bot < 2 || top / bot > 12 || gcd(a, b) > 1 || gcd(c, d) > 1) continue;
       const ans = top / bot;
-      return numQ(`${frac(a, b)} ÷ ${frac(c, d)} = ?`, ans, [a * c, ans + 1, ans - 1, d / b | 0, top].filter(v => v > 0 && v !== ans), { visual: bars([[b, a], [d, c]]), show: false });
+      return numQ(`${frac(a, b)} ÷ ${frac(c, d)} = ?`, ans, [a * c, ans + 1, ans - 1, d / b | 0, top].filter(v => v > 0 && v !== ans), { visual: bars([[b, a], [d, c]]), show: false, sol: { t: 'fdiv', a, b, c, d } });
     }
   }
   const b = pick([2, 3, 4]), a = R(1, b - 1), k = b * pick([2, 3]);
   const ans = (a * k) / b;
   return chance(0.5)
-    ? numQ(`${frac(a, b)} ÷ ${frac(1, k)} = ?`, ans, [a * k, ans + 1, k, ans - 1].filter(v => v > 0), { visual: bars([[b, a], [k, ans]]), show: false })
-    : (w => numQ(`? ÷ ${frac(1, k)} = ${k * w}`, w, [k * k * w, k, w + 1, k * w - k].filter(v => v > 0 && v !== w), {}))(R(2, 5));
+    ? numQ(`${frac(a, b)} ÷ ${frac(1, k)} = ?`, ans, [a * k, ans + 1, k, ans - 1].filter(v => v > 0), { visual: bars([[b, a], [k, ans]]), show: false, sol: { t: 'fdiv', a, b, c: 1, d: k } })
+    : (w => numQ(`? ÷ ${frac(1, k)} = ${k * w}`, w, [k * k * w, k, w + 1, k * w - k].filter(v => v > 0 && v !== w), { sol: { t: 'scoopBack', k, w } }))(R(2, 5));
 }
 
 // ---------- 8. Tenths and hundredths ----------
@@ -356,24 +358,25 @@ function genDec(lvl) {
   if (kind === 'grid') {
     const n = lvl ? R(1, 99) : 10 * R(1, 9);
     const t = Math.floor(n / 10), o = n % 10;
-    return decQ('?', n, [n * 10, n / 10, o * 10 + t, n + 1, n + 10, t, 1000 + n].filter(v => v !== n), { visual: grid100(n), show: true });
+    return decQ('?', n, [n * 10, n / 10, o * 10 + t, n + 1, n + 10, t, 1000 + n].filter(v => v !== n), { visual: grid100(n), show: true, sol: { t: 'decGrid', n } });
   }
   if (kind === 'line') {
     const a = lvl < 2 ? 0 : R(1, 4), t = R(1, 9);
-    return decQ('?', a * 100 + t * 10, [a * 100 + t, a * 100 + (10 - t) * 10, (a + 1) * 100 + t * 10, a * 100 + t * 10 + 10, a * 100 + t * 10 - 10], { visual: decLine(a, t), show: true });
+    return decQ('?', a * 100 + t * 10, [a * 100 + t, a * 100 + (10 - t) * 10, (a + 1) * 100 + t * 10, a * 100 + t * 10 + 10, a * 100 + t * 10 - 10], { visual: decLine(a, t), show: true, sol: { t: 'decLine', a, s: t } });
   }
   if (kind === 'hund') {
     const n = lvl ? R(1, 99) : 10 * R(1, 9);
     const asTenths = n % 10 === 0 && chance(0.5);
     return asTenths
-      ? numQ(`${dec(n)} = ${frac('?', 10)}`, n / 10, [n, n / 10 + 1, 10 - n / 10], { visual: grid100(n), show: false })
-      : numQ(`${dec(n)} = ${frac('?', 100)}`, n, [n / 10 | 0 || 2, n * 10 > 999 ? n + 10 : n * 10, n + 1, 100 - n], { visual: grid100(n), show: false });
+      ? numQ(`${dec(n)} = ${frac('?', 10)}`, n / 10, [n, n / 10 + 1, 10 - n / 10], { visual: grid100(n), show: false, sol: { t: 'decFrac', n, den: 10 } })
+      : numQ(`${dec(n)} = ${frac('?', 100)}`, n, [n / 10 | 0 || 2, n * 10 > 999 ? n + 10 : n * 10, n + 1, 100 - n], { visual: grid100(n), show: false, sol: { t: 'decFrac', n, den: 100 } });
   }
   // 0.3 is more than 0.25, even though 25 is more than 3. Sometimes 0.3 and 0.30 are the same.
   if (chance(0.15)) {
     const t = R(1, 9), [l, r] = shuffle([`0.${t}`, `0.${t}0`]);
     const q = cmpQ(l, r, t, t, `<div class="pairvis">${grid100(t * 10, 100)}<b class="op"></b>${grid100(t * 10, 100)}</div>`);
     q.show = false;
+    q.sol = { t: 'decCmp', x: t * 10, y: t * 10 };
     return q;
   }
   const a = R(1, 9), b = R(10, 99);
@@ -381,6 +384,7 @@ function genDec(lvl) {
   const [x, y] = chance(0.5) ? [a * 10, b] : [b, a * 10];
   const q = cmpQ(dec(x), dec(y), x, y, `<div class="pairvis">${grid100(x, 100)}<b class="op"></b>${grid100(y, 100)}</div>`);
   q.show = false;
+  q.sol = { t: 'decCmp', x, y };
   return q;
 }
 
@@ -401,16 +405,16 @@ function genReg(lvl) {
     const ans = kind === 'add' ? a + b : a - b;
     const mis = wrongAlign(a, b);
     return decQ(`<span class="ptag">${dec(a)}</span> ${kind === 'add' ? '+' : '−'} <span class="ptag">${dec(b)}</span> = ?`, ans,
-      [mis > 0 && kind === 'add' ? Math.round(mis) : -1, ans + 10, ans - 10, ans + 100, ans - 1, ans + 1], { small: true });
+      [mis > 0 && kind === 'add' ? Math.round(mis) : -1, ans + 10, ans - 10, ans + 100, ans - 1, ans + 1], { small: true, sol: { t: 'decAdd', a, b, minus: kind === 'sub' } });
   }
   if (kind === 'shift') {
     const v = R(101, 999), [op, f] = pick([['× 10', 10], ['× 100', 100], ['÷ 10', 0.1]]);
     const ans = Math.round(v * f);
     if (f === 0.1 && v % 10) return genReg(lvl);
-    return decQ(`${dec(v)} ${op} = ?`, ans, [Math.round(v * (f === 10 ? 100 : 10)), Math.round(v / 10), v + f * 100, ans + 1000, Math.round(v / 100)].filter(x => x !== ans && Number.isInteger(x)), { small: true });
+    return decQ(`${dec(v)} ${op} = ?`, ans, [Math.round(v * (f === 10 ? 100 : 10)), Math.round(v / 10), v + f * 100, ans + 1000, Math.round(v / 100)].filter(x => x !== ans && Number.isInteger(x)), { small: true, sol: { t: 'decShift', v, f } });
   }
   const t = R(2, 9), m = R(2, lvl ? 9 : 5), ans = t * m * 10;
-  return decQ(`${dec(t * 10)} × ${m} = ?`, ans, [t * m, t * m * 100, ans + 10, (t + m) * 10], { small: true });
+  return decQ(`${dec(t * 10)} × ${m} = ?`, ans, [t * m, t * m * 100, ans + 10, (t + m) * 10], { small: true, sol: { t: 'decTimes', n: t, m } });
 }
 
 // ---------- 10. Percent bars ----------
@@ -423,12 +427,12 @@ function genPct(lvl) {
   const kind = pick([['battery', 'battery', 'of'], ['battery', 'of', 'grid', 'sale'], ['of', 'of', 'sale', 'grid']][lvl]);
   if (kind === 'battery') {
     const f = R(1, 9);
-    return { eq: '?', answer: `${f * 10}%`, input: 'choice', layout: 'grid', visual: battery(f), show: true,
+    return { eq: '?', answer: `${f * 10}%`, input: 'choice', layout: 'grid', visual: battery(f), show: true, sol: { t: 'pctBars', f },
       choices: pctChoices(f * 10, [f, (10 - f) * 10, f * 10 + 10, f * 10 - 10, f * 100]) };
   }
   if (kind === 'grid') {
     const n = pick([5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 12, 48, 72]);
-    return { eq: '?', answer: `${n}%`, input: 'choice', layout: 'grid', visual: grid100(n), show: true,
+    return { eq: '?', answer: `${n}%`, input: 'choice', layout: 'grid', visual: grid100(n), show: true, sol: { t: 'pctGrid', n },
       choices: pctChoices(n, [100 - n, n + 10, Math.round(n / 10), n - 10, n + 1]) };
   }
   const [p, base] = pick([
@@ -440,8 +444,8 @@ function genPct(lvl) {
   if (n < 10 || n > 400) return genPct(lvl);
   const ans = (p * n) / 100;
   if (!Number.isInteger(ans)) return genPct(lvl);
-  if (kind === 'sale') return numQ('?', n - ans, [ans, n - ans + 10, n - p, n + ans].filter(v => v > 0 && v !== n - ans), { visual: saleTag(n, p), show: true, sale: true });
-  return numQ(`${p}% × ${n} = ?`, ans, [n - ans, ans * 10, p, ans + 10, n / p | 0].filter(v => v > 0), { visual: grid100(p), show: false });
+  if (kind === 'sale') return numQ('?', n - ans, [ans, n - ans + 10, n - p, n + ans].filter(v => v > 0 && v !== n - ans), { visual: saleTag(n, p), show: true, sale: true, sol: { t: 'pctOf', p, n, sale: true } });
+  return numQ(`${p}% × ${n} = ?`, ans, [n - ans, ans * 10, p, ans + 10, n / p | 0].filter(v => v > 0), { visual: grid100(p), show: false, sol: { t: 'pctOf', p, n } });
 }
 
 // ---------- 11. Recipe mixer: ratio and rate ----------
@@ -455,18 +459,18 @@ function genRatio(lvl) {
     const eq = leftHidden ? `${a}🍓 : ${b}🍋 = ?🍓 : ${b * k}🍋` : `${a}🍓 : ${b}🍋 = ${a * k}🍓 : ?🍋`;
     const ans = leftHidden ? a * k : b * k;
     const add = leftHidden ? a + (b * k - b) : b + (a * k - a);
-    return numQ(eq, ans, [add, ans + 1, ans - 1, ans + k].filter(v => v > 0), { visual: `<div class="mixes">${mixVis(a, b)}${mixVis(a * k, b * k)}</div>`, show: lvl === 0 && k === 2, ratio: true });
+    return numQ(eq, ans, [add, ans + 1, ans - 1, ans + k].filter(v => v > 0), { visual: `<div class="mixes">${mixVis(a, b)}${mixVis(a * k, b * k)}</div>`, show: lvl === 0 && k === 2, ratio: true, sol: { t: 'ratio', a, b, k, left: !!leftHidden } });
   }
   if (kind === 'same') {
     const k = R(2, 3);
     const opts = [[a * k, b * k], [a + k, b + k], [b * k, a * k], [a * k, b * k + 1], [a * k + 1, b * k]];
     const seen = new Set(), choices = [];
     for (const [x, y] of opts) { const key = `${x}:${y}`; if (!seen.has(key) && (choices.length === 0 || x * b !== y * a)) { seen.add(key); choices.push({ value: key, html: mixHTML(x, y) }); } }
-    return { eq: `${a}🍓 ${b}🍋 = ?`, answer: `${a * k}:${b * k}`, input: 'choice', layout: 'grid', visual: mixVis(a, b), show: true, choices: shuffle(choices.slice(0, 4)), ratio: true };
+    return { eq: `${a}🍓 ${b}🍋 = ?`, answer: `${a * k}:${b * k}`, input: 'choice', layout: 'grid', visual: mixVis(a, b), show: true, choices: shuffle(choices.slice(0, 4)), ratio: true, sol: { t: 'ratioSame', a, b } };
   }
   const n = R(2, 5), unit = R(2, lvl === 2 ? 9 : 5), m = R(2, 7);
   if (m === n) return genRatio(lvl);
-  return numQ(`${m}🍬 = ?🪙`, m * unit, [n * unit + (m - n), m * unit + unit, unit, (m - 1) * unit].filter(v => v > 0), { visual: `<div class="ratecard"><span>${'🍬'.repeat(n)}</span><b>=</b><span>${n * unit}🪙</span></div>`, show: true, rate: true });
+  return numQ(`${m}🍬 = ?🪙`, m * unit, [n * unit + (m - n), m * unit + unit, unit, (m - 1) * unit].filter(v => v > 0), { visual: `<div class="ratecard"><span>${'🍬'.repeat(n)}</span><b>=</b><span>${n * unit}🪙</span></div>`, show: true, rate: true, sol: { t: 'unitRate', n, unit, k: m } });
 }
 
 // ---------- 12. Fraction puzzles ----------
@@ -486,12 +490,12 @@ function genCPuz(lvl) {
   if (kind === 'unit') {
     const [a, b, x0, y0] = pick(UNIT_SPLITS.filter(u => (lvl < 2 ? u[1] <= 12 : true)));
     const [x, y] = chance(0.5) ? [x0, y0] : [y0, x0];
-    return numQ(`${frac(a, b)} = ${frac(1, x)} + ${frac(1, '?')}`, y, [y + 1, y - 1, b, b - x, x].filter(v => v > 1 && v !== y), { small: true });
+    return numQ(`${frac(a, b)} = ${frac(1, x)} + ${frac(1, '?')}`, y, [y + 1, y - 1, b, b - x, x].filter(v => v > 1 && v !== y), { small: true, sol: { t: 'unitFrac', a, b, x } });
   }
   if (kind === 'toOne') {
     const set = shuffle(pick(TO_ONE.filter(t => (lvl < 2 ? t.length === 3 || t[3] <= 12 : t.length === 4))).slice());
     const z = set.pop();
-    return numQ(`${set.map(x => frac(1, x)).join(' + ')} + ${frac(1, '?')} = 1`, z, [z + 1, z - 1, set[0] + set[1], set[0] * set[1]].filter(v => v > 1 && v !== z), { small: true });
+    return numQ(`${set.map(x => frac(1, x)).join(' + ')} + ${frac(1, '?')} = 1`, z, [z + 1, z - 1, set[0] + set[1], set[0] * set[1]].filter(v => v > 1 && v !== z), { small: true, sol: { t: 'toOne', set } });
   }
   if (kind === 'left') {
     // Eat a fraction of what is left, box after box.
@@ -501,11 +505,11 @@ function genCPuz(lvl) {
     let left = n;
     for (const k of steps) left -= left / k;
     const naive = n / steps.reduce((s, k) => s * k, 1);
-    return numQ(`${n}🍬 ${steps.map(k => `➜<span class="mach">×${frac(k - 1, k)}</span>`).join('')}➜ ?`, left, [naive, left + 1, n - n / steps[0], left - 1, left * 2].filter(v => v > 0 && v !== left), { small: true, eatLeft: true });
+    return numQ(`${n}🍬 ${steps.map(k => `➜<span class="mach">×${frac(k - 1, k)}</span>`).join('')}➜ ?`, left, [naive, left + 1, n - n / steps[0], left - 1, left * 2].filter(v => v > 0 && v !== left), { small: true, eatLeft: true, sol: { t: 'eatLeft', n, ks: steps } });
   }
   const k = R(3, 8), c = R(1, k - 1);
   if (gcd(c, k) > 1) return genCPuz(lvl);
-  return fracQ(`${c}🎂 ÷ ${k}🧒 = ?`, [c, k], [[k, c], [1, k], [c, k + c], [1, c], [c + 1, k]], { share: true });
+  return fracQ(`${c}🎂 ÷ ${k}🧒 = ?`, [c, k], [[k, c], [1, k], [c, k + c], [1, c], [c + 1, k]], { share: true, sol: { t: 'shareCake', c, k } });
 }
 
 export const CANDY = [

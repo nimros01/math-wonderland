@@ -925,6 +925,8 @@ svg.die { display: block; margin: auto; }
 .solchecks div.ok b { color: var(--mint); }
 .solchecks div.no b { color: var(--tomato); }
 .solchecks .mcoins { font-size: 14px; }
+.solchecks .frac { font-size: .95em; }
+.solmath .cdot { width: 26px; height: 26px; }
 .solgal { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 290px; }
 .solgal.shapes { display: grid; grid-template-columns: repeat(3, 76px); }
 .solgal.shapes div { position: relative; border-radius: 12px; padding: 2px; display: grid; place-items: center; }
@@ -939,6 +941,10 @@ svg.die { display: block; margin: auto; }
 .solcoins { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 300px; }
 .solcoins div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .solcoins b { font-size: 16px; color: var(--mint); }
+.solchests { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; max-width: 290px; }
+.solchests span { display: flex; flex-direction: column; align-items: center; }
+.solchests i { font-style: normal; font-size: 30px; line-height: 1.1; }
+.solchests b { font-size: 17px; padding: 0 6px; background: #d7f5e6; border: 2px solid var(--mint); border-radius: 8px; }
 
 .lookback { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; background: var(--card); border: 3px solid var(--ink); border-radius: 18px; max-width: 100%; }
 .lbicon { font-size: 22px; }
