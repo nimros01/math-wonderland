@@ -2,6 +2,7 @@
 import * as P from './progress.js';
 import { sfx, unlockAudio } from './audio.js';
 import { LEARN, STICKERS, HATS, AVATARS } from './skills.js';
+import { lookBackHTML, bindLookBack } from './solve.js';
 import { startRound } from './play.js';
 import { WORLDS, learnOf, bossBeaten, setBossBeaten, worldOpen, worldOfStage } from './worlds.js';
 import * as C from './cloud.js';
@@ -140,7 +141,9 @@ function placementDone(r) {
       <div class="placed"><span>${p.avatar}</span><b>→</b><span class="stage-ic">${at.icon}</span></div>
       <div class="res-gems">💎 +${r.gems}</div>
       <button class="bigbtn green" id="go" aria-label="Go to map">▶</button>
+      ${lookBackHTML(r.log)}
     </div>`;
+  bindLookBack(app, r.log);
   app.querySelector('#go').onclick = () => { sfx.tap(); map(at.id); };
 }
 
@@ -310,7 +313,9 @@ function result(STAGES, i, r) {
         <button class="bigbtn" id="again" aria-label="Play again">🔁</button>
         <button class="bigbtn green" id="map" aria-label="Map">${nextOpen ? '▶' : '🗺️'}</button>
       </div>
+      ${lookBackHTML(r.log)}
     </div>`;
+  bindLookBack(app, r.log);
   [1, 2, 3].forEach(k => { if (k <= r.stars) setTimeout(sfx.star, k * 350 + 150); });
   if (r.stars === 0) sfx.fail();
 
@@ -353,7 +358,9 @@ function bossResult(W, r) {
         <button class="bigbtn" id="again" aria-label="Fight again">🔁</button>
         <button class="bigbtn green" id="map" aria-label="Map">${nextW ? `${nextW.icon} ▶` : '🗺️'}</button>
       </div>
+      ${lookBackHTML(r.log)}
     </div>`;
+  bindLookBack(app, r.log);
   const chest = app.querySelector('#chest');
   if (chest) chest.onclick = () => {
     chest.disabled = true;

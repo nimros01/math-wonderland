@@ -878,3 +878,89 @@ svg.die { display: block; margin: auto; }
   .story .leave, .story .enter, .story .puff, .story .swimout, .story .swimin { animation: none; }
   .story .still { display: inline; }
 }
+
+/* 🔍 solution: button beside ⓘ, the ⏭ skip wait, the solution sheet and the look-back strip */
+.icon-btn.sol { font: 20px/1 var(--font); color: inherit; background: #fff3cf; transition: opacity .2s; }
+.icon-btn.sol:disabled { opacity: 0; pointer-events: none; }
+.icon-btn.sol.nudge { animation: nudge 1.2s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: scale(1.15); } }
+.bottombar .away { visibility: hidden; }
+.icon-btn.skip { position: relative; overflow: hidden; background: var(--mint); color: #fff; font-size: 24px; }
+.icon-btn.skip i { position: absolute; left: 0; bottom: 0; height: 5px; width: 100%; background: rgba(255, 255, 255, .8); transform-origin: left; }
+.icon-btn.skip.run i { animation: drain var(--wait, 4s) linear forwards; }
+@keyframes drain { to { transform: scaleX(0); } }
+
+.overlay.solov { padding: 12px; background: rgba(20, 26, 60, .5); }
+.popup.solpop { width: min(420px, 100%); max-width: 100%; min-width: 0; max-height: 100%; padding: 16px 12px 12px; gap: 8px; }
+.solq { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 10px; max-width: 100%; }
+.solq .eq { font-size: 30px; white-space: normal; text-align: center; line-height: 1.25; }
+.solq .eq .slot { font-size: 1em; }
+.solq .solright { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; padding: 2px 8px; font-size: 26px; font-weight: 800; background: #d7f5e6; border: 3px solid var(--mint); border-radius: 12px; }
+.solq .solright svg, .solq .solmine svg { max-height: 56px; width: auto; }
+.solq .solmine { font-size: 22px; font-weight: 800; color: var(--tomato); text-decoration-thickness: 3px; opacity: .85; }
+.solq.multi { flex-direction: column; }
+.solq .target { font-size: 28px; font-weight: 800; }
+.solitems { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.solitems span { font-size: 18px; font-weight: 800; padding: 2px 8px; border: 3px solid var(--mint); background: #d7f5e6; border-radius: 10px; }
+.solitems svg { width: 40px; height: 40px; }
+.soldots { display: flex; gap: 8px; }
+.soldots i { width: 12px; height: 12px; border-radius: 50%; background: var(--lock); cursor: pointer; }
+.soldots i.on { background: var(--ink); }
+.soldots i.oops { box-shadow: 0 0 0 2px var(--tomato); }
+.solstep { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--ink); border-radius: 20px; padding: 10px 8px; }
+.solstep.in { animation: stepin .35s ease-out; }
+@keyframes stepin { from { opacity: 0; transform: translateX(14px); } }
+.solstep.oops { border-color: var(--tomato); background: #fff4f3; }
+.solpic { width: 100%; height: min(200px, 30vh); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.solfit { flex: none; display: inline-flex; justify-content: center; align-items: center; transform-origin: center; }
+.solmath { font-size: 24px; font-weight: 800; text-align: center; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.solsay { margin: 0; min-height: 1.3em; font: 15px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif; color: #56608a; text-align: center; }
+.solnav { display: flex; gap: 18px; }
+.solnav .icon-btn:disabled { opacity: .35; }
+.solsvg { display: block; max-width: none; }
+.solchecks { display: grid; gap: 4px; }
+.solchecks div { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 19px; font-weight: 800; padding: 2px 10px; border-radius: 10px; background: #eef1f7; }
+.solchecks div.ok { background: #d7f5e6; }
+.solchecks div.no { opacity: .6; }
+.solchecks div.ok b { color: var(--mint); }
+.solchecks div.no b { color: var(--tomato); }
+.solchecks .mcoins { font-size: 14px; }
+.solgal { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 290px; }
+.solgal.shapes { display: grid; grid-template-columns: repeat(3, 76px); }
+.solgal.shapes div { position: relative; border-radius: 12px; padding: 2px; display: grid; place-items: center; }
+.solgal.shapes div.ok { background: #d7f5e6; outline: 3px solid var(--mint); }
+.solgal.shapes div.no { opacity: .45; }
+.solgal.shapes svg { width: 62px; height: 62px; }
+.solgal.shapes b { position: absolute; right: 2px; bottom: 0; font-size: 16px; }
+.solrow { display: flex; align-items: center; gap: 12px; }
+.solbig { font-size: 44px; font-weight: 800; line-height: 1; }
+.solcrowd { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; max-width: 280px; font-size: 30px; }
+.solcrowd .gone { opacity: .2; }
+.solcoins { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 300px; }
+.solcoins div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.solcoins b { font-size: 16px; color: var(--mint); }
+
+.lookback { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; background: var(--card); border: 3px solid var(--ink); border-radius: 18px; max-width: 100%; }
+.lbicon { font-size: 22px; }
+.lbtiles { display: flex; flex-wrap: wrap; gap: 5px; }
+.lbtile { min-width: 38px; height: 36px; padding: 0 4px; border-radius: 10px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 2px; border: 2px solid var(--ink); }
+.lbtile.ok { background: #d7f5e6; }
+.lbtile.no { background: #ffd9d6; }
+.lbtile b { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn.sol.nudge, .solstep.in { animation: none; }
+}
+.solpop .close { top: 8px; right: 8px; width: 40px; height: 40px; font-size: 18px; }
+.solpop .solq { padding: 0 44px; min-height: 40px; }
+@media (max-width: 380px) {
+  .overlay.solov { padding: 8px; }
+  .popup.solpop { padding: 12px 6px 10px; }
+  .solstep { padding: 8px 4px; }
+}
+/* the look-back strip can make the results screen taller than a small phone: let it scroll */
+.result { overflow-y: auto; justify-content: safe center; }
+.lookback { flex: none; padding: 6px 8px; gap: 6px; border-radius: 16px; }
+.lbicon { font-size: 18px; }
+.lbtiles { gap: 4px; }
+.lbtile { min-width: 32px; height: 30px; border-radius: 8px; font-size: 13px; }
+.lbtile b { font-size: 10px; }

@@ -4,10 +4,11 @@ import { sfx } from './audio.js';
 import { LEARN } from './skills.js';
 import { WORLDS, learnOf } from './worlds.js';
 import { helpFor } from './help.js';
+import { openSolution } from './solve.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const ROUND = 10, GATE = 8, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
+const ROUND = 10, GATE = 8, WAIT_RIGHT = 800, WAIT_WRONG = 4000, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
 
 // Stars for a 10-question round: 7 right opens the next stage.
 export const starsFor = correct => (correct >= 10 ? 3 : correct >= 9 ? 2 : correct >= 7 ? 1 : 0);
@@ -32,6 +33,7 @@ export function startRound(app, opts) {
   const st = {
     i: 0, correct: 0, streak: 0, best: 0, lvl: startLvl, gems: 0, redo: [], busy: true, demo: false, lastKey: '',
     goldenUsed: false, hp: BOSS_HP, hearts: BOSS_HEARTS, keys: new Set(),
+    log: [], given: undefined, after: null, // after: the pause between an answer and the next question
   };
   const pl = { si: 0, right: 0, miss: 0 }; // placement: current stage index and its score
   let q = null;
@@ -45,6 +47,7 @@ export function startRound(app, opts) {
         <button class="icon-btn" id="quit" aria-label="Back to map">✖</button>
         <div class="prog"><i id="progfill"></i></div>
         <button class="icon-btn info" id="info" aria-label="What to do">i</button>
+        <button class="icon-btn info sol" id="sol" aria-label="Show the solution" disabled>🔍</button>
         <div class="gem-count"><span>💎</span><b id="gems">${p.gems}</b></div>
       </div>
       ${mode === 'boss' ? `<div class="bossbar"><span class="boss" id="boss">${world.boss}</span><div class="hp"><i id="hpfill"></i></div><span class="hearts" id="hearts"></span></div>` : ''}
@@ -60,13 +63,15 @@ export function startRound(app, opts) {
         <button class="icon-btn" id="hint" aria-label="Hint">💡</button>
         <div class="pet-mini" id="petmini">${P.petEmoji(buddy.pet, buddy.wid)}${buddy.pet.hat ? `<span class="hat">${buddy.pet.hat}</span>` : ''}</div>
         <button class="icon-btn" id="showme" aria-label="Show me how">👀</button>
+        <button class="icon-btn skip" id="skip" aria-label="Next question" hidden>⏭<i></i></button>
       </div>
     </div>`;
 
   const $ = id => app.querySelector('#' + id);
   const eqEl = $('eq'), visEl = $('vis'), ansEl = $('answers'), hintBtn = $('hint'), cardEl = $('card');
 
-  $('quit').onclick = () => { over = true; document.querySelector('.infopop')?.parentNode.remove(); sfx.tap(); opts.onQuit(); };
+  const closePopups = () => { document.querySelector('.infopop')?.parentNode.remove(); document.querySelector('.solov')?.remove(); };
+  $('quit').onclick = () => { over = true; clearTimeout(st.after?.timer); closePopups(); sfx.tap(); opts.onQuit(); };
   hintBtn.onclick = () => {
     if (!q || st.busy || !q.visual || q.show) return;
     q.show = true; q.hinted = true;
@@ -92,6 +97,18 @@ export function startRound(app, opts) {
     const current = q;
     demo(currentGen(), () => { render(current); st.busy = false; });
   };
+  // 🔍: after an answer, how to solve it. Opening it holds the game until the sheet is closed.
+  $('sol').onclick = () => {
+    const a = st.after;
+    if (!a || a.done || over) return;
+    clearTimeout(a.timer);
+    a.held = true;
+    $('skip').hidden = true;
+    sfx.tap();
+    openSolution(a.entry, () => moveOn());
+  };
+  // ⏭: skip the wait after a wrong answer.
+  $('skip').onclick = () => { if (st.after && !st.after.held) { sfx.tap(); moveOn(); } };
 
   // ---------- small helpers ----------
   const currentGen = () => (mode === 'placement' ? LEARN[Math.min(pl.si, LEARN.length - 1)].gen
@@ -230,6 +247,7 @@ export function startRound(app, opts) {
 
   function answer(v, el) {
     if (blocked()) return;
+    st.given = v;
     resolve(String(v) === String(q.answer), el);
   }
 
@@ -375,7 +393,40 @@ export function startRound(app, opts) {
     }
     P.save();
     setProgress();
-    setTimeout(next, ok ? 800 : 2200);
+    wait4next(ok);
+  }
+
+  // The pause after an answer: 🔍 lights up; after a miss the ⏭ skip button counts down the wait.
+  function wait4next(ok) {
+    const entry = { q, given: st.given, ok, sid: q.sid };
+    st.log.push(entry);
+    st.given = undefined;
+    const ms = ok ? WAIT_RIGHT : WAIT_WRONG;
+    st.after = { entry, done: false, held: false, timer: setTimeout(moveOn, ms) };
+    const sb = $('sol');
+    sb.disabled = false;
+    sb.classList.toggle('nudge', !ok);
+    if (!ok) {
+      $('showme').hidden = true;
+      $('hint').classList.add('away');
+      const sk = $('skip');
+      sk.hidden = false;
+      sk.style.setProperty('--wait', ms + 'ms');
+      sk.classList.remove('run'); void sk.offsetWidth; sk.classList.add('run');
+    }
+  }
+  function moveOn() {
+    const a = st.after;
+    if (!a || a.done) return;
+    a.done = true;
+    clearTimeout(a.timer);
+    const sb = $('sol');
+    sb.disabled = true;
+    sb.classList.remove('nudge');
+    $('skip').hidden = true;
+    $('showme').hidden = false;
+    $('hint').classList.remove('away');
+    next();
   }
 
   function fresh(gen, lvl) {
@@ -396,11 +447,15 @@ export function startRound(app, opts) {
     if (mode === 'placement') {
       if (pl.miss >= 2 || pl.si >= LEARN.length) return finish();
       nq = fresh(LEARN[pl.si].gen, 2);
+      nq.sid = LEARN[pl.si].id;
     } else if (mode === 'boss') {
       if (st.hp <= 0 || st.hearts <= 0) return finish();
-      nq = fresh(pick(bossPool).gen, Math.random() < 0.6 ? 2 : 1);
+      const bs = pick(bossPool);
+      nq = fresh(bs.gen, Math.random() < 0.6 ? 2 : 1);
+      nq.sid = bs.id;
     } else if (st.i < total) {
       nq = fresh(stage.gen, st.lvl);
+      nq.sid = stage.id;
       if (mode === 'gate' && Math.random() < 0.6) toPad(nq);
       if (mode === 'normal' && !st.goldenUsed && st.i >= 2 && Math.random() < 0.15) { nq.golden = true; st.goldenUsed = true; }
     } else if (st.redo.length) {
@@ -415,8 +470,8 @@ export function startRound(app, opts) {
 
   function finish() {
     over = true;
-    document.querySelector('.infopop')?.parentNode.remove();
-    const r = { mode, gems: st.gems, correct: st.correct, total, best: st.best };
+    closePopups();
+    const r = { mode, gems: st.gems, correct: st.correct, total, best: st.best, log: st.log };
     if (mode === 'normal') r.stars = starsFor(st.correct);
     else if (mode === 'gate') r.stars = st.correct >= GATE_PASS ? 3 : 0;
     else if (mode === 'boss') r.win = st.hp <= 0;

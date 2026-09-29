@@ -42,11 +42,11 @@ function genMeasure(lvl) {
   const kind = pick([['clips', 'clips', 'ruler0', 'longer'], ['ruler0', 'ruler', 'longer', 'guess'], ['ruler', 'diff', 'guess', 'longer']][lvl]);
   if (kind === 'clips') {
     const n = R(3, 8);
-    return numQ('? 📎', n, [n + 1, n - 1, n + 2], { visual: pic(n * U + 20, 50, snake(10, 6, n, COL.green) + clipsRow(10, 30, n)), show: true });
+    return numQ('? 📎', n, [n + 1, n - 1, n + 2], { visual: pic(n * U + 20, 50, snake(10, 6, n, COL.green) + clipsRow(10, 30, n)), show: true, sol: { t: 'clips', n } });
   }
   if (kind === 'ruler0' || kind === 'ruler') {
     const start = kind === 'ruler' ? R(1, 5) : 0, len = R(2, kind === 'ruler' ? 8 : 12), end = start + len, n = Math.max(12, end + 1);
-    return numQ('?', len, [end, start, len + 1, len - 1].filter(v => v > 0), { visual: pic(n * U + 20, 60, snake(10 + start * U, 8, len, COL.green) + ruler(10, 26, n)), show: true });
+    return numQ('?', len, [end, start, len + 1, len - 1].filter(v => v > 0), { visual: pic(n * U + 20, 60, snake(10 + start * U, 8, len, COL.green) + ruler(10, 26, n)), show: true, sol: { t: 'ruler', start, end } });
   }
   if (kind === 'longer' && lvl === 2) {
     // the longer snake is drawn with smaller steps, so it can look shorter: read the rulers
@@ -65,7 +65,7 @@ function genMeasure(lvl) {
   }
   if (kind === 'diff') {
     const a = R(5, 12), b = R(2, a - 1);
-    return numQ(`${dot('red')} − ${dot('blue')} = ?`, a - b, [a, b, a + b, a - b + 1], { visual: pic(12 * U + 20, 86, snake(10, 6, a, COL.red) + snake(10, 30, b, COL.blue) + ruler(10, 52, 12)), show: true });
+    return numQ(`${dot('red')} − ${dot('blue')} = ?`, a - b, [a, b, a + b, a - b + 1], { visual: pic(12 * U + 20, 86, snake(10, 6, a, COL.red) + snake(10, 30, b, COL.blue) + ruler(10, 52, 12)), show: true, sol: { t: 'sub', a, b, up: true } });
   }
   // guess first: one unit square is shown, and its size changes, so the answers range from 2 to about 30
   const len = R(2, 30), u = pick([8, 10, 12, 15, 20, 25, 32, 40].filter(k => k * len <= 262));
@@ -76,7 +76,7 @@ function genMeasure(lvl) {
   }
   for (let d = 3; opts.length < 4; d += 2) if (opts.every(o => Math.abs(o - (len + d)) >= 2)) opts.push(len + d);
   return {
-    eq: '≈ ?', answer: len, input: 'choice', layout: 'grid', visual: pic(14 * U + 20, 32 + Math.max(u, 18) + 6, snake(10, 6, len, COL.green, u) + `<rect x="10" y="32" width="${u}" height="${u}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + u + 6}" y="${32 + u / 2 + 5}" font-size="15" font-weight="800" fill="${INK}">1</text>`), show: true,
+    sol: { t: 'guess', len, u }, eq: '≈ ?', answer: len, input: 'choice', layout: 'grid', visual: pic(14 * U + 20, 32 + Math.max(u, 18) + 6, snake(10, 6, len, COL.green, u) + `<rect x="10" y="32" width="${u}" height="${u}" fill="#ffe8a3" stroke="${INK}" stroke-width="2"/><text x="${10 + u + 6}" y="${32 + u / 2 + 5}" font-size="15" font-weight="800" fill="${INK}">1</text>`), show: true,
     choices: shuffle(opts).map(v => ({ value: v, html: String(v) })),
   };
 }
@@ -102,7 +102,7 @@ function genShop(lvl) {
     const list = randomCoins(R(2, lvl ? 6 : 4), small, M.max);
     const shown = lvl === 2 ? shuffle(list.slice()) : list;
     const v = sum(list);
-    return numQ(M.fmt('?'), v, [v + list[0], v - list[list.length - 1], v + 1, v - 1].filter(x => x > 0), { visual: coinsHTML(shown), show: true });
+    return numQ(M.fmt('?'), v, [v + list[0], v - list[list.length - 1], v + 1, v - 1].filter(x => x > 0), { visual: coinsHTML(shown), show: true, sol: { t: 'coins', list } });
   }
   if (kind === 'fewest') {
     // every handful pays the price exactly; the right one uses the fewest coins
@@ -122,11 +122,11 @@ function genShop(lvl) {
     }
     if (hands.length < 4) return genShop(lvl);
     const order = shuffle([0, 1, 2, 3]);
-    return { eq: '<span class="fewest">🪙<b>⬇</b></span>', answer: order.indexOf(0), input: 'choice', layout: 'grid', fewest: true, visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(hands[k].slice()) : hands[k]) })) };
+    return { sol: { t: 'fewest', price, best }, eq: '<span class="fewest">🪙<b>⬇</b></span>', answer: order.indexOf(0), input: 'choice', layout: 'grid', fewest: true, visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(hands[k].slice()) : hands[k]) })) };
   }
   if (kind === 'change') {
     const pay = pick(M.pay), price = R(Math.ceil(pay / 4), pay - 1);
-    return numQ(`${M.fmt(pay)} − ${M.fmt(price)} = ?`, pay - price, [pay - price + 1, pay - price - 1, price, pay - price + 10], { visual: tag(pick(TOYS), price), show: true, small: true });
+    return numQ(`${M.fmt(pay)} − ${M.fmt(price)} = ?`, pay - price, [pay - price + 1, pay - price - 1, price, pay - price + 10], { visual: tag(pick(TOYS), price), show: true, small: true, sol: { t: 'sub', a: pay, b: price, up: true } });
   }
   // pay: which handful of coins is exactly the price?
   const right = randomCoins(R(2, lvl ? 5 : 3), small, M.max), price = sum(right);
@@ -141,7 +141,7 @@ function genShop(lvl) {
   }
   if (sets.length < 4) return genShop(lvl);
   const order = shuffle([0, 1, 2, 3]);
-  return { eq: '', answer: order.indexOf(0), input: 'choice', layout: 'grid', visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(sets[k].slice()) : sets[k]) })) };
+  return { sol: { t: 'pay', price, sums: order.map(k => sum(sets[k])) }, eq: '', answer: order.indexOf(0), input: 'choice', layout: 'grid', visual: tag(pick(TOYS), price), show: true, choices: order.map((k, i) => ({ value: i, html: coinsHTML(lvl === 2 ? shuffle(sets[k].slice()) : sets[k]) })) };
 }
 
 // ---------- Picture stories: a three-picture comic with no words ----------
@@ -158,7 +158,7 @@ function genStory1(lvl) {
   if (kind === 'missing') {
     // the middle picture is the question: how many flew away?
     const vis = `<div class="story">${[panel(branch(many(e, n))), panel(branch(`<span class="slot">?</span><span class="puff">💨</span>`)), panel(branch(many(e, left)))].join('<b class="arrow">▶</b>')}</div>`;
-    return numQ('', c, [n, left, c + 1, c - 1].filter(v => v > 0), { visual: vis, show: true });
+    return numQ('', c, [n, left, c + 1, c - 1].filter(v => v > 0), { visual: vis, show: true, sol: { t: 'story', n, c, away, e, miss: true } });
   }
   // The middle picture moves: the birds lift off the branch and fly out, or the fruit drops into the basket.
   // A small arrow stands in for the movement when the phone asks for reduced motion.
@@ -175,9 +175,9 @@ function genStory1(lvl) {
       if (opts.length < 4 && val(x) >= 0 && !seen.has(val(x))) { opts.push(x); seen.add(val(x)); }
     }
     shuffle(opts);
-    return { eq: '', answer: right, input: 'choice', layout: 'grid', visual: vis, show: true, choices: opts.map(x => ({ value: x, html: `<span class="ex">${x}</span>` })) };
+    return { sol: { t: 'story', n, c, away, e }, eq: '', answer: right, input: 'choice', layout: 'grid', visual: vis, show: true, choices: opts.map(x => ({ value: x, html: `<span class="ex">${x}</span>` })) };
   }
-  return numQ('', left, [away ? n + c : n - c, n, c, left + 1, left - 1].filter(v => v >= 0), { visual: vis, show: true });
+  return numQ('', left, [away ? n + c : n - c, n, c, left + 1, left - 1].filter(v => v >= 0), { visual: vis, show: true, sol: { t: 'story', n, c, away, e } });
 }
 
 export { genMeasure, genShop, genStory1 };
