@@ -971,3 +971,9 @@ svg.die { display: block; margin: auto; }
   .play .topbar .icon-btn.info:not(.sol) { font-size: 21px; }
   .play .topbar .icon-btn.sol { font-size: 17px; }
 }
+/* coin handfuls at the top of the sheet stay small, and a tall sheet scrolls instead of pushing ◀ ↻ ▶ away */
+.solq .mcoins { gap: 0; justify-content: center; max-width: 150px; }
+.solq .mcoin { transform: scale(.62); margin: -7px; }
+.solq { flex: none; }
+.solq .solright, .solq .solmine { max-width: 100%; }
+.popup.solpop { overflow-y: auto; }
