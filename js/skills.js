@@ -60,7 +60,10 @@ function pairsQ(target, op, pairs, decoys) {
 const SYMBOLS = [['<', '&lt;'], ['=', '='], ['>', '&gt;']].map(([v, html]) => ({ value: v, html }));
 const symOf = (x, y) => (x > y ? '>' : x < y ? '<' : '=');
 const cmpQ = (left, right, x, y, visual = null) =>
-  ({ sol: { t: 'cmp', x, y, lx: left, ly: right }, eq: `${left} ◯ ${right}`, answer: symOf(x, y), input: 'choice', layout: 'row', choices: SYMBOLS, visual, show: !!visual });
+  ({ eq: `${left} ◯ ${right}`, answer: symOf(x, y), input: 'choice', layout: 'row', choices: SYMBOLS, visual, show: !!visual });
+// Meadow's comparisons also carry their solution. Other worlds share cmpQ with values that are not
+// what the child sees (fractions, units, dice), so they keep the simple sheet until they get their own.
+const cmpSolQ = (left, right, x, y, visual = null) => ({ ...cmpQ(left, right, x, y, visual), sol: { t: 'cmp', x, y, lx: left, ly: right } });
 
 function genCount(lvl) {
   const kind = pick([['dots', 'cmpDots', 'cmpDots', 'track', 'track'], ['dots', 'cmp', 'cmp', 'track', 'track'], ['cmp', 'cmpSum', 'cmpSum', 'track', 'track']][lvl]);
@@ -72,7 +75,7 @@ function genCount(lvl) {
     const a = R(5, 20);
     const b = chance(0.12) ? a : Math.min(20, Math.max(1, a + pick([-3, -2, -1, 1, 2, 3])));
     if (b === a && a === 20) return genCount(lvl);
-    return cmpQ(a, b, a, b, pair(frames(fill(a)), '', frames(fill(b, 'b'))));
+    return cmpSolQ(a, b, a, b, pair(frames(fill(a)), '', frames(fill(b, 'b'))));
   }
   if (kind === 'cmp') {
     // Close numbers up to 100, including swapped digits like 36 and 63.
@@ -81,18 +84,18 @@ function genCount(lvl) {
     let b = chance(0.35) && o !== t && o > 0 ? o * 10 + t : a + pick([-4, -3, -2, -1, 1, 2, 3, 9, -9, 11, -11]);
     if (chance(0.12)) b = a;
     b = Math.min(100, Math.max(1, b));
-    return cmpQ(a, b, a, b);
+    return cmpSolQ(a, b, a, b);
   }
   if (kind === 'cmpSum') {
     const a = R(3, 9), b = R(3, 9), s = a + b;
     const off = () => (chance(0.12) ? 0 : pick([-2, -1, 1, 2]));
     if (chance(0.5)) {
       const c = s + off();
-      return cmpQ(`${a} + ${b}`, c, s, c);
+      return cmpSolQ(`${a} + ${b}`, c, s, c);
     }
     const c = R(2, 9), d = s - c + off();
     if (d < 1) return genCount(lvl);
-    return cmpQ(`${a} + ${b}`, `${c} + ${d}`, s, c + d);
+    return cmpSolQ(`${a} + ${b}`, `${c} + ${d}`, s, c + d);
   }
   const step = lvl === 2 ? pick([2, 5, 10, -1, -2, 3]) : lvl === 1 ? pick([1, 1, -1, 2]) : pick([1, 1, -1]);
   const len = 5;
@@ -482,4 +485,4 @@ export const HATS = ['🎩', '👑', '🎀', '🧢', '🕶️', '🎓'];
 export const AVATARS = ['🦊', '🐼', '🐯', '🐸', '🐵', '🦁', '🐰', '🐨'];
 
 // Shared with the other worlds' stage files.
-export { R, pick, chance, shuffle, numQ, tfQ, findAllQ, pairsQ, cmpQ, SYMBOLS, OPS, productsOf };
+export { R, pick, chance, shuffle, numQ, tfQ, findAllQ, pairsQ, cmpQ, cmpSolQ, SYMBOLS, OPS, productsOf };

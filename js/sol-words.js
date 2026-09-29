@@ -9,6 +9,9 @@ const WORDS = {
     'countDots': 'Count the dots one by one.',
     'fill10': 'Fill the first frame up to 10: {a} more.',
     'ten+': '10 and {a} more make {b}.',
+    'toTen': 'Add {a} first to reach {b}, a whole ten.',
+    'tenMore': '{b} and {a} more make {c}.',
+    'downToTen': 'Take away {a} first to get down to {b}, a whole ten.',
     'double': 'A double: the same number twice.',
     'nearDouble': '{a} + {b} is one more than the double {a} + {a}.',
     'hops': 'Start at {a} and hop {b} forward.',
@@ -50,7 +53,7 @@ const WORDS = {
     // times
     'rows': '{a} rows of {b}.',
     'skip': 'Count on by {a} for each row.',
-    'split5': 'Cut it into 5 rows and {a} more rows.',
+    'split5': 'Cut it into 5 rows and {a} more.',
     'times10': 'Times 10 puts a 0 on the end.',
     'times9': '9 rows is 10 rows take away one row.',
     'times1': 'One row of {a} is just {a}.',

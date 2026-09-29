@@ -964,3 +964,10 @@ svg.die { display: block; margin: auto; }
 .lbtiles { gap: 4px; }
 .lbtile { min-width: 32px; height: 30px; border-radius: 8px; font-size: 13px; }
 .lbtile b { font-size: 10px; }
+.solq .solmine { padding: 0 6px; background: #ffe1df; border-radius: 8px; text-decoration-color: var(--tomato); opacity: 1; }
+@media (max-width: 360px) {
+  .play .topbar { gap: 6px; padding-left: 10px; padding-right: 10px; }
+  .play .topbar .icon-btn.info { width: 36px; height: 36px; }
+  .play .topbar .icon-btn.info:not(.sol) { font-size: 21px; }
+  .play .topbar .icon-btn.sol { font-size: 17px; }
+}

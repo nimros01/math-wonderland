@@ -58,12 +58,12 @@ function add({ a, b }, q, given) {
   } else if (b < 10) {
     // bridge through the next ten: 47 + 5 = 47 + 3 + 2
     const up = 10 - (a % 10), next = a + up, rest = b - up;
-    steps.push(S(nline(a - 2, s + 2, { jumps: [[a, next, '+' + up]] }), `${a} + ${up} = ${next}`, 'fill10', { a: up }));
-    steps.push(S(nline(a - 2, s + 2, { jumps: [[a, next, '+' + up], [next, s, '+' + rest]] }), `${next} + ${rest} = ${s}`, 'ten+', { a: rest, b: s }));
+    steps.push(S(nline(a - 2, s + 2, { jumps: [[a, next, '+' + up]] }), `${a} + ${up} = ${next}`, 'toTen', { a: up, b: next }));
+    steps.push(S(nline(a - 2, s + 2, { jumps: [[a, next, '+' + up], [next, s, '+' + rest]] }), `${next} + ${rest} = ${s}`, 'tenMore', { a: rest, b: next, c: s }));
     if (given === s - 10) oops = OOPS(`${a} + ${b} ≠ ${given}`, 'oopsNewTen');
   } else {
     const t1 = Math.floor(a / 10), o1 = a % 10, t2 = Math.floor(b / 10), o2 = b % 10, T = (t1 + t2) * 10, O = o1 + o2;
-    steps.push(S(b10([{ t: t1, o: o1, col: RED, label: a }, { op: '+' }, { t: t2, o: o2, col: BLUE_, label: b }]), `${t1 * 10} + ${o1}<br>${t2 * 10} + ${o2}`, 'split'));
+    steps.push(S(b10([{ t: t1, o: o1, col: RED, label: a }, { op: '+' }, { t: t2, o: o2, col: BLUE_, label: b }]), [[a, t1, o1], [b, t2, o2]].filter(([, , o]) => o).map(([v, t, o]) => `${v} = ${t * 10} + ${o}`).join('<br>'), 'split'));
     if (O >= 10) {
       steps.push(S(b10([{ t: 0, o: O, ring: true, label: `${o1} + ${o2} = ${O}` }]), `${o1} + ${o2} = ${O} = 10 + ${O - 10}`, 'newTen', { a: O - 10 }));
       steps.push(S(b10([{ t: t1 + t2 + 1, o: O - 10, col: BLUE_, newRod: true, label: s }]), `${T} + 10 + ${O - 10} = ${s}`, 'together'));
@@ -106,7 +106,7 @@ function sub({ a, b, up }, q, given) {
       steps.push(S(blocks(a, 'a', 0, b), `${a} − ${b} = ${d}`, 'crossOut', { a: b }));
     } else {
       const t = a - o, rest = b - o;
-      steps.push(S(nline(d - 2, a + 2, { jumps: [[a, t, '−' + o]] }), `${a} − ${o} = ${t}`, 'backTo10', { a: o }));
+      steps.push(S(nline(d - 2, a + 2, { jumps: [[a, t, '−' + o]] }), `${a} − ${o} = ${t}`, 'downToTen', { a: o, b: t }));
       steps.push(S(nline(d - 2, a + 2, { jumps: [[a, t, '−' + o], [t, d, '−' + rest]] }), `${t} − ${rest} = ${d}`, 'thenRest', { a: rest }));
       if (given === d + 10) oops = OOPS(`${a} − ${b} ≠ ${given}`, 'oopsBorrow');
     }
@@ -164,9 +164,9 @@ function cmp({ x, y, lx, ly }, q, given) {
     steps.push(S(pair(blocks(x), '', blocks(y, 'b')), tx !== ty ? `${tx} ${esc(SYM(tx, ty))} ${ty}` : `${x % 10} ${esc(SYM(x % 10, y % 10))} ${y % 10}`, tx !== ty ? 'cmpTens' : 'cmpOnes'));
   }
   const lo = Math.min(x, y), hi = Math.max(x, y), pad = Math.max(2, Math.round((hi - lo) * 0.3));
-  steps.push(S(nline(Math.max(0, lo - pad), hi + pad, { marks: x === y ? [[x, '#2fb383', '=']] : [[x, '#ef5b52', ''], [y, '#3e9be0', '']] }),
-    `${String(L).includes('span') ? L : x} ${esc(sym)} ${String(Rt).includes('span') ? Rt : y}`, x === y ? 'cmpSame' : 'cmpLine'));
-  return { ans: sym, steps, oops: given && given !== sym ? OOPS(`${x} ${esc(sym)} ${y}`, 'oopsSym') : null };
+  steps.push(S(nline(lo >= 0 ? Math.max(0, lo - pad) : lo - pad, hi + pad, { marks: x === y ? [[x, '#2fb383', '=']] : [[x, '#ef5b52', ''], [y, '#3e9be0', '']] }),
+    `${String(L).includes('span') ? L : m(x)} ${esc(sym)} ${String(Rt).includes('span') ? Rt : m(y)}`, x === y ? 'cmpSame' : 'cmpLine'));
+  return { ans: sym, steps, oops: given && given !== sym ? OOPS(`${m(x)} ${esc(sym)} ${m(y)}`, 'oopsSym') : null };
 }
 
 // ---------- rows and patterns ----------

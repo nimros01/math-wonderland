@@ -1,6 +1,6 @@
 // Meadow stages added after launch: measuring, the coin shop and picture stories.
 // They get new stage ids, so every saved star stays where it was.
-import { R, pick, chance, shuffle, numQ, cmpQ } from './skills.js';
+import { R, pick, chance, shuffle, numQ, cmpSolQ } from './skills.js';
 import { money, country } from './country.js';
 
 const INK = '#1e2650';
@@ -54,14 +54,14 @@ function genMeasure(lvl) {
     do { a = R(3, 11); b = R(3, 11); } while (Math.abs(a - b) < 1 || Math.abs(a - b) > 3);
     const ua = a > b ? 14 : 24, ub = a > b ? 24 : 14;
     const rowPic = (len, u, color, y) => snake(10, y, len, color, u) + rulerU(10, y + 18, Math.ceil(12 * 20 / u), u);
-    return { ...cmpQ(dot('red'), dot('blue'), a, b), visual: pic(12 * U + 44, 116, rowPic(a, ua, COL.red, 4) + rowPic(b, ub, COL.blue, 60)), show: true };
+    return { ...cmpSolQ(dot('red'), dot('blue'), a, b), visual: pic(12 * U + 44, 116, rowPic(a, ua, COL.red, 4) + rowPic(b, ub, COL.blue, 60)), show: true };
   }
   if (kind === 'longer') {
     const a = R(3, 10), b = chance(0.12) ? a : Math.max(2, Math.min(11, a + pick([-3, -2, -1, 1, 2, 3])));
     // level 0 lines both snakes up at the left; later they start at different places on a ruler
     const sa = lvl ? R(0, 12 - a) : 0, sb = lvl ? R(0, 12 - b) : 0;
     const body = snake(10 + sa * U, 6, a, COL.red) + snake(10 + sb * U, 30, b, COL.blue) + (lvl ? ruler(10, 52, 12) : '');
-    return { ...cmpQ(dot('red'), dot('blue'), a, b), visual: pic(12 * U + 20, lvl ? 86 : 52, body), show: true };
+    return { ...cmpSolQ(dot('red'), dot('blue'), a, b), visual: pic(12 * U + 20, lvl ? 86 : 52, body), show: true };
   }
   if (kind === 'diff') {
     const a = R(5, 12), b = R(2, a - 1);
