@@ -896,7 +896,7 @@ svg.die { display: block; margin: auto; }
 .solq .eq { font-size: 30px; white-space: normal; text-align: center; line-height: 1.25; }
 .solq .eq .slot { font-size: 1em; }
 .solq .solright { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; padding: 2px 8px; font-size: 26px; font-weight: 800; background: #d7f5e6; border: 3px solid var(--mint); border-radius: 12px; }
-.solq .solright svg, .solq .solmine svg { max-height: 56px; width: auto; }
+.solq .solright svg, .solq .solmine svg, .solq .slot svg { max-height: 56px; width: auto; }
 .solq .solmine { font-size: 22px; font-weight: 800; color: var(--tomato); text-decoration-thickness: 3px; opacity: .85; }
 .solq.multi { flex-direction: column; }
 .solq .target { font-size: 28px; font-weight: 800; }
