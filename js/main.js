@@ -442,8 +442,16 @@ function holdToBuy(fn) {
     t = setTimeout(() => { cancel(); fn(); }, 700);
   });
   btn.addEventListener('pointerup', () => {
-    if (Date.now() - down < 650) { btn.classList.remove('wobble'); void btn.offsetWidth; btn.classList.add('wobble'); }
+    const early = Date.now() - down < 650;
     cancel();
+    if (early && !btn.querySelector('.holdhint')) {
+      // Show how: a finger pressing on ✅ while the fill rises, then drains away.
+      fill.style.transition = 'height .6s linear';
+      fill.style.height = '60%';
+      setTimeout(() => { fill.style.transition = 'height .8s'; fill.style.height = '0'; }, 600);
+      btn.insertAdjacentHTML('beforeend', '<b class="holdhint" aria-hidden="true">👆</b>');
+      setTimeout(() => btn.querySelector('.holdhint')?.remove(), 1600);
+    }
   });
   ['pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
   btn.addEventListener('contextmenu', e => e.preventDefault());

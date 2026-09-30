@@ -1061,3 +1061,6 @@ svg.die { display: block; margin: auto; }
 .bigbtn.buy { position: relative; overflow: hidden; touch-action: none; }
 .bigbtn.buy .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--sun); }
 .bigbtn.buy span, .bigbtn.buy small { position: relative; }
+.bigbtn.buy { -webkit-touch-callout: none; }
+.holdhint { position: absolute; left: 68%; bottom: -10px; font-size: 38px; pointer-events: none; animation: holdpress 1.6s; }
+@keyframes holdpress { 0% { transform: translate(-30%, 20px); opacity: 0; } 20%, 80% { transform: translate(-30%, 0); opacity: 1; } 100% { opacity: 0; } }
