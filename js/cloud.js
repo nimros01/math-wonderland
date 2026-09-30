@@ -3,6 +3,7 @@
 // The game never waits on this: local saves are the truth, and sync merges in the background.
 import { FIREBASE } from './cloud-config.js';
 import * as P from './progress.js';
+import { mergeShop } from './shop.js';
 
 const LS = 'math-wonderland-cloud';
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
@@ -109,6 +110,7 @@ function mergeProfiles(a, b) {
     const n = (m.pets ||= {})[w];
     if (!n || pet.stage > n.stage || (pet.stage === n.stage && pet.xp > n.xp)) m.pets[w] = pet;
   }
+  mergeShop(m, older); // room items, pet colors and hatched creatures bought on either phone are kept
   return m;
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);

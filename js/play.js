@@ -1,5 +1,6 @@
 // One round of questions: a normal stage round, a golden-gate skip test, the placement quest or the boss.
 import * as P from './progress.js';
+import { shineClass } from './shop.js';
 import { sfx } from './audio.js';
 import { LEARN } from './skills.js';
 import { WORLDS, learnOf } from './worlds.js';
@@ -61,7 +62,7 @@ export function startRound(app, opts) {
       <div class="answers" id="answers"></div>
       <div class="bottombar">
         <button class="icon-btn" id="hint" aria-label="Hint">💡</button>
-        <div class="pet-mini" id="petmini">${P.petEmoji(buddy.pet, buddy.wid)}${buddy.pet.hat ? `<span class="hat">${buddy.pet.hat}</span>` : ''}</div>
+        <div class="pet-mini" id="petmini"><span class="pe${shineClass(p, buddy.wid, buddy.pet)}">${P.petEmoji(buddy.pet, buddy.wid)}</span>${buddy.pet.hat ? `<span class="hat">${buddy.pet.hat}</span>` : ''}</div>
         <button class="icon-btn" id="showme" aria-label="Show me how">👀</button>
         <button class="icon-btn skip" id="skip" aria-label="Next question" hidden>⏭<i></i></button>
       </div>
