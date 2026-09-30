@@ -409,16 +409,45 @@ function openChest(p) {
 // Pet screen. The row on top picks a world's pet; the tabs under it show that pet's
 // 🏠 room, 🍎 food, colors and hats, 🥚 mystery eggs and creature collection, and 📒 the sticker book.
 // Worlds that aren't built yet show a locked egg, so kids know more pets are coming.
-// Nothing costs diamonds without a second tap on ✅, so a stray tap never spends anything.
+// Room items, colors and eggs cost diamonds only after picking them and then holding ✅, and taps are ignored for
+// a moment after a purchase, so a child hammering the screen doesn't buy the next thing that lands under the finger.
 const SOON = [['candy', '🍭'], ['desert', '🏜️'], ['volcano', '🌋'], ['space', '🚀']];
 const PET_TABS = [['room', '🏠'], ['care', '🍎'], ['zoo', '🥚'], ['book', '📒']];
 let petTab = 'room';
+let calmUntil = 0;
+const calm = () => { calmUntil = Date.now() + 1500; };
 
 const buyRow = (price, ok) => `
   <div class="buyrow">
     <button class="bigbtn" id="no" aria-label="Cancel">✖</button>
-    <button class="bigbtn green" id="yes" aria-label="Buy" ${ok ? '' : 'disabled'}><span>✅</span><small>💎 ${price}</small></button>
+    <button class="bigbtn green buy" id="yes" aria-label="Press and hold to buy" ${ok ? '' : 'disabled'}><i class="fill"></i><span>✅</span><small>💎 ${price}</small></button>
   </div>`;
+// ✅ buys only when held until its fill reaches the top, so quick taps and a hammering finger never spend.
+function holdToBuy(fn) {
+  const btn = app.querySelector('#yes');
+  if (!btn) return;
+  const fill = btn.querySelector('.fill');
+  let t = null, down = 0;
+  const cancel = () => {
+    clearTimeout(t);
+    fill.style.transition = 'height .15s';
+    fill.style.height = '0';
+  };
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    down = Date.now();
+    sfx.tap();
+    fill.style.transition = 'height .7s linear';
+    fill.style.height = '100%';
+    t = setTimeout(() => { cancel(); fn(); }, 700);
+  });
+  btn.addEventListener('pointerup', () => {
+    if (Date.now() - down < 650) { btn.classList.remove('wobble'); void btn.offsetWidth; btn.classList.add('wobble'); }
+    cancel();
+  });
+  ['pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+}
 const roomThing = (spot, it) => (spot === 'rug' ? `<i class="rug ${it}"></i>` : it);
 
 // sel is what the child is in the middle of: a room spot and item preview, a color or an egg to buy.
@@ -462,6 +491,11 @@ function petScreen(w = wid(P.me()), tab = petTab, sel = {}) {
   const no = app.querySelector('#no');
   if (no) no.onclick = () => { sfx.tap(); again(sel.spot ? { spot: sel.spot } : {}); };
   ({ room: bindRoom, care: bindCare, zoo: bindZoo, book: () => {} })[tab](p, w, pet, sel, again);
+  const screen = app.querySelector('.petscreen');
+  const wait = calmUntil - Date.now();
+  if (wait > 0) { screen.style.pointerEvents = 'none'; setTimeout(() => { screen.style.pointerEvents = ''; }, wait); }
+  // On short phones the choices sit under the room: bring them into view.
+  if (sel.spot || sel.shine || sel.egg) app.querySelector('.under')?.scrollIntoView({ block: 'nearest' });
 }
 
 const cheer = (cls = 'grow') => app.querySelector('.petscreen .pet')?.classList.add(cls);
@@ -499,7 +533,7 @@ function roomTab(p, w, pet, sel) {
       ${spots}
       <div class="room-pet">${petFace(pet, w, pet.stage ? 'bounce' : '', p)}</div>
     </div>
-    ${under}`;
+    <div class="under">${under}</div>`;
 }
 
 function bindRoom(p, w, pet, sel, again) {
@@ -523,17 +557,17 @@ function bindRoom(p, w, pet, sel, again) {
   });
   const toZoo = app.querySelector('#tozoo');
   if (toZoo) toZoo.onclick = () => { sfx.tap(); again({}, 'zoo'); };
-  const yes = app.querySelector('#yes');
-  if (yes) yes.onclick = () => {
+  holdToBuy(() => {
     const wasDone = S.roomDone(p, w);
     if (!S.buyItem(p, w, sel.spot, sel.preview)) { sfx.bad(); return; }
     P.save();
+    calm();
     const done = !wasDone && S.roomDone(p, w);
     done ? sfx.grow() : sfx.chest();
-    again({ spot: sel.spot });
+    again(); // the picker closes, so nothing buyable is left under a finger that keeps tapping
     cheer('grow');
     if (done) app.querySelector('.room').insertAdjacentHTML('beforeend', '<div class="room-party">⭐</div>');
-  };
+  });
 }
 
 // 🍎 Feed the pet until it's grown; a grown pet can turn golden, then rainbow. Hats are shared by all pets.
@@ -546,7 +580,7 @@ function careTab(p, w, pet, sel) {
   else if (pet.stage < 3) grow = `
     <div class="growbar"><i style="width:${Math.round(P.feedProgress(pet) * 100)}%"></i></div>
     <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${cost}</small></button>`;
-  else if (sel.shine) grow = buyRow(S.shinePrice(sel.shine), S.canBuyShine(p, w, pet, sel.shine));
+  else if (sel.shine) grow = `<div class="under">${buyRow(S.shinePrice(sel.shine), S.canBuyShine(p, w, pet, sel.shine))}</div>`;
   else {
     const worn = p.wear?.[w] || '';
     const face = c => `<span class="pet"><span class="pe${c ? ' sh-' + c : ''}">${P.petEmoji(pet, w)}</span></span>`;
@@ -589,14 +623,14 @@ function bindCare(p, w, pet, sel, again) {
       again({ shine: c });
     };
   });
-  const yes = app.querySelector('#yes');
-  if (yes) yes.onclick = () => {
+  holdToBuy(() => {
     if (!S.buyShine(p, w, pet, sel.shine)) { sfx.bad(); return; }
     P.save();
+    calm();
     sfx.grow();
     again();
     cheer('grow');
-  };
+  });
   app.querySelectorAll('.hatbtn').forEach(b => {
     b.onclick = () => {
       if (b.dataset.buy) {
@@ -620,7 +654,7 @@ function zooTab(p, w, pet, sel) {
   const W = WORLDS.find(x => x.id === w);
   const set = S.zooSet(w), got = set.filter(c => (p.zoo || []).includes(c));
   const full = got.length === set.length;
-  const top = sel.egg ? buyRow(S.EGG_COST, p.gems >= S.EGG_COST)
+  const top = sel.egg ? `<div class="under">${buyRow(S.EGG_COST, p.gems >= S.EGG_COST)}</div>`
     : full ? '<div class="eggbuy full">✅</div>'
     : `<button class="eggbuy" id="egg" aria-label="Mystery egg"><span>🥚</span><small>💎 ${S.EGG_COST}</small></button>`;
   return `
@@ -634,17 +668,17 @@ function zooTab(p, w, pet, sel) {
 function bindZoo(p, w, pet, sel, again) {
   const egg = app.querySelector('#egg');
   if (egg) egg.onclick = () => { sfx.tap(); again({ egg: true }); };
-  const yes = app.querySelector('#yes');
-  if (yes) yes.onclick = () => {
+  holdToBuy(() => {
     const c = S.buyEgg(p, w);
     if (!c) { sfx.bad(); return; }
     P.save();
+    calm();
     again();
     // Tap the egg three times to crack it open.
     const box = document.createElement('div');
     box.className = 'hatchbox';
     box.innerHTML = '<button class="bigegg" aria-label="Crack the egg">🥚</button>';
-    app.querySelector('.petscreen').appendChild(box);
+    app.appendChild(box); // outside the screen, so the pause after buying doesn't block the cracking taps
     const big = box.firstElementChild;
     let taps = 0;
     big.onclick = e => {
@@ -660,7 +694,7 @@ function bindZoo(p, w, pet, sel, again) {
       box.innerHTML = `<div class="hatched">${c}</div>`;
       box.onclick = () => box.remove();
     };
-  };
+  });
 }
 
 function bookTab(p) {

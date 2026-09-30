@@ -1057,3 +1057,7 @@ svg.die { display: block; margin: auto; }
   .pe.sh-rainbow { animation: none; filter: sepia(1) saturate(4) hue-rotate(150deg) drop-shadow(0 0 .08em #ff8ad8); }
   .spot.ghost { animation: none; opacity: .6; }
 }
+@media (max-height: 640px) { .room { width: min(80%, 300px); } .pet-stage { height: 150px; } .pet.huge { font-size: 104px; } }
+.bigbtn.buy { position: relative; overflow: hidden; touch-action: none; }
+.bigbtn.buy .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--sun); }
+.bigbtn.buy span, .bigbtn.buy small { position: relative; }

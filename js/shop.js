@@ -3,7 +3,7 @@
 //   p.homeOwn[world] = items bought for that world's room     p.home[world] = { spot: item }
 //   p.shine[world]   = colors bought for that world's pet     p.wear[world] = 'gold' | 'rainbow' | ''
 //   p.zoo            = creatures hatched from mystery eggs (any world)
-// Emoji are from 2020 or older, so they show on older phones too.
+// Emoji are from Unicode 12 (2019) or older, so they show on older phones too (iOS 13.2+, Android 10+).
 
 // Room spots in the order the picker lists them, with the room's own items: cheap, nice, fancy.
 export const SPOTS = ['bed', 'window', 'wall', 'light', 'toy', 'plant', 'bowl', 'rug'];
@@ -13,10 +13,10 @@ export const RUGS = ['rug1', 'rug2', 'rug3']; // drawn in CSS: plain, striped, r
 export const ROOMS = {
   meadow: { bed: ['🧺', '🛏️', '🛋️'], window: ['🌤️', '🌈', '🌙'], wall: ['🌻', '🦋', '🏆'], light: ['🕯️', '💡', '🏮'], toy: ['⚽', '🪀', '🪁'], plant: ['🌱', '🌷', '🌳'], bowl: ['🥣', '🍯', '🎂'] },
   ocean: { bed: ['🐚', '🛶', '🏝️'], window: ['🌊', '🐋', '🌅'], wall: ['⚓', '🗺️', '🔱'], light: ['🔦', '🏮', '🌟'], toy: ['🏐', '🎣', '🤿'], plant: ['🌿', '🎋', '🌴'], bowl: ['🦐', '🍣', '🍱'] },
-  candy: { bed: ['🍩', '🍰', '🏰'], window: ['🍭', '🎈', '🎆'], wall: ['🍫', '🍬', '🖼️'], light: ['🎐', '🏮', '🎇'], toy: ['🧸', '🪅', '🎠'], plant: ['🍄', '🌸', '🌺'], bowl: ['🍪', '🍦', '🍨'] },
-  desert: { bed: ['⛺', '🛖', '🏺'], window: ['🌞', '🌅', '🌌'], wall: ['📜', '🧭', '🔺'], light: ['🔥', '🪔', '☀️'], toy: ['🪃', '🥁', '🎯'], plant: ['🌵', '🌾', '🌴'], bowl: ['🥙', '🍉', '🥥'] },
-  volcano: { bed: ['🪨', '🪵', '🛏️'], window: ['🌋', '☄️', '🌠'], wall: ['🦴', '🥇', '🏆'], light: ['🕯️', '🔥', '⚡'], toy: ['🏀', '🎳', '🥁'], plant: ['🌵', '🍁', '🌲'], bowl: ['🍖', '🍗', '🌶️'] },
-  space: { bed: ['🛸', '🪐', '🌙'], window: ['🌍', '🌌', '🌕'], wall: ['📡', '🔭', '🛰️'], light: ['💡', '⭐', '🌟'], toy: ['🤖', '🎮', '🧩'], plant: ['🌱', '🍄', '🪴'], bowl: ['🍕', '🧃', '🍩'] },
+  candy: { bed: ['🍩', '🍰', '🏰'], window: ['🍭', '🎈', '🎆'], wall: ['🍫', '🍬', '🖼️'], light: ['🎐', '🏮', '🎇'], toy: ['🧸', '🎁', '🎠'], plant: ['🍄', '🌸', '🌺'], bowl: ['🍪', '🍦', '🍨'] },
+  desert: { bed: ['⛺', '🏕️', '🏺'], window: ['🌞', '🌅', '🌌'], wall: ['📜', '🧭', '🔺'], light: ['🔥', '🪔', '☀️'], toy: ['🎲', '🥁', '🎯'], plant: ['🌵', '🌾', '🌴'], bowl: ['🥙', '🍉', '🥥'] },
+  volcano: { bed: ['🧱', '⛺', '🛏️'], window: ['🌋', '☄️', '🌠'], wall: ['🦴', '🥇', '🏆'], light: ['🕯️', '🔥', '⚡'], toy: ['🏀', '🎳', '🥁'], plant: ['🌵', '🍁', '🌲'], bowl: ['🍖', '🍗', '🌶️'] },
+  space: { bed: ['🛸', '🪐', '🌙'], window: ['🌍', '🌌', '🌕'], wall: ['📡', '🔭', '🛰️'], light: ['💡', '⭐', '🌟'], toy: ['🤖', '🎮', '🧩'], plant: ['🌱', '🍄', '🎍'], bowl: ['🍕', '🧃', '🍩'] },
 };
 
 export const roomItems = (w, spot) => (spot === 'rug' ? RUGS : (ROOMS[w] || ROOMS.meadow)[spot]);
@@ -28,7 +28,7 @@ export const roomOf = (p, w) => p.home?.[w] || {};
 // Put an owned item (or nothing) in a spot. The friend spot takes any creature from the collection.
 export function place(p, w, spot, item) {
   const room = ((p.home ||= {})[w] ||= {});
-  if (!item) { delete room[spot]; return true; }
+  if (!item) { room[spot] = null; return true; } // kept as null, so sync knows the spot was cleared on purpose
   if (spot === 'friend' ? !(p.zoo || []).includes(item) : !ownsItem(p, w, item)) return false;
   room[spot] = item;
   return true;
@@ -83,11 +83,11 @@ export function shineClass(p, w, pet) {
 export const EGG_COST = 150;
 export const ZOO = {
   meadow: ['🐿️', '🦊', '🦝', '🦆', '🐓', '🐑', '🐐', '🦌'],
-  ocean: ['🦭', '🐙', '🦑', '🐧', '🦦', '🐳', '🦩', '🦢'],
-  candy: ['🐼', '🐨', '🦥', '🦙', '🐻', '🐷', '🐮', '🦫'],
+  ocean: ['🐤', '🐙', '🦑', '🐧', '🦦', '🐳', '🦩', '🦢'],
+  candy: ['🐼', '🐨', '🦥', '🦙', '🐻', '🐷', '🐮', '🦨'],
   desert: ['🐫', '🦒', '🦓', '🐆', '🦛', '🦃', '🦜', '🐃'],
-  volcano: ['🦇', '🕷️', '🦤', '🦬', '🐗', '🦡', '🪲', '🐺'],
-  space: ['👻', '⛄', '🧸', '🎃', '🌝', '🌞', '🪆', '🦠'],
+  volcano: ['🦇', '🕷️', '🐂', '🐅', '🐗', '🦡', '🐎', '🐺'],
+  space: ['👻', '⛄', '🧸', '🎃', '🌝', '🌞', '🌚', '🦠'],
 };
 export const zooSet = w => ZOO[w] || [];
 export const zooMissing = (p, w) => zooSet(w).filter(c => !(p.zoo || []).includes(c));
@@ -110,8 +110,11 @@ export function mergeShop(m, older) {
   for (const key of ['homeOwn', 'shine']) {
     for (const [w, list] of Object.entries(older[key] || {})) (m[key] ||= {})[w] = union(m[key][w], list);
   }
-  for (const key of ['home', 'wear']) {
-    for (const [w, v] of Object.entries(older[key] || {})) if (!(w in (m[key] ||= {}))) m[key][w] = v;
+  // A room is joined spot by spot: the newer copy's spots (null = cleared) win, the older copy fills the rest.
+  for (const [w, room] of Object.entries(older.home || {})) {
+    const n = ((m.home ||= {})[w] ||= {});
+    for (const [spot, it] of Object.entries(room || {})) if (!(spot in n)) n[spot] = it;
   }
+  for (const [w, c] of Object.entries(older.wear || {})) if (!(w in (m.wear ||= {}))) m.wear[w] = c;
   if (older.zoo) m.zoo = union(m.zoo, older.zoo);
 }
