@@ -35,6 +35,7 @@ This is the first prototype: **Meadow**, the first of four worlds, with 17 stage
 - **⚡ golden gate**: 8 hard questions. Getting 7 right clears the stage with 3 stars.
 - **🚀 placement quest** for new players: questions get harder until the child struggles, then the child starts from that stage.
 - **Rewards**: gems, streak multipliers (×2 at 5 in a row, ×3 at 10), a surprise chest after each cleared round (stickers, pet hats, gems), and a pet that hatches and grows when fed with gems.
+- **Diamond shop** (on the pet screen, picture tabs 🏠 🍎 🥚 📒): every pet has a room with 8 spots and 3 themed items per spot (💎 40 / 120 / 300); a grown pet can turn golden (💎 500) and then rainbow (💎 1,000); each world sells a mystery egg (💎 150) that hatches one of 8 creatures, never a repeat, and creatures can visit the room. Nothing is spent without a second tap on ✅. Saved in new player fields (`homeOwn`, `home`, `shine`, `wear`, `zoo`) that family sync joins, see `js/shop.js`.
 - **Parent corner**: press and hold ⚙️ on the map. It shows progress, can open all stages, turns sound on or off, and deletes a player.
 
 Up to 6 players can share a device; each child taps their own animal when the game opens. Progress is saved in the browser on the device, and can also be shared between devices with family sync.

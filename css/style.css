@@ -977,3 +977,83 @@ svg.die { display: block; margin: auto; }
 .solq { flex: none; }
 .solq .solright, .solq .solmine { max-width: 100%; }
 .popup.solpop { overflow-y: auto; }
+
+/* diamond shop: pet tabs, pet rooms, golden and rainbow pets, mystery eggs */
+.pettabs { display: flex; gap: 8px; justify-content: center; }
+.pettab { width: 58px; height: 50px; border-radius: 16px; background: var(--card); border: 3px solid var(--ink); font-size: 28px; line-height: 1; }
+.pettab.on { background: var(--sun); box-shadow: inset 0 -4px 0 rgba(30, 38, 80, .15); }
+.petpick { position: relative; }
+.petpick .done { position: absolute; top: -8px; right: -8px; font-size: 16px; font-style: normal; }
+
+/* colors: a filter on the pet picture only, so its hat keeps its own colors */
+.pe { display: inline-block; }
+.pe.sh-gold { filter: sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.08) drop-shadow(0 0 .08em #ffd23f); }
+.pe.sh-rainbow { filter: sepia(1) saturate(4) hue-rotate(0deg) drop-shadow(0 0 .08em #ff8ad8); animation: rainbow 3s linear infinite; }
+@keyframes rainbow { to { filter: sepia(1) saturate(4) hue-rotate(360deg) drop-shadow(0 0 .08em #8ad8ff); } }
+.shines { display: flex; gap: 10px; justify-content: center; }
+.shinebtn { width: 86px; height: 96px; border-radius: 20px; background: var(--card); border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.shinebtn .pet { font-size: 46px; }
+.shinebtn small { font-size: 14px; font-weight: 800; }
+.shinebtn.on { background: var(--sun); }
+.shinebtn.locked { opacity: .5; }
+.buyrow { display: flex; gap: 22px; justify-content: center; }
+.buyrow .bigbtn small { font-size: 16px; }
+
+/* the room: wall on top, floor below; spots sit in fixed places so small kids just tap */
+.room { position: relative; width: min(92%, 360px); aspect-ratio: 1; border: 4px solid var(--ink); border-radius: 26px; overflow: hidden; background: #fde9b8; flex-shrink: 0; }
+.room-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 42%; background: #c9e59a; border-top: 3px solid rgba(30, 38, 80, .25); }
+.r-ocean { background: #bfe6ff; } .r-ocean .room-floor { background: #f3dca0; }
+.r-candy { background: #ffd6ec; } .r-candy .room-floor { background: radial-gradient(circle, #ff9ccc 2px, transparent 3px) 0 0 / 18px 18px, #fff0f7; }
+.r-desert { background: #ffe0b0; } .r-desert .room-floor { background: #e8b86a; }
+.r-volcano { background: #f7c3a0; } .r-volcano .room-floor { background: #9b6b52; }
+.r-space { background: radial-gradient(circle, #fff 1px, transparent 2px) 0 0 / 34px 34px, #2b2f66; } .r-space .room-floor { background: #5a5fa3; }
+.spot { position: absolute; width: 21%; height: 21%; display: grid; place-items: center; font-size: clamp(28px, 10vw, 42px); line-height: 1; border-radius: 16px; z-index: 1; }
+.spot.empty { border: 3px dashed rgba(30, 38, 80, .35); }
+.spot.empty::after { content: '+'; font-size: 26px; font-weight: 800; color: rgba(30, 38, 80, .4); }
+.r-space .spot.empty { border-color: rgba(255, 255, 255, .5); }
+.r-space .spot.empty::after { color: rgba(255, 255, 255, .6); }
+.spot.on { outline: 4px solid var(--sun); outline-offset: 2px; background: rgba(255, 255, 255, .35); }
+.spot.ghost { animation: ghost 1s ease-in-out infinite; }
+@keyframes ghost { 50% { opacity: .45; transform: scale(.92); } }
+.sp-window { left: 5%; top: 6%; background: #d7f1ff; border: 4px solid #fff; box-shadow: 0 0 0 3px var(--ink); }
+.sp-window.empty { border-style: solid; }
+.sp-light { left: 39.5%; top: 3%; }
+.sp-wall { left: 74%; top: 6%; }
+.sp-friend { left: 5%; top: 34%; }
+.sp-plant { left: 76%; top: 36%; }
+.sp-bed { left: 4%; top: 64%; }
+.sp-toy { left: 76%; top: 72%; }
+.sp-bowl { left: 26%; top: 78%; width: 17%; height: 17%; font-size: clamp(24px, 8vw, 34px); }
+.sp-rug { left: 30%; top: 74%; width: 48%; height: 18%; z-index: 0; border-radius: 50%; }
+.sp-bowl { z-index: 3; }
+.rug { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid rgba(30, 38, 80, .5); }
+.rug.rug1 { background: #e98f5a; }
+.rug.rug2 { background: repeating-linear-gradient(90deg, #3e9be0 0 12px, #fff 12px 20px, #ef5b52 20px 32px, #fff 32px 40px); }
+.rug.rug3 { background: conic-gradient(#ef5b52, #ffc23d, #8ad97a, #3e9be0, #b57be6, #ef5b52); }
+.room-pet { position: absolute; left: 50%; top: 67%; transform: translate(-50%, -50%); font-size: clamp(60px, 22vw, 92px); z-index: 2; pointer-events: none; }
+.room-count { font-size: 28px; font-weight: 800; }
+.room-party { position: absolute; inset: 0; display: grid; place-items: center; font-size: 150px; z-index: 5; pointer-events: none; animation: party 1.6s forwards; }
+@keyframes party { 0% { transform: scale(.2) rotate(-90deg); opacity: 0; } 30% { transform: scale(1.2); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+.shoprow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 0 14px; }
+.shopbtn { width: 70px; height: 76px; border-radius: 18px; background: var(--card); border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 34px; line-height: 1.05; }
+.shopbtn .rug { width: 50px; height: 26px; }
+.shopbtn small { font-size: 13px; font-weight: 800; margin-top: 2px; }
+.shopbtn.own { border-color: var(--mint); }
+.shopbtn.on { background: var(--sun); }
+.shoprow.friends .shopbtn { width: 56px; height: 56px; font-size: 30px; }
+
+/* mystery eggs */
+.eggbuy { width: 130px; height: 120px; border-radius: 28px; background: var(--card); border: 4px solid var(--ink); box-shadow: 0 6px 0 var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 62px; line-height: 1; }
+.eggbuy small { font-size: 17px; font-weight: 800; margin-top: 4px; }
+.eggbuy:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.eggbuy.full { font-size: 56px; box-shadow: none; }
+.book.zoo .book-grid span.miss { filter: brightness(0); opacity: .18; }
+.hatchbox { position: fixed; inset: 0; z-index: 20; background: rgba(20, 26, 60, .55); display: grid; place-items: center; animation: fadein .2s; }
+.bigegg { font-size: 150px; line-height: 1; transition: transform .15s; }
+.bigegg.crack { animation: wobble .4s; }
+.hatched { font-size: 160px; line-height: 1; animation: starpop .6s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pe.sh-rainbow { animation: none; filter: sepia(1) saturate(4) hue-rotate(150deg) drop-shadow(0 0 .08em #ff8ad8); }
+  .spot.ghost { animation: none; opacity: .6; }
+}

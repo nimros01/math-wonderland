@@ -1,5 +1,6 @@
 // Screens: players, map, stage popup, results, pet and sticker book, parent corner.
 import * as P from './progress.js';
+import * as S from './shop.js';
 import { sfx, unlockAudio } from './audio.js';
 import { LEARN, STICKERS, HATS, AVATARS } from './skills.js';
 import { lookBackHTML, bindLookBack } from './solve.js';
@@ -27,13 +28,14 @@ function curWorld(p) {
 
 const wid = p => WORLDS[curWorld(p)].id;
 
-function petFace(pet, w, cls = '') {
-  return `<span class="pet ${cls} s${pet.stage}">${P.petEmoji(pet, w)}${pet.hat ? `<span class="hat">${pet.hat}</span>` : ''}</span>`;
+// A grown pet shows the color its child picked (gold or rainbow) wherever it appears.
+function petFace(pet, w, cls = '', p = P.me()) {
+  return `<span class="pet ${cls} s${pet.stage}"><span class="pe${S.shineClass(p, w, pet)}">${P.petEmoji(pet, w)}</span>${pet.hat ? `<span class="hat">${pet.hat}</span>` : ''}</span>`;
 }
 // A child's pet for the world they're in (egg until it hatches); with `buddy`, the one that plays along.
 function petHTML(p, cls = '', buddy = false) {
   const c = buddy ? P.companion(p, wid(p)) : { pet: P.peekPet(p, wid(p)), wid: wid(p) };
-  return petFace(c.pet, c.wid, cls);
+  return petFace(c.pet, c.wid, cls, p);
 }
 
 // Players. Each child picks their own animal at every launch; each keeps separate progress.
@@ -404,19 +406,31 @@ function openChest(p) {
   return `<div class="rw-item">💎</div><div class="rw-sub">+${g}</div>`;
 }
 
-// Pet and sticker book. Each world has its own pet; the row on top picks which one to look after.
+// Pet screen. The row on top picks a world's pet; the tabs under it show that pet's
+// 🏠 room, 🍎 food, colors and hats, 🥚 mystery eggs and creature collection, and 📒 the sticker book.
 // Worlds that aren't built yet show a locked egg, so kids know more pets are coming.
+// Nothing costs diamonds without a second tap on ✅, so a stray tap never spends anything.
 const SOON = [['candy', '🍭'], ['desert', '🏜️'], ['volcano', '🌋'], ['space', '🚀']];
+const PET_TABS = [['room', '🏠'], ['care', '🍎'], ['zoo', '🥚'], ['book', '📒']];
+let petTab = 'room';
 
-function petScreen(w = wid(P.me())) {
+const buyRow = (price, ok) => `
+  <div class="buyrow">
+    <button class="bigbtn" id="no" aria-label="Cancel">✖</button>
+    <button class="bigbtn green" id="yes" aria-label="Buy" ${ok ? '' : 'disabled'}><span>✅</span><small>💎 ${price}</small></button>
+  </div>`;
+const roomThing = (spot, it) => (spot === 'rug' ? `<i class="rug ${it}"></i>` : it);
+
+// sel is what the child is in the middle of: a room spot and item preview, a color or an egg to buy.
+function petScreen(w = wid(P.me()), tab = petTab, sel = {}) {
   const p = P.me();
   const k = WORLDS.findIndex(x => x.id === w);
   if (k < 0 || !worldOpen(p, k)) w = 'meadow';
-  const W = WORLDS.find(x => x.id === w);
+  if (!PET_TABS.some(t => t[0] === tab)) tab = 'room';
+  petTab = tab;
   const pet = P.petOf(p, w);
-  const cost = P.feedCost(pet);
-  const canFeed = pet.stage > 0 && pet.stage < 3 && p.gems >= cost;
   const soon = SOON.filter(([id]) => !WORLDS.some(x => x.id === id));
+  const body = { room: roomTab, care: careTab, zoo: zooTab, book: bookTab }[tab](p, w, pet, sel);
   app.innerHTML = `
     <div class="petscreen">
       <div class="topbar">
@@ -426,41 +440,162 @@ function petScreen(w = wid(P.me())) {
       </div>
       <div class="petpicks">
         ${WORLDS.map((x, j) => worldOpen(p, j)
-          ? `<button class="petpick${x.id === w ? ' on' : ''}" data-w="${x.id}" aria-label="Pet of world ${j + 1}">${petFace(P.peekPet(p, x.id), x.id)}<small>${x.icon}</small></button>`
+          ? `<button class="petpick${x.id === w ? ' on' : ''}" data-w="${x.id}" aria-label="Pet of world ${j + 1}">${petFace(P.peekPet(p, x.id), x.id)}<small>${x.icon}</small>${S.roomDone(p, x.id) ? '<i class="done">⭐</i>' : ''}</button>`
           : `<button class="petpick locked" aria-label="Locked">🥚<small>🔒</small></button>`).join('')}
         ${soon.map(() => '<button class="petpick locked soon" aria-label="Coming soon">🥚<small>🔒</small></button>').join('')}
       </div>
-      <div class="pet-stage">${petFace(pet, w, 'huge')}</div>
-      ${pet.stage === 0 ? `<div class="pet-hint">${w === 'meadow' ? '▶' : W.icon} ⭐ → 🐣</div>` : pet.stage < 3 ? `
-        <div class="growbar"><i style="width:${Math.round(P.feedProgress(pet) * 100)}%"></i></div>
-        <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${cost}</small></button>` : '<div class="pet-hint">🏆</div>'}
-      <div class="hats">
-        <button class="hatbtn ${pet.hat ? '' : 'on'}" data-h="" aria-label="No hat">∅</button>
-        ${HATS.map(h => p.hats.includes(h)
-          ? `<button class="hatbtn ${pet.hat === h ? 'on' : ''}" data-h="${h}">${h}</button>`
-          : `<button class="hatbtn shop" data-buy="${h}" ${p.gems >= P.HAT_COST ? '' : 'disabled'}><span>${h}</span><small>💎${P.HAT_COST}</small></button>`).join('')}
+      <div class="pettabs">
+        ${PET_TABS.map(([id, ic]) => `<button class="pettab${id === tab ? ' on' : ''}" data-tab="${id}" aria-label="${id}">${ic}</button>`).join('')}
       </div>
-      <div class="book">
-        <div class="book-head">📒 ${p.stickers.length} / ${STICKERS.length}</div>
-        <div class="book-grid">${STICKERS.map(s => `<span class="${p.stickers.includes(s) ? 'got' : ''}">${p.stickers.includes(s) ? s : '❔'}</span>`).join('')}</div>
-      </div>
+      ${body}
     </div>`;
+  const again = (s2 = {}, t2 = tab) => petScreen(w, t2, s2);
   app.querySelector('#back').onclick = () => { sfx.tap(); map(); };
   app.querySelectorAll('.petpick').forEach(b => {
     b.onclick = () => {
       if (!b.dataset.w) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
       sfx.tap();
-      petScreen(b.dataset.w);
+      petScreen(b.dataset.w, tab);
     };
   });
+  app.querySelectorAll('.pettab').forEach(b => { b.onclick = () => { sfx.tap(); again({}, b.dataset.tab); }; });
+  const no = app.querySelector('#no');
+  if (no) no.onclick = () => { sfx.tap(); again(sel.spot ? { spot: sel.spot } : {}); };
+  ({ room: bindRoom, care: bindCare, zoo: bindZoo, book: () => {} })[tab](p, w, pet, sel, again);
+}
+
+const cheer = (cls = 'grow') => app.querySelector('.petscreen .pet')?.classList.add(cls);
+
+// 🏠 The pet's room: 8 spots with 3 items each, plus a free spot for a friend from the collection.
+function roomTab(p, w, pet, sel) {
+  const room = S.roomOf(p, w);
+  const shown = sp => (sel.spot === sp && sel.preview !== undefined ? sel.preview : room[sp]);
+  const spots = [...S.SPOTS, 'friend'].map(sp => {
+    const it = shown(sp);
+    const cls = `spot sp-${sp}${sel.spot === sp ? ' on' : ''}${sel.spot === sp && sel.preview ? ' ghost' : ''}${it ? '' : ' empty'}`;
+    return `<button class="${cls}" data-spot="${sp}" aria-label="${sp}">${it ? roomThing(sp, it) : ''}</button>`;
+  }).join('');
+  let under;
+  if (!sel.spot) {
+    under = `<div class="room-count">🏠 ${S.SPOTS.filter(s => room[s]).length} / ${S.SPOTS.length}</div>`;
+  } else if (sel.preview) {
+    const price = S.itemPrice(w, sel.spot, sel.preview);
+    under = buyRow(price, p.gems >= price);
+  } else {
+    const items = sel.spot === 'friend' ? (p.zoo || []) : S.roomItems(w, sel.spot);
+    const btns = items.map(it => {
+      const own = sel.spot === 'friend' || S.ownsItem(p, w, it);
+      return `<button class="shopbtn${own ? ' own' : ''}${room[sel.spot] === it ? ' on' : ''}" data-item="${it}">
+        <span>${roomThing(sel.spot, it)}</span>${own ? '' : `<small>💎${S.itemPrice(w, sel.spot, it)}</small>`}</button>`;
+    }).join('');
+    const clear = room[sel.spot] ? '<button class="shopbtn" data-item="" aria-label="Take away"><span>∅</span></button>' : '';
+    under = sel.spot === 'friend' && !items.length
+      ? '<button class="shopbtn" id="tozoo" aria-label="Mystery eggs"><span>🥚</span><small>→</small></button>'
+      : `<div class="shoprow${sel.spot === 'friend' ? ' friends' : ''}">${clear}${btns}</div>`;
+  }
+  return `
+    <div class="room r-${w}">
+      <i class="room-floor"></i>
+      ${spots}
+      <div class="room-pet">${petFace(pet, w, pet.stage ? 'bounce' : '', p)}</div>
+    </div>
+    ${under}`;
+}
+
+function bindRoom(p, w, pet, sel, again) {
+  app.querySelectorAll('.spot').forEach(b => {
+    b.onclick = () => { sfx.tap(); again(sel.spot === b.dataset.spot && !sel.preview ? {} : { spot: b.dataset.spot }); };
+  });
+  app.querySelectorAll('.shopbtn[data-item]').forEach(b => {
+    b.onclick = () => {
+      const it = b.dataset.item;
+      if (!it || sel.spot === 'friend' || S.ownsItem(p, w, it)) {
+        S.place(p, w, sel.spot, it || null);
+        P.save();
+        sfx.ok();
+        again({ spot: sel.spot });
+        if (it) cheer('munch');
+      } else {
+        sfx.tap();
+        again({ spot: sel.spot, preview: it });
+      }
+    };
+  });
+  const toZoo = app.querySelector('#tozoo');
+  if (toZoo) toZoo.onclick = () => { sfx.tap(); again({}, 'zoo'); };
+  const yes = app.querySelector('#yes');
+  if (yes) yes.onclick = () => {
+    const wasDone = S.roomDone(p, w);
+    if (!S.buyItem(p, w, sel.spot, sel.preview)) { sfx.bad(); return; }
+    P.save();
+    const done = !wasDone && S.roomDone(p, w);
+    done ? sfx.grow() : sfx.chest();
+    again({ spot: sel.spot });
+    cheer('grow');
+    if (done) app.querySelector('.room').insertAdjacentHTML('beforeend', '<div class="room-party">⭐</div>');
+  };
+}
+
+// 🍎 Feed the pet until it's grown; a grown pet can turn golden, then rainbow. Hats are shared by all pets.
+function careTab(p, w, pet, sel) {
+  const W = WORLDS.find(x => x.id === w);
+  const cost = P.feedCost(pet);
+  const canFeed = pet.stage > 0 && pet.stage < 3 && p.gems >= cost;
+  let grow;
+  if (pet.stage === 0) grow = `<div class="pet-hint">${w === 'meadow' ? '▶' : W.icon} ⭐ → 🐣</div>`;
+  else if (pet.stage < 3) grow = `
+    <div class="growbar"><i style="width:${Math.round(P.feedProgress(pet) * 100)}%"></i></div>
+    <button class="bigbtn green feed" id="feed" ${canFeed ? '' : 'disabled'}><span>🍎</span><small>💎 ${cost}</small></button>`;
+  else if (sel.shine) grow = buyRow(S.shinePrice(sel.shine), S.canBuyShine(p, w, pet, sel.shine));
+  else {
+    const worn = p.wear?.[w] || '';
+    const face = c => `<span class="pet"><span class="pe${c ? ' sh-' + c : ''}">${P.petEmoji(pet, w)}</span></span>`;
+    grow = `<div class="shines">
+      <button class="shinebtn${worn ? '' : ' on'}" data-c="" aria-label="Plain">${face('')}</button>
+      ${S.SHINES.map(([c, price]) => {
+        const own = S.ownsShine(p, w, c);
+        const locked = c === 'rainbow' && !S.ownsShine(p, w, 'gold');
+        return `<button class="shinebtn${worn === c && own ? ' on' : ''}${locked ? ' locked' : ''}" data-c="${c}" aria-label="${c}">
+          ${face(c)}${own ? '' : `<small>${locked ? '🔒' : '💎' + price}</small>`}</button>`;
+      }).join('')}
+    </div>`;
+  }
+  return `
+    <div class="pet-stage">${petFace(pet, w, 'huge', p)}</div>
+    ${grow}
+    <div class="hats">
+      <button class="hatbtn ${pet.hat ? '' : 'on'}" data-h="" aria-label="No hat">∅</button>
+      ${HATS.map(h => p.hats.includes(h)
+        ? `<button class="hatbtn ${pet.hat === h ? 'on' : ''}" data-h="${h}">${h}</button>`
+        : `<button class="hatbtn shop" data-buy="${h}" ${p.gems >= P.HAT_COST ? '' : 'disabled'}><span>${h}</span><small>💎${P.HAT_COST}</small></button>`).join('')}
+    </div>`;
+}
+
+function bindCare(p, w, pet, sel, again) {
   const feedBtn = app.querySelector('#feed');
   if (feedBtn) feedBtn.onclick = () => {
     const grew = P.feed(p, pet);
     P.save();
     grew ? sfx.grow() : sfx.ok();
-    petScreen(w);
-    const el = app.querySelector('.pet-stage .pet');
-    el.classList.add(grew ? 'grow' : 'munch');
+    again();
+    cheer(grew ? 'grow' : 'munch');
+  };
+  app.querySelectorAll('.shinebtn').forEach(b => {
+    b.onclick = () => {
+      const c = b.dataset.c;
+      if (!c || S.ownsShine(p, w, c)) { S.wearShine(p, w, c); P.save(); sfx.ok(); again(); cheer('munch'); return; }
+      if (b.classList.contains('locked')) { sfx.bad(); b.classList.add('wobble'); setTimeout(() => b.classList.remove('wobble'), 500); return; }
+      sfx.tap();
+      again({ shine: c });
+    };
+  });
+  const yes = app.querySelector('#yes');
+  if (yes) yes.onclick = () => {
+    if (!S.buyShine(p, w, pet, sel.shine)) { sfx.bad(); return; }
+    P.save();
+    sfx.grow();
+    again();
+    cheer('grow');
   };
   app.querySelectorAll('.hatbtn').forEach(b => {
     b.onclick = () => {
@@ -475,9 +610,65 @@ function petScreen(w = wid(P.me())) {
         pet.hat = b.dataset.h || null;
       }
       P.save();
-      petScreen(w);
+      again();
     };
   });
+}
+
+// 🥚 Each world's mystery egg hatches one of its 8 creatures, never one the child already has.
+function zooTab(p, w, pet, sel) {
+  const W = WORLDS.find(x => x.id === w);
+  const set = S.zooSet(w), got = set.filter(c => (p.zoo || []).includes(c));
+  const full = got.length === set.length;
+  const top = sel.egg ? buyRow(S.EGG_COST, p.gems >= S.EGG_COST)
+    : full ? '<div class="eggbuy full">✅</div>'
+    : `<button class="eggbuy" id="egg" aria-label="Mystery egg"><span>🥚</span><small>💎 ${S.EGG_COST}</small></button>`;
+  return `
+    ${top}
+    <div class="book zoo">
+      <div class="book-head">${W.icon} ${got.length} / ${set.length}</div>
+      <div class="book-grid">${set.map(c => `<span class="${got.includes(c) ? 'got' : 'miss'}">${c}</span>`).join('')}</div>
+    </div>`;
+}
+
+function bindZoo(p, w, pet, sel, again) {
+  const egg = app.querySelector('#egg');
+  if (egg) egg.onclick = () => { sfx.tap(); again({ egg: true }); };
+  const yes = app.querySelector('#yes');
+  if (yes) yes.onclick = () => {
+    const c = S.buyEgg(p, w);
+    if (!c) { sfx.bad(); return; }
+    P.save();
+    again();
+    // Tap the egg three times to crack it open.
+    const box = document.createElement('div');
+    box.className = 'hatchbox';
+    box.innerHTML = '<button class="bigegg" aria-label="Crack the egg">🥚</button>';
+    app.querySelector('.petscreen').appendChild(box);
+    const big = box.firstElementChild;
+    let taps = 0;
+    big.onclick = e => {
+      e.stopPropagation(); // the box closes on a later tap, not on this one
+      if (++taps < 3) {
+        sfx.tap();
+        big.classList.remove('crack'); void big.offsetWidth; big.classList.add('crack');
+        big.style.transform = `rotate(${taps % 2 ? -12 : 12}deg) scale(${1 + taps * 0.1})`;
+        return;
+      }
+      sfx.grow();
+      big.onclick = null;
+      box.innerHTML = `<div class="hatched">${c}</div>`;
+      box.onclick = () => box.remove();
+    };
+  };
+}
+
+function bookTab(p) {
+  return `
+    <div class="book">
+      <div class="book-head">📒 ${p.stickers.length} / ${STICKERS.length}</div>
+      <div class="book-grid">${STICKERS.map(s => `<span class="${p.stickers.includes(s) ? 'got' : ''}">${p.stickers.includes(s) ? s : '❔'}</span>`).join('')}</div>
+    </div>`;
 }
 
 // Parent corner: press and hold the gear so kids don't open it by accident.
