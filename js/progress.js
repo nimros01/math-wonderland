@@ -1,4 +1,5 @@
 // Saved game state, kept in this browser's localStorage.
+import { clearAll as clearRounds } from './resume.js';
 const KEY = 'math-wonderland-v1';
 
 function fresh() {
@@ -14,7 +15,12 @@ const listeners = [];
 export const onSave = fn => listeners.push(fn);
 
 export function writeLocal() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+  const data = JSON.stringify(state);
+  try { localStorage.setItem(KEY, data); } catch (e) {
+    // Storage full: drop the saved half-played rounds (js/resume.js) and try again.
+    clearRounds();
+    try { localStorage.setItem(KEY, data); } catch (e2) { /* storage blocked */ }
+  }
 }
 
 export function save() {

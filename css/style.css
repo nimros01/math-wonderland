@@ -227,6 +227,13 @@ button:focus-visible { outline: 4px solid var(--blue); outline-offset: 2px; }
 .pop-icon.txt { font-size: 70px; }
 .pop-btns { display: flex; gap: 16px; }
 .pop-btns .bigbtn { width: 110px; height: 96px; font-size: 44px; }
+/* a round left part way through: how far it got, and 🔁 to start it over */
+.pop-btns .bigbtn { position: relative; overflow: hidden; }
+.bigbtn .resbar { position: absolute; left: 0; bottom: 0; height: 8px; width: 100%; background: rgba(255, 255, 255, .45); }
+.bigbtn .resbar::after { content: ""; position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(var(--f, 0)); }
+.bigbtn.gold .resbar { background: rgba(0, 0, 0, .15); }
+.bigbtn.gold .resbar::after { background: var(--ink); }
+.icon-btn.restart { font-size: 24px; }
 
 /* play */
 .play { height: 100%; display: flex; flex-direction: column; }

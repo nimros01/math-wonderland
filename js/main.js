@@ -5,11 +5,13 @@ import { sfx, unlockAudio } from './audio.js';
 import { LEARN, STICKERS, HATS, AVATARS } from './skills.js';
 import { lookBackHTML, bindLookBack } from './solve.js';
 import { startRound } from './play.js';
+import * as R from './resume.js';
 import { WORLDS, learnOf, bossBeaten, setBossBeaten, worldOpen, worldOfStage } from './worlds.js';
 import * as C from './cloud.js';
 import { country, setCountry } from './country.js';
 
 const app = document.getElementById('app');
+R.prune(P.state.profiles.map(p => p.id));
 const esc = t => String(t).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const starsHTML = n => [1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('');
@@ -264,6 +266,11 @@ function stagePopup(STAGES, i) {
   const p = P.me();
   const s = STAGES[i];
   const rec = P.stageRec(p, s.id);
+  // A round left part way through carries on from ▶ (or ⚡); its bar shows how far it got, and 🔁 starts it over
+  // (the round test, when both were left).
+  const left = { normal: R.peek(p.id, R.roundKey('normal', s)), gate: R.peek(p.id, R.roundKey('gate', s)) };
+  const bar = m => (left[m] ? `<i class="resbar" style="--f:${Math.min(1, left[m].st.i / (m === 'gate' ? 8 : 10))}"></i>` : '');
+  const lm = left.normal ? 'normal' : left.gate ? 'gate' : null; // 🔁 restarts the normal round if both were left
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `
@@ -272,9 +279,10 @@ function stagePopup(STAGES, i) {
       <div class="pop-icon ${s.icon.startsWith('×') ? 'txt' : ''}">${s.icon}</div>
       <div class="stars big">${starsHTML(rec.stars)}</div>
       <div class="pop-btns">
-        <button class="bigbtn green" id="play" aria-label="Play">▶</button>
-        ${rec.stars < 3 ? `<button class="bigbtn gold" id="gate" aria-label="Skip test"><span>⚡</span><small>★★★</small></button>` : ''}
+        <button class="bigbtn green" id="play" aria-label="${left.normal ? 'Carry on' : 'Play'}">▶${bar('normal')}</button>
+        ${rec.stars < 3 || left.gate ? `<button class="bigbtn gold" id="gate" aria-label="Skip test"><span>⚡</span><small>★★★</small>${bar('gate')}</button>` : ''}
       </div>
+      ${lm ? '<button class="icon-btn restart" id="restart" aria-label="Start over">🔁</button>' : ''}
     </div>`;
   app.appendChild(ov);
   const close = () => ov.remove();
@@ -283,6 +291,8 @@ function stagePopup(STAGES, i) {
   ov.querySelector('#play').onclick = () => { sfx.tap(); play(STAGES, i, 'normal'); };
   const g = ov.querySelector('#gate');
   if (g) g.onclick = () => { sfx.tap(); play(STAGES, i, 'gate'); };
+  const rs = ov.querySelector('#restart');
+  if (rs) rs.onclick = () => { sfx.tap(); R.drop(p.id, R.roundKey(lm, s)); play(STAGES, i, lm); };
 }
 
 function play(STAGES, i, mode) {

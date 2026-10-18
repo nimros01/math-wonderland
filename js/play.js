@@ -6,6 +6,7 @@ import { LEARN } from './skills.js';
 import { WORLDS, learnOf } from './worlds.js';
 import { helpFor } from './help.js';
 import { openSolution } from './solve.js';
+import * as R from './resume.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -37,6 +38,8 @@ export function startRound(app, opts) {
     log: [], given: undefined, after: null, // after: the pause between an answer and the next question
   };
   const pl = { si: 0, right: 0, miss: 0 }; // placement: current stage index and its score
+  const rk = R.roundKey(mode, stage, world);
+  const saved = R.peek(p.id, rk); // this round, left part way through
   let q = null;
   let typed = '';
   let sel = null; // selected card in a pairs question
@@ -182,7 +185,7 @@ export function startRound(app, opts) {
     bug.hidden = false;
     void bug.offsetWidth;
     bug.classList.add('crawl');
-    bug.onclick = () => { bug.hidden = true; sfx.star(); addGems(10); };
+    bug.onclick = () => { bug.hidden = true; sfx.star(); addGems(10); P.save(); keepRound(st.busy ? null : q); };
     bug.onanimationend = () => { bug.hidden = true; };
   }
 
@@ -405,6 +408,7 @@ export function startRound(app, opts) {
     const entry = { q, given: st.given, ok, sid: q.sid };
     st.log.push(entry);
     st.given = undefined;
+    keepRound(null);
     const ms = ok ? WAIT_RIGHT : WAIT_WRONG;
     st.after = { entry, done: false, held: false, timer: setTimeout(moveOn, ms) };
     if (!ok) {
@@ -468,12 +472,45 @@ export function startRound(app, opts) {
       return finish();
     }
     render(nq);
+    keepRound(nq);
     maybeBug();
+    st.busy = false;
+  }
+
+  // ---------- leaving and coming back ----------
+  // After every new question and every answer the round is put aside (js/resume.js), so ✖ or closing the app
+  // loses nothing: the next time this round opens it shows the same question, or the next one if the last was answered.
+  // Gems are already in the saved game by then, so nothing can be earned twice.
+  const fresh0 = x => { (x.items || x.cards || []).forEach(it => { it.done = false; }); return x; };
+  function keepRound(cur) {
+    if (mode === 'placement') return; // offered only once, when a player is made: there is no coming back to it
+    R.keep(p.id, rk, {
+      cur: cur || null, pl,
+      st: {
+        i: st.i, correct: st.correct, streak: st.streak, best: st.best, lvl: st.lvl, gems: st.gems, goldenUsed: st.goldenUsed,
+        hp: st.hp, hearts: st.hearts, lastKey: st.lastKey, keys: [...st.keys], redo: st.redo, log: st.log,
+      },
+    });
+  }
+  // A saved question has lost its generator (👀 and the next round of the same kind need it): find it again.
+  const genOf = x => (mode === 'boss' ? (bossPool.find(b => b.id === x.sid) || bossPool[0]).gen
+    : mode === 'placement' ? (LEARN.find(l => l.id === x.sid) || LEARN[Math.min(pl.si, LEARN.length - 1)]).gen : stage.gen);
+  function resume(r) {
+    Object.assign(pl, r.pl);
+    Object.assign(st, r.st, { keys: new Set(r.st.keys), redo: r.st.redo.map(x => ({ ...fresh0(x), gen: genOf(x) })) });
+    showStreak();
+    setProgress();
+    bossUI();
+    if (!r.cur) return next();
+    const cur = fresh0(r.cur);
+    cur.gen = genOf(cur);
+    render(cur);
     st.busy = false;
   }
 
   function finish() {
     over = true;
+    R.drop(p.id, rk);
     closePopups();
     const r = { mode, gems: st.gems, correct: st.correct, total, best: st.best, log: st.log };
     if (mode === 'normal') r.stars = starsFor(st.correct);
@@ -532,7 +569,8 @@ export function startRound(app, opts) {
   }
 
   bossUI();
-  if (mode === 'normal' && !P.stageRec(p, stage.id).demo) {
+  if (saved) resume(saved);
+  else if (mode === 'normal' && !P.stageRec(p, stage.id).demo) {
     demo(stage.gen, () => { P.stageRec(p, stage.id).demo = true; P.save(); next(); });
   } else next();
 }
