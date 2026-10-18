@@ -495,6 +495,8 @@ export function startRound(app, opts) {
     if (mode === 'placement') return; // offered only once, when a player is made: there is no coming back to it
     R.keep(p.id, rk, {
       cur: cur || null, pl,
+      // Left in the pause after the round's last answer: coming back only shows the results.
+      ends: !cur && (mode === 'boss' ? st.hp <= 0 || st.hearts <= 0 : st.i >= total && !st.redo.length),
       st: {
         i: st.i, correct: st.correct, streak: st.streak, best: st.best, lvl: st.lvl, gems: st.gems, goldenUsed: st.goldenUsed,
         hp: st.hp, hearts: st.hearts, lastKey: st.lastKey, keys: [...st.keys], redo: st.redo, log: st.log,
@@ -511,10 +513,11 @@ export function startRound(app, opts) {
     setProgress();
     bossUI();
     if (!r.cur) return next();
+    const misses = r.cur.misses || 0; // render() starts a question at 0
     const cur = fresh0(r.cur);
     cur.gen = genOf(cur);
     render(cur);
-    q.misses = r.cur.misses || 0;
+    q.misses = misses;
     if (q.hinted) hintBtn.disabled = true;
     dealt = cur;
     st.busy = false;

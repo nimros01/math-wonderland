@@ -282,7 +282,7 @@ function stagePopup(STAGES, i) {
         <button class="bigbtn green" id="play" aria-label="${left.normal ? 'Carry on' : 'Play'}">▶${bar('normal')}</button>
         ${rec.stars < 3 || left.gate ? `<button class="bigbtn gold" id="gate" aria-label="Skip test"><span>⚡</span><small>★★★</small>${bar('gate')}</button>` : ''}
       </div>
-      ${lm ? '<button class="icon-btn restart" id="restart" aria-label="Start over">🔁</button>' : ''}
+      ${lm && !left[lm].ends ? '<button class="icon-btn restart" id="restart" aria-label="Start over">🔁</button>' : ''}
     </div>`;
   app.appendChild(ov);
   const close = () => ov.remove();
@@ -301,7 +301,7 @@ function bossStart(W) {
   const p = P.me();
   const fight = () => startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r => bossResult(W, r) });
   const left = R.peek(p.id, R.roundKey('boss', null, W));
-  if (!left) return fight();
+  if (!left || left.ends) return fight(); // a finished fight goes straight to its result
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `
