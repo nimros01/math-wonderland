@@ -231,7 +231,7 @@ function map(focusId) {
   app.querySelector('#bossnode').onclick = e => {
     if (!bossOpen) { sfx.bad(); e.currentTarget.classList.add('wobble'); setTimeout(() => e.currentTarget?.classList.remove('wobble'), 500); return; }
     sfx.tap();
-    startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r => bossResult(W, r) });
+    bossStart(W);
   };
   holdToOpen(app.querySelector('#gear'), app.querySelector('#gearfill'), parentCorner);
 
@@ -266,11 +266,11 @@ function stagePopup(STAGES, i) {
   const p = P.me();
   const s = STAGES[i];
   const rec = P.stageRec(p, s.id);
-  // A round left part way through carries on from ▶ (or ⚡); its bar shows how far it got, and 🔁 starts it over
-  // (the round test, when both were left).
+  // A round left part way through carries on from ▶ (or ⚡); its bar shows how far it got, and 🔁 starts over
+  // (dropping both, and playing ▶'s round if both were left).
   const left = { normal: R.peek(p.id, R.roundKey('normal', s)), gate: R.peek(p.id, R.roundKey('gate', s)) };
   const bar = m => (left[m] ? `<i class="resbar" style="--f:${Math.min(1, left[m].st.i / (m === 'gate' ? 8 : 10))}"></i>` : '');
-  const lm = left.normal ? 'normal' : left.gate ? 'gate' : null; // 🔁 restarts the normal round if both were left
+  const lm = left.normal ? 'normal' : left.gate ? 'gate' : null;
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `
@@ -292,7 +292,34 @@ function stagePopup(STAGES, i) {
   const g = ov.querySelector('#gate');
   if (g) g.onclick = () => { sfx.tap(); play(STAGES, i, 'gate'); };
   const rs = ov.querySelector('#restart');
-  if (rs) rs.onclick = () => { sfx.tap(); R.drop(p.id, R.roundKey(lm, s)); play(STAGES, i, lm); };
+  if (rs) rs.onclick = () => { sfx.tap(); R.drop(p.id, R.roundKey('normal', s)); R.drop(p.id, R.roundKey('gate', s)); play(STAGES, i, lm); };
+}
+
+// A boss fight starts at once, unless one was left part way: then ▶ carries on (its bar shows the boss's lost health)
+// and 🔁 starts a new fight.
+function bossStart(W) {
+  const p = P.me();
+  const fight = () => startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r => bossResult(W, r) });
+  const left = R.peek(p.id, R.roundKey('boss', null, W));
+  if (!left) return fight();
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `
+    <div class="popup">
+      <button class="icon-btn close" aria-label="Close">✖</button>
+      <div class="pop-icon">${W.boss}</div>
+      <div class="hearts">${'❤️'.repeat(Math.max(0, left.st.hearts))}${'🤍'.repeat(Math.max(0, 3 - left.st.hearts))}</div>
+      <div class="pop-btns">
+        <button class="bigbtn green" id="play" aria-label="Carry on">▶<i class="resbar" style="--f:${Math.min(1, Math.max(0, 1 - left.st.hp / 15))}"></i></button>
+      </div>
+      <button class="icon-btn restart" id="restart" aria-label="Start over">🔁</button>
+    </div>`;
+  app.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector('.close').onclick = () => { sfx.tap(); close(); };
+  ov.onclick = e => { if (e.target === ov) close(); };
+  ov.querySelector('#play').onclick = () => { sfx.tap(); fight(); };
+  ov.querySelector('#restart').onclick = () => { sfx.tap(); R.drop(p.id, R.roundKey('boss', null, W)); fight(); };
 }
 
 function play(STAGES, i, mode) {
@@ -388,7 +415,7 @@ function bossResult(W, r) {
       P.save();
     }, 500);
   };
-  app.querySelector('#again').onclick = () => { sfx.tap(); startRound(app, { mode: 'boss', world: W, onQuit: () => map(), onDone: r2 => bossResult(W, r2) }); };
+  app.querySelector('#again').onclick = () => { sfx.tap(); bossStart(W); };
   app.querySelector('#map').onclick = () => { sfx.tap(); map(); };
 }
 

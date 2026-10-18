@@ -4,7 +4,8 @@
 // Stored as { playerId: { roundKey: round } }, the latest few rounds per player.
 const KEY = 'math-wonderland-round-v1';
 const MAX_AGE = 2 * 24 * 3600 * 1000;
-const PER_PLAYER = 5;
+const PER_PLAYER = 3;
+const MAX_SIZE = 400000; // all rounds together, in characters: the oldest give way past this
 
 let rounds = {};
 try { rounds = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { rounds = {}; }
@@ -13,7 +14,19 @@ if (typeof rounds !== 'object' || Array.isArray(rounds)) rounds = {};
 // Out of room: older rounds give way to the one just played, and if even that doesn't fit, rounds aren't kept.
 // The saved game never gives way for them (and progress.js clears them if it needs the room).
 function write(pid, key) {
-  try { localStorage.setItem(KEY, JSON.stringify(rounds)); return; } catch (e) { /* full, or storage blocked */ }
+  let data = JSON.stringify(rounds);
+  // Over the size cap: drop the oldest rounds of anyone (never the one just played).
+  if (data.length > MAX_SIZE) {
+    const all = Object.entries(rounds).flatMap(([id, m]) => Object.keys(m).map(k => [id, k, m[k].t])).sort((a, b) => a[2] - b[2]);
+    for (const [id, k] of all) {
+      if (data.length <= MAX_SIZE) break;
+      if (id === pid && k === key) continue;
+      delete rounds[id][k];
+      if (!Object.keys(rounds[id]).length) delete rounds[id];
+      data = JSON.stringify(rounds);
+    }
+  }
+  try { localStorage.setItem(KEY, data); return; } catch (e) { /* full, or storage blocked */ }
   const r = pid && rounds[pid]?.[key];
   rounds = r ? { [pid]: { [key]: r } } : {};
   try { localStorage.setItem(KEY, JSON.stringify(rounds)); } catch (e) {
@@ -25,7 +38,7 @@ function write(pid, key) {
 // Which round this is: a stage's normal round or skip test, a world's boss, or the placement quest.
 export const roundKey = (mode, stage, world) => (mode === 'boss' ? 'boss:' + world.id : mode === 'placement' ? 'placement' : mode + ':' + stage.id);
 
-const live = r => r && r.v === 1 && Date.now() - r.t < MAX_AGE;
+const live = r => r && r.v === 1 && Date.now() - r.t >= 0 && Date.now() - r.t < MAX_AGE;
 
 // The saved round for this player, if they left this one and it is still fresh. A copy, so playing it doesn't change it.
 export function peek(pid, key) {

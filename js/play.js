@@ -10,6 +10,8 @@ import * as R from './resume.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
+// A short fingerprint of a question, for "not the same question twice in a round" (kept small: rounds are saved).
+const hash = t => { let h = 2166136261; for (let k = 0; k < t.length; k++) h = Math.imul(h ^ t.charCodeAt(k), 16777619); return (h >>> 0).toString(36) + t.length; };
 const ROUND = 10, GATE = 8, WAIT_RIGHT = 800, WAIT_WRONG = 5000, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
 
 // Stars for a 10-question round: 7 right opens the next stage.
@@ -44,6 +46,7 @@ export function startRound(app, opts) {
   let typed = '';
   let sel = null; // selected card in a pairs question
   let over = false;
+  let dealt = null; // the question being played (q is the hand's question while 👀 shows how)
 
   app.innerHTML = `
     <div class="play ${mode}">
@@ -84,6 +87,7 @@ export function startRound(app, opts) {
     fitVis();
     hintBtn.disabled = true;
     sfx.tap();
+    keepNow(); // coming back doesn't take the 💡 back
   };
   // ⓘ: what this question asks, in words, for parents and kids who read. Free, and it doesn't pause scoring.
   $('info').onclick = () => {
@@ -185,7 +189,7 @@ export function startRound(app, opts) {
     bug.hidden = false;
     void bug.offsetWidth;
     bug.classList.add('crawl');
-    bug.onclick = () => { bug.hidden = true; sfx.star(); addGems(10); P.save(); keepRound(st.busy ? null : q); };
+    bug.onclick = () => { bug.hidden = true; sfx.star(); addGems(10); P.save(); keepNow(); };
     bug.onanimationend = () => { bug.hidden = true; };
   }
 
@@ -269,6 +273,7 @@ export function startRound(app, opts) {
       if (q.items.every(x => !x.ok || x.done)) resolve(q.misses === 0, null);
     } else {
       q.misses++;
+      if (q.misses < 3) keepNow();
       btn.classList.add('bad');
       sfx.bad();
       setTimeout(() => btn.classList.remove('bad'), 450);
@@ -330,6 +335,7 @@ export function startRound(app, opts) {
       if (cardEl.querySelectorAll('.slot.mini.filled').length >= q.need) resolve(q.misses === 0, null);
     } else {
       q.misses++;
+      if (q.misses < 3) keepNow();
       sfx.bad();
       [first, btn].forEach(b2 => b2.classList.add('bad'));
       setTimeout(() => { [first, btn].forEach(b2 => b2.classList.remove('bad')); s1.textContent = '?'; s2.textContent = '?'; }, 450);
@@ -442,7 +448,7 @@ export function startRound(app, opts) {
     // Avoid asking the same question twice in a round (and never twice in a row).
     for (let k = 0; k < 12; k++) {
       nq = gen(lvl);
-      const key = nq.eq + (nq.visual || '') + nq.answer + (nq.target || '') + (nq.items || []).map(it => it.html).join();
+      const key = hash(nq.eq + (nq.visual || '') + nq.answer + (nq.target || '') + (nq.items || []).map(it => it.html).join());
       if (key !== st.lastKey && (!st.keys.has(key) || k >= 11)) { st.lastKey = key; st.keys.add(key); break; }
     }
     nq.gen = gen;
@@ -472,6 +478,7 @@ export function startRound(app, opts) {
       return finish();
     }
     render(nq);
+    dealt = nq;
     keepRound(nq);
     maybeBug();
     st.busy = false;
@@ -482,6 +489,8 @@ export function startRound(app, opts) {
   // loses nothing: the next time this round opens it shows the same question, or the next one if the last was answered.
   // Gems are already in the saved game by then, so nothing can be earned twice.
   const fresh0 = x => { (x.items || x.cards || []).forEach(it => { it.done = false; }); return x; };
+  // Mid-question (a 💡, a wrong tap, a ladybug) the question stays; in the pause after an answer, the next one comes.
+  const keepNow = () => { if (!over) keepRound(st.after && !st.after.done ? null : dealt); };
   function keepRound(cur) {
     if (mode === 'placement') return; // offered only once, when a player is made: there is no coming back to it
     R.keep(p.id, rk, {
@@ -505,6 +514,9 @@ export function startRound(app, opts) {
     const cur = fresh0(r.cur);
     cur.gen = genOf(cur);
     render(cur);
+    q.misses = r.cur.misses || 0;
+    if (q.hinted) hintBtn.disabled = true;
+    dealt = cur;
     st.busy = false;
   }
 
