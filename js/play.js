@@ -7,11 +7,10 @@ import { WORLDS, learnOf } from './worlds.js';
 import { helpFor } from './help.js';
 import { openSolution } from './solve.js';
 import * as R from './resume.js';
+import { freshQ } from './fresh.js';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
-// A short fingerprint of a question, for "not the same question twice in a round" (kept small: rounds are saved).
-const hash = t => { let h = 2166136261; for (let k = 0; k < t.length; k++) h = Math.imul(h ^ t.charCodeAt(k), 16777619); return (h >>> 0).toString(36) + t.length; };
 const ROUND = 10, GATE = 8, WAIT_RIGHT = 800, WAIT_WRONG = 5000, GATE_PASS = 7, BOSS_HP = 15, BOSS_HEARTS = 3;
 
 // Stars for a 10-question round: 7 right opens the next stage.
@@ -35,7 +34,8 @@ export function startRound(app, opts) {
   const total = mode === 'gate' ? GATE : ROUND;
   const startLvl = mode === 'normal' ? Math.max(0, (P.stageRec(p, stage.id).stars || 0) - 1) : 2;
   const st = {
-    i: 0, correct: 0, streak: 0, best: 0, lvl: startLvl, gems: 0, redo: [], busy: true, demo: false, lastKey: '',
+    // lastKey starts as the player's last question anywhere, so a new round never opens with it
+    i: 0, correct: 0, streak: 0, best: 0, lvl: startLvl, gems: 0, redo: [], busy: true, demo: false, lastKey: R.recent(p.id).slice(-1)[0] || '',
     goldenUsed: false, hp: BOSS_HP, hearts: BOSS_HEARTS, keys: new Set(),
     log: [], given: undefined, after: null, // after: the pause between an answer and the next question
   };
@@ -384,7 +384,8 @@ export function startRound(app, opts) {
         setTimeout(showRight, 450);
       }
       if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); fitVis(); }
-      // A missed question comes back later, with its picture if it needs one.
+      // A missed question comes back at the end of the round as one of the same kind with new numbers
+      // (the right answer was just shown, and the same numbers again would come right after a missed last question).
       if (mode === 'normal' && !q.redo) {
         const again = JSON.parse(JSON.stringify(q));
         (again.items || again.cards || []).forEach(x => { x.done = false; });
@@ -444,13 +445,10 @@ export function startRound(app, opts) {
   }
 
   function fresh(gen, lvl) {
-    let nq;
-    // Avoid asking the same question twice in a round (and never twice in a row).
-    for (let k = 0; k < 12; k++) {
-      nq = gen(lvl);
-      const key = hash(nq.eq + (nq.visual || '') + nq.answer + (nq.target || '') + (nq.items || []).map(it => it.html).join());
-      if (key !== st.lastKey && (!st.keys.has(key) || k >= 11)) { st.lastKey = key; st.keys.add(key); break; }
-    }
+    const { q: nq, key } = freshQ(gen, lvl, st.lastKey, st.keys, R.recent(p.id));
+    st.lastKey = key;
+    st.keys.add(key);
+    R.asked(p.id, key);
     nq.gen = gen;
     return nq;
   }
@@ -473,7 +471,9 @@ export function startRound(app, opts) {
       if (mode === 'gate' && Math.random() < 0.6) toPad(nq);
       if (mode === 'normal' && !st.goldenUsed && st.i >= 2 && Math.random() < 0.15) { nq.golden = true; st.goldenUsed = true; }
     } else if (st.redo.length) {
-      nq = st.redo.shift();
+      const missed = st.redo.shift();
+      nq = fresh(missed.gen, st.lvl);
+      Object.assign(nq, { sid: missed.sid, redo: true, golden: false });
     } else {
       return finish();
     }
