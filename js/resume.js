@@ -72,10 +72,30 @@ export function prune(ids) {
     if (!Object.keys(mine).length) { delete rounds[id]; changed = true; }
   }
   if (changed) write();
+  const gone = Object.keys(recentQs).filter(id => !ids.includes(id));
+  gone.forEach(id => delete recentQs[id]);
+  if (gone.length) saveRecent();
 }
 
 // For the quota guard in progress.js: free the room rounds take.
 export function clearAll() {
   rounds = {};
-  try { localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ }
+  recentQs = {};
+  try { localStorage.removeItem(KEY); localStorage.removeItem(RECENT_KEY); } catch (e) { /* storage blocked */ }
+}
+
+// The player's last questions, so a new round (🔁 or the next day) doesn't open with the ones just played.
+// Fingerprints only (js/fresh.js), in their own key, on this phone only. Losing them only means less variety.
+const RECENT_KEY = 'math-wonderland-recent-v1';
+const RECENT = 30;
+let recentQs = {};
+try { recentQs = JSON.parse(localStorage.getItem(RECENT_KEY)) || {}; } catch (e) { recentQs = {}; }
+if (typeof recentQs !== 'object' || Array.isArray(recentQs)) recentQs = {};
+const saveRecent = () => { try { localStorage.setItem(RECENT_KEY, JSON.stringify(recentQs)); } catch (e) { /* full, or storage blocked */ } };
+
+export const recent = pid => (Array.isArray(recentQs[pid]) ? recentQs[pid] : []);
+export function asked(pid, key) {
+  if (!pid) return;
+  recentQs[pid] = [...recent(pid).filter(k => k !== key), key].slice(-RECENT);
+  saveRecent();
 }
