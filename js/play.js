@@ -384,7 +384,7 @@ export function startRound(app, opts) {
         setTimeout(showRight, 450);
       }
       if (q.visual && !q.show) { visEl.innerHTML = q.visual; visEl.classList.add('pop'); fitVis(); }
-      // A missed question comes back at the end of the round as one of the same kind with new numbers
+      // A missed question comes back at the end of the round as a new one from the same stage, with new numbers
       // (the right answer was just shown, and the same numbers again would come right after a missed last question).
       if (mode === 'normal' && !q.redo) {
         const again = JSON.parse(JSON.stringify(q));
@@ -537,7 +537,9 @@ export function startRound(app, opts) {
 
   // Watch-then-try: a hand answers one question. Plays the first time a stage opens and on 👀.
   async function demo(gen, then) {
-    const dq = gen(0);
+    // Not the question on screen or a recent one, and the next real question won't be this one either.
+    const { q: dq, key } = freshQ(gen, 0, st.lastKey, st.keys, R.recent(p.id));
+    R.asked(p.id, key);
     dq.gen = gen;
     dq.show = !!dq.visual;
     render(dq);
