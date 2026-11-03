@@ -1,0 +1,8 @@
+{
+  // Cloudflare Worker that serves the game as static files (same setup as Memory Ladder).
+  // "previews" lets branch builds make preview links.
+  "name": "math-wonderland",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "." },
+  "previews": {}
+}

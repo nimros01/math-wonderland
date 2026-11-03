@@ -80,10 +80,10 @@ Then open http://localhost:8000.
 
 ## Hosting
 
-The game is moving from GitHub Pages to Firebase Hosting on its own domain (`firebase.json`).
-`.github/workflows/firebase-hosting.yml` publishes `main` to the live site and gives each pull request
-a preview address. It needs a `FIREBASE_SERVICE_ACCOUNT` repository secret (Firebase console → Project
-settings → Service accounts → Generate new private key).
+The game is moving from GitHub Pages to https://mathwonderland.playresearch.org, served by a
+Cloudflare Worker as static files (`wrangler.jsonc`, the same setup as Memory Ladder). Cloudflare
+builds `main` for the live site and gives other branches preview links. `.assetsignore` keeps
+repository files that aren't part of the game off the site.
 
 A browser keeps saves per address, so `js/move.js` carries them across. When `NEW_HOME` is set, the copy
 on GitHub Pages packs the device's saves into the link and opens the new address, which takes them in

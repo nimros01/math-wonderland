@@ -1,7 +1,8 @@
 // Offline support. Game files come from the network when it's there, so a new version shows up on
-// the next launch; the cache is only a fallback for playing offline.
+// the next launch; the cache is only a fallback for playing offline. index.html is cached as './'
+// (the Cloudflare host redirects /index.html to /).
 const CACHE = 'mw-v16';
-const FILES = ['./', 'index.html', 'css/style.css', 'js/main.js', 'js/play.js', 'js/skills.js',
+const FILES = ['./', 'css/style.css', 'js/main.js', 'js/play.js', 'js/skills.js',
   'js/visuals.js', 'js/progress.js', 'js/audio.js', 'js/cloud.js', 'js/cloud-config.js', 'js/worlds.js', 'js/meadow2.js', 'js/country.js', 'js/ocean.js', 'js/candy.js', 'js/desert.js', 'js/volcano.js', 'js/space.js', 'js/help.js', 'js/shop.js', 'js/solve.js', 'js/resume.js', 'js/fresh.js', 'js/move.js', 'js/sol-basic.js', 'js/sol-pics.js', 'js/sol-words.js', 'js/sol-all.js', 'js/sol-pics2.js', 'js/sol-ocean.js', 'js/sol-candy.js', 'js/sol-desert.js', 'js/sol-volcano.js', 'js/sol-space.js', 'js/sol-words-desert.js', 'js/sol-words-volcano.js', 'js/sol-words-space.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', e => {
