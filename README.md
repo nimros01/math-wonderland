@@ -76,7 +76,20 @@ It's a static site with no build step. Serve the folder with any web server, for
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000. On GitHub Pages, publish the `main` branch root.
+Then open http://localhost:8000.
+
+## Hosting
+
+The game is moving from GitHub Pages to https://mathwonderland.playresearch.org, served by a
+Cloudflare Worker as static files (`wrangler.jsonc`, the same setup as Memory Ladder). Cloudflare
+builds `main` for the live site and gives other branches preview links. `.assetsignore` keeps
+repository files that aren't part of the game off the site.
+
+A browser keeps saves per address, so `js/move.js` carries them across. When `NEW_HOME` is set, the copy
+on GitHub Pages packs the device's saves into the link and opens the new address, which takes them in
+before the game starts. Saves at the old address are never deleted and travel on every visit, so a
+device that played offline there still brings its newest progress. On a device that already has
+players at the new address, they are merged with family sync's rules.
 
 ## Code map
 
@@ -86,5 +99,6 @@ Then open http://localhost:8000. On GitHub Pages, publish the `main` branch root
 - `js/visuals.js`: picture aids
 - `js/progress.js`: saving, players, pet growth
 - `js/cloud.js`, `js/cloud-config.js`: family sync (Firebase REST, no SDK)
+- `js/move.js`: carries saves from the old GitHub Pages address to the new one
 - `js/audio.js`: sound effects made with Web Audio
 - `sw.js`: offline support
