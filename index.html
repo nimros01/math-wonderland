@@ -16,6 +16,10 @@
 <body>
   <div id="app"></div>
   <div id="hand" aria-hidden="true" hidden>👆</div>
-  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    // Take in saves carried from the game's old address first (js/move.js), then start the game.
+    import { go } from './js/move.js';
+    go().then(start => { if (start) import('./js/main.js'); });
+  </script>
 </body>
 </html>

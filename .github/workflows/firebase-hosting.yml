@@ -1,0 +1,35 @@
+# Publishes the game to Firebase Hosting: main goes live, and each pull request gets its own preview
+# address (posted on the pull request, kept for 7 days). Needs the FIREBASE_SERVICE_ACCOUNT secret.
+name: Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Pull requests from forks can't use the secret.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the deploy key is set up
+        id: key
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -n "$SA" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::warning::FIREBASE_SERVICE_ACCOUNT secret is missing, skipping deploy"; fi
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.key.outputs.ok == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: math-wonderland
+          channelId: ${{ github.event_name == 'push' && 'live' || '' }}
+          expires: 7d

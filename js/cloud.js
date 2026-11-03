@@ -4,6 +4,7 @@
 import { FIREBASE } from './cloud-config.js';
 import * as P from './progress.js';
 import { mergeShop } from './shop.js';
+import { PENDING as MOVED } from './move.js';
 
 const LS = 'math-wonderland-cloud';
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
@@ -196,6 +197,28 @@ async function doSync() {
   if (changed) { P.writeLocal(); changeFns.forEach(fn => fn()); }
   return changed;
 }
+
+// Players carried over from the game's old address (js/move.js) when this device already had some
+// here: merged by the same rules as sync, and a player deleted here stays deleted.
+function mergeMoved() {
+  let moved;
+  try { moved = JSON.parse(localStorage.getItem(MOVED)); } catch (e) { return; }
+  if (!moved || !Array.isArray(moved.profiles)) return;
+  const st = P.state;
+  st.deleted ||= {};
+  for (const r of moved.profiles) {
+    if (!r || !r.id) continue;
+    const tomb = st.deleted[r.id];
+    if (tomb && tomb >= (r.updated || 0)) continue;
+    const local = st.profiles.find(p => p.id === r.id);
+    if (!local) st.profiles.push(r);
+    else replaceInPlace(local, mergeProfiles(local, r));
+  }
+  mergeTwins(st);
+  P.writeLocal();
+  try { localStorage.removeItem(MOVED); } catch (e) { /* storage blocked */ }
+}
+mergeMoved();
 
 // ---------- family code ----------
 export function newCode() {
