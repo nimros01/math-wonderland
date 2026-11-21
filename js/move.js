@@ -4,7 +4,7 @@
 // are carried on every visit, so a device that played offline there still brings its newest stars.
 // Runs before js/main.js (see index.html); go() resolves to true when the game should start here.
 
-export const NEW_HOME = ''; // the game's own address, e.g. 'https://example.com/'; empty = no move yet
+export const NEW_HOME = 'https://mathwonderland.playresearch.org/'; // the game's own address; empty = no move
 const OLD_HOST = 'nimros01.github.io';
 
 // Everything a device keeps. The family code and sign-in in -cloud work at any address.
